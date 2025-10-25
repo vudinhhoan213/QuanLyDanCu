@@ -115,16 +115,16 @@ const Layout = ({ children }) => {
       onClick: () => navigate("/citizen/submit-edit-request"),
     },
     {
-      key: "/citizen/my-requests",
-      icon: <FileTextOutlined />,
-      label: "Yêu cầu của tôi",
-      onClick: () => navigate("/citizen/my-requests"),
-    },
-    {
       key: "/citizen/submit-reward-proposal",
       icon: <TrophyOutlined />,
       label: "Đề xuất khen thưởng",
       onClick: () => navigate("/citizen/submit-reward-proposal"),
+    },
+    {
+      key: "/citizen/my-requests",
+      icon: <FileTextOutlined />,
+      label: "Yêu cầu của tôi",
+      onClick: () => navigate("/citizen/my-requests"),
     },
     {
       key: "/citizen/my-rewards",
