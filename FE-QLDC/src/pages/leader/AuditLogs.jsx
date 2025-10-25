@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Table,
@@ -8,86 +8,140 @@ import {
   Typography,
   DatePicker,
   Select,
+  message,
+  Tooltip,
+  Modal,
+  Descriptions,
+  Button,
+  Image,
+  Badge,
 } from "antd";
 import {
   SearchOutlined,
   AuditOutlined,
   UserOutlined,
   FileTextOutlined,
+  InfoCircleOutlined,
+  EyeOutlined,
+  ClearOutlined,
 } from "@ant-design/icons";
 import Layout from "../../components/Layout";
 import dayjs from "dayjs";
+import { auditLogService } from "../../services/auditLogService";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
 const AuditLogs = () => {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [selectedAction, setSelectedAction] = useState("all");
+  const [selectedAction, setSelectedAction] = useState("");
+  const [selectedEntityType, setSelectedEntityType] = useState("");
+  const [dateRange, setDateRange] = useState(null);
+  const [logs, setLogs] = useState([]);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 20,
+    total: 0,
+  });
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedLog, setSelectedLog] = useState(null);
 
-  // Mock data
-  const logs = [
-    {
-      key: "1",
-      id: "LOG-001",
-      user: "Admin",
-      action: "CREATE",
-      entity: "Household",
-      entityId: "HK-001",
-      description: "Tạo hộ khẩu mới HK-001",
-      timestamp: "2024-10-20 14:30:00",
-      ip: "192.168.1.1",
-    },
-    {
-      key: "2",
-      id: "LOG-002",
-      user: "Admin",
-      action: "UPDATE",
-      entity: "Citizen",
-      entityId: "NK-001",
-      description: "Cập nhật thông tin nhân khẩu NK-001",
-      timestamp: "2024-10-20 13:15:00",
-      ip: "192.168.1.1",
-    },
-    {
-      key: "3",
-      id: "LOG-003",
-      user: "User123",
-      action: "APPROVE",
-      entity: "EditRequest",
-      entityId: "REQ-001",
-      description: "Phê duyệt yêu cầu chỉnh sửa REQ-001",
-      timestamp: "2024-10-19 10:45:00",
-      ip: "192.168.1.2",
-    },
-  ];
+  // Fetch audit logs từ API
+  useEffect(() => {
+    fetchAuditLogs();
+  }, [
+    pagination.current,
+    pagination.pageSize,
+    selectedAction,
+    selectedEntityType,
+    dateRange,
+  ]);
 
-  const actionConfig = {
-    CREATE: { color: "green", text: "Tạo mới" },
-    UPDATE: { color: "blue", text: "Cập nhật" },
-    DELETE: { color: "red", text: "Xóa" },
-    APPROVE: { color: "cyan", text: "Phê duyệt" },
-    REJECT: { color: "orange", text: "Từ chối" },
+  const fetchAuditLogs = async () => {
+    try {
+      setLoading(true);
+      const params = {
+        page: pagination.current,
+        limit: pagination.pageSize,
+      };
+
+      // Thêm filter theo action (chỉ khi có giá trị)
+      if (selectedAction && selectedAction !== "") {
+        params.action = selectedAction;
+      }
+
+      // Thêm filter theo entityType (chỉ khi có giá trị)
+      if (selectedEntityType && selectedEntityType !== "") {
+        params.entityType = selectedEntityType;
+      }
+
+      // Thêm filter theo date range
+      if (dateRange && dateRange.length === 2) {
+        params.startDate = dateRange[0].startOf("day").toISOString();
+        params.endDate = dateRange[1].endOf("day").toISOString();
+      }
+
+      const response = await auditLogService.getAll(params);
+
+      setLogs(response.docs || []);
+      setPagination({
+        ...pagination,
+        total: response.total || 0,
+      });
+    } catch (error) {
+      message.error("Không thể tải nhật ký hệ thống");
+      console.error("Error fetching audit logs:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Mapping action types
+  const getActionDisplay = (action) => {
+    if (action.includes("APPROVED")) {
+      return { color: "green", text: "Phê duyệt" };
+    } else if (action.includes("REJECTED")) {
+      return { color: "red", text: "Từ chối" };
+    } else if (action.includes("REQUESTED") || action.includes("PROPOSED")) {
+      return { color: "blue", text: "Yêu cầu" };
+    } else if (action.includes("UPDATE")) {
+      return { color: "orange", text: "Cập nhật" };
+    } else if (action.includes("CREATE")) {
+      return { color: "cyan", text: "Tạo mới" };
+    } else if (action.includes("DELETE")) {
+      return { color: "red", text: "Xóa" };
+    }
+    return { color: "default", text: action };
+  };
+
+  // Mapping entity types
+  const entityTypeConfig = {
+    Citizen: { text: "Nhân khẩu", icon: <UserOutlined /> },
+    Household: { text: "Hộ khẩu", icon: <FileTextOutlined /> },
+    EditRequest: { text: "Yêu cầu chỉnh sửa", icon: <FileTextOutlined /> },
+    RewardProposal: { text: "Đề xuất khen thưởng", icon: <AuditOutlined /> },
+    User: { text: "Người dùng", icon: <UserOutlined /> },
+    Notification: { text: "Thông báo", icon: <InfoCircleOutlined /> },
   };
 
   const columns = [
     {
       title: "Thời gian",
-      dataIndex: "timestamp",
-      key: "timestamp",
+      dataIndex: "createdAt",
+      key: "createdAt",
       width: 180,
       render: (text) => dayjs(text).format("DD/MM/YYYY HH:mm:ss"),
     },
     {
-      title: "Người dùng",
-      dataIndex: "user",
-      key: "user",
-      render: (text) => (
+      title: "Người thực hiện",
+      dataIndex: "performedBy",
+      key: "performedBy",
+      render: (user) => (
         <Space>
           <UserOutlined />
-          {text}
+          {user?.username || user?.fullName || "Hệ thống"}
         </Space>
       ),
     },
@@ -95,93 +149,496 @@ const AuditLogs = () => {
       title: "Hành động",
       dataIndex: "action",
       key: "action",
+      width: 150,
       render: (action) => {
-        const config = actionConfig[action];
+        const config = getActionDisplay(action);
         return <Tag color={config.color}>{config.text}</Tag>;
       },
     },
     {
-      title: "Đối tượng",
-      dataIndex: "entity",
-      key: "entity",
+      title: "Loại đối tượng",
+      dataIndex: "entityType",
+      key: "entityType",
+      width: 180,
+      render: (type) => {
+        const config = entityTypeConfig[type] || { text: type, icon: null };
+        return (
+          <Space>
+            {config.icon}
+            {config.text}
+          </Space>
+        );
+      },
     },
     {
       title: "Mã đối tượng",
       dataIndex: "entityId",
       key: "entityId",
+      width: 120,
+      render: (id) => (
+        <Tooltip title={id}>{id ? id.substring(0, 8) + "..." : "-"}</Tooltip>
+      ),
     },
     {
-      title: "Mô tả",
-      dataIndex: "description",
-      key: "description",
+      title: "Lý do",
+      dataIndex: "reason",
+      key: "reason",
+      render: (reason) => reason || "-",
     },
     {
       title: "IP Address",
-      dataIndex: "ip",
-      key: "ip",
+      dataIndex: "ipAddress",
+      key: "ipAddress",
+      width: 130,
+      render: (ip) => ip || "-",
+    },
+    {
+      title: "Thao tác",
+      key: "action",
+      width: 100,
+      fixed: "right",
+      render: (_, record) => (
+        <Button
+          type="link"
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={() => handleViewDetail(record)}
+        >
+          Chi tiết
+        </Button>
+      ),
     },
   ];
 
+  // Tìm kiếm theo mã đối tượng (entityId)
   const filteredLogs = logs.filter((log) => {
-    const matchSearch = Object.values(log).some((value) =>
-      value.toString().toLowerCase().includes(searchText.toLowerCase())
-    );
-    const matchAction =
-      selectedAction === "all" || log.action === selectedAction;
-    return matchSearch && matchAction;
+    if (!searchText) return true;
+
+    const searchLower = searchText.toLowerCase();
+    // Tìm kiếm chính xác theo entityId
+    return log.entityId?.toLowerCase().includes(searchLower);
   });
+
+  const handleTableChange = (newPagination) => {
+    setPagination({
+      ...pagination,
+      current: newPagination.current,
+      pageSize: newPagination.pageSize,
+    });
+  };
+
+  const handleViewDetail = (log) => {
+    setSelectedLog(log);
+    setDetailModalVisible(true);
+  };
+
+  const handleClearFilters = () => {
+    setSearchText("");
+    setSelectedAction("");
+    setSelectedEntityType("");
+    setDateRange(null);
+    setPagination({ ...pagination, current: 1 });
+  };
+
+  // Đếm số lượng filter đang active
+  const activeFilterCount = [
+    searchText,
+    selectedAction,
+    selectedEntityType,
+    dateRange,
+  ].filter(Boolean).length;
+
+  const renderDetailContent = () => {
+    if (!selectedLog) return null;
+
+    const { before, after, proposedChanges, reason, evidenceImages } =
+      selectedLog;
+
+    return (
+      <div>
+        <Descriptions bordered column={1} size="small">
+          <Descriptions.Item label="Hành động">
+            {getActionDisplay(selectedLog.action).text}
+          </Descriptions.Item>
+          <Descriptions.Item label="Loại đối tượng">
+            {entityTypeConfig[selectedLog.entityType]?.text ||
+              selectedLog.entityType}
+          </Descriptions.Item>
+          <Descriptions.Item label="Người thực hiện">
+            {selectedLog.performedBy?.fullName ||
+              selectedLog.performedBy?.username ||
+              "Hệ thống"}
+          </Descriptions.Item>
+          <Descriptions.Item label="Thời gian">
+            {dayjs(selectedLog.createdAt).format("DD/MM/YYYY HH:mm:ss")}
+          </Descriptions.Item>
+          <Descriptions.Item label="IP Address">
+            {selectedLog.ipAddress || "-"}
+          </Descriptions.Item>
+          {reason && (
+            <Descriptions.Item label="Lý do">
+              <Text>{reason}</Text>
+            </Descriptions.Item>
+          )}
+        </Descriptions>
+
+        {/* Hiển thị proposedChanges cho EditRequest */}
+        {selectedLog.entityType === "EditRequest" && before && (
+          <>
+            <Title level={5} style={{ marginTop: 16 }}>
+              Thông tin thay đổi đề xuất:
+            </Title>
+            <Descriptions bordered column={1} size="small">
+              {before.title && (
+                <Descriptions.Item label="Tiêu đề">
+                  {before.title}
+                </Descriptions.Item>
+              )}
+              {before.requestType && (
+                <Descriptions.Item label="Loại yêu cầu">
+                  {before.requestType}
+                </Descriptions.Item>
+              )}
+              {before.description && (
+                <Descriptions.Item label="Mô tả">
+                  {before.description}
+                </Descriptions.Item>
+              )}
+              {before.details && (
+                <Descriptions.Item label="Chi tiết">
+                  {before.details}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+          </>
+        )}
+
+        {/* Hiển thị proposedChanges cho RewardProposal */}
+        {selectedLog.entityType === "RewardProposal" && before && (
+          <>
+            <Title level={5} style={{ marginTop: 16 }}>
+              Thông tin đề xuất khen thưởng:
+            </Title>
+            <Descriptions bordered column={1} size="small">
+              {before.studentName && (
+                <Descriptions.Item label="Tên học sinh">
+                  {before.studentName}
+                </Descriptions.Item>
+              )}
+              {before.school && (
+                <Descriptions.Item label="Trường">
+                  {before.school}
+                </Descriptions.Item>
+              )}
+              {before.grade && (
+                <Descriptions.Item label="Lớp">
+                  {before.grade}
+                </Descriptions.Item>
+              )}
+              {before.achievementType && (
+                <Descriptions.Item label="Loại thành tích">
+                  {before.achievementType}
+                </Descriptions.Item>
+              )}
+              {before.achievementTitle && (
+                <Descriptions.Item label="Tiêu đề thành tích">
+                  {before.achievementTitle}
+                </Descriptions.Item>
+              )}
+              {before.description && (
+                <Descriptions.Item label="Mô tả">
+                  {before.description}
+                </Descriptions.Item>
+              )}
+              {before.achievementDate && (
+                <Descriptions.Item label="Ngày đạt thành tích">
+                  {dayjs(before.achievementDate).format("DD/MM/YYYY")}
+                </Descriptions.Item>
+              )}
+              {before.phone && (
+                <Descriptions.Item label="Số điện thoại">
+                  {before.phone}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+          </>
+        )}
+
+        {/* Hiển thị before/after cho Citizen updates */}
+        {selectedLog.entityType === "Citizen" && (before || after) && (
+          <>
+            {before && (
+              <>
+                <Title level={5} style={{ marginTop: 16 }}>
+                  Trước khi thay đổi:
+                </Title>
+                <pre
+                  style={{
+                    background: "#f5f5f5",
+                    padding: 12,
+                    borderRadius: 4,
+                    maxHeight: 200,
+                    overflow: "auto",
+                  }}
+                >
+                  {JSON.stringify(before, null, 2)}
+                </pre>
+              </>
+            )}
+            {after && (
+              <>
+                <Title level={5} style={{ marginTop: 16 }}>
+                  Sau khi thay đổi:
+                </Title>
+                <pre
+                  style={{
+                    background: "#f5f5f5",
+                    padding: 12,
+                    borderRadius: 4,
+                    maxHeight: 200,
+                    overflow: "auto",
+                  }}
+                >
+                  {JSON.stringify(after, null, 2)}
+                </pre>
+              </>
+            )}
+          </>
+        )}
+
+        {/* Hiển thị evidence images */}
+        {evidenceImages && evidenceImages.length > 0 && (
+          <>
+            <Title level={5} style={{ marginTop: 16 }}>
+              Hình ảnh minh chứng:
+            </Title>
+            <Image.PreviewGroup>
+              {evidenceImages.map((img, idx) => (
+                <Image
+                  key={idx}
+                  width={100}
+                  src={img}
+                  style={{ marginRight: 8 }}
+                />
+              ))}
+            </Image.PreviewGroup>
+          </>
+        )}
+      </div>
+    );
+  };
 
   return (
     <Layout>
       <div>
         <div style={{ marginBottom: 24 }}>
-          <Title level={2} style={{ marginBottom: 8 }}>
-            <AuditOutlined /> Nhật Ký Hệ Thống
-          </Title>
+          <Space
+            style={{ width: "100%", justifyContent: "space-between" }}
+            align="center"
+          >
+            <div>
+              <Title level={2} style={{ marginBottom: 8 }}>
+                <AuditOutlined /> Nhật Ký Hệ Thống
+              </Title>
+              {activeFilterCount > 0 && (
+                <Text type="secondary">
+                  <Badge count={activeFilterCount} style={{ marginRight: 8 }} />
+                  Đang áp dụng {activeFilterCount} bộ lọc
+                </Text>
+              )}
+            </div>
+            {activeFilterCount > 0 && (
+              <Button
+                icon={<ClearOutlined />}
+                onClick={handleClearFilters}
+                type="default"
+              >
+                Xóa bộ lọc
+              </Button>
+            )}
+          </Space>
         </div>
 
         <Card bordered={false} style={{ marginBottom: 16 }}>
-          <Space style={{ width: "100%", justifyContent: "space-between" }}>
-            <Space>
-              <Input
-                placeholder="Tìm kiếm..."
-                prefix={<SearchOutlined />}
-                style={{ width: 250 }}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                allowClear
-              />
-              <Select
-                style={{ width: 150 }}
-                value={selectedAction}
-                onChange={setSelectedAction}
-              >
-                <Option value="all">Tất cả</Option>
-                <Option value="CREATE">Tạo mới</Option>
-                <Option value="UPDATE">Cập nhật</Option>
-                <Option value="DELETE">Xóa</Option>
-                <Option value="APPROVE">Phê duyệt</Option>
-                <Option value="REJECT">Từ chối</Option>
-              </Select>
-              <RangePicker format="DD/MM/YYYY" />
-            </Space>
+          {/* Hiển thị active filters */}
+          {activeFilterCount > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <Space wrap>
+                <Text strong>Bộ lọc đang áp dụng:</Text>
+                {searchText && (
+                  <Tag closable onClose={() => setSearchText("")} color="blue">
+                    Mã: {searchText}
+                  </Tag>
+                )}
+                {selectedEntityType && (
+                  <Tag
+                    closable
+                    onClose={() => setSelectedEntityType("")}
+                    color="green"
+                  >
+                    Loại: {entityTypeConfig[selectedEntityType]?.text}
+                  </Tag>
+                )}
+                {selectedAction && (
+                  <Tag
+                    closable
+                    onClose={() => setSelectedAction("")}
+                    color="orange"
+                  >
+                    Hành động: {selectedAction}
+                  </Tag>
+                )}
+                {dateRange && (
+                  <Tag
+                    closable
+                    onClose={() => setDateRange(null)}
+                    color="purple"
+                  >
+                    Từ {dayjs(dateRange[0]).format("DD/MM/YYYY")} đến{" "}
+                    {dayjs(dateRange[1]).format("DD/MM/YYYY")}
+                  </Tag>
+                )}
+              </Space>
+            </div>
+          )}
+
+          <Space wrap style={{ width: "100%" }}>
+            <Input
+              placeholder="Tìm kiếm theo mã đối tượng..."
+              prefix={<SearchOutlined />}
+              style={{ width: 280 }}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              allowClear
+            />
+
+            <Select
+              placeholder="Chọn loại đối tượng"
+              style={{ width: 220 }}
+              value={selectedEntityType || undefined}
+              onChange={setSelectedEntityType}
+              allowClear
+            >
+              <Option value="EditRequest">
+                <Space>
+                  <FileTextOutlined />
+                  Yêu cầu chỉnh sửa
+                </Space>
+              </Option>
+              <Option value="RewardProposal">
+                <Space>
+                  <AuditOutlined />
+                  Đề xuất khen thưởng
+                </Space>
+              </Option>
+              <Option value="Citizen">
+                <Space>
+                  <UserOutlined />
+                  Nhân khẩu
+                </Space>
+              </Option>
+              <Option value="Household">
+                <Space>
+                  <FileTextOutlined />
+                  Hộ khẩu
+                </Space>
+              </Option>
+              <Option value="User">
+                <Space>
+                  <UserOutlined />
+                  Người dùng
+                </Space>
+              </Option>
+              <Option value="Notification">
+                <Space>
+                  <InfoCircleOutlined />
+                  Thông báo
+                </Space>
+              </Option>
+            </Select>
+
+            <Select
+              placeholder="Chọn hành động"
+              style={{ width: 220 }}
+              value={selectedAction || undefined}
+              onChange={setSelectedAction}
+              allowClear
+            >
+              <Option value="EDIT_REQUEST_CREATED">
+                📝 Tạo yêu cầu chỉnh sửa
+              </Option>
+              <Option value="CITIZEN_UPDATE_APPROVED">
+                ✅ Phê duyệt chỉnh sửa
+              </Option>
+              <Option value="CITIZEN_UPDATE_REJECTED">
+                ❌ Từ chối chỉnh sửa
+              </Option>
+              <Option value="REWARD_PROPOSAL_CREATED">
+                🎯 Tạo đề xuất khen thưởng
+              </Option>
+              <Option value="REWARD_APPROVED">✅ Phê duyệt khen thưởng</Option>
+              <Option value="REWARD_REJECTED">❌ Từ chối khen thưởng</Option>
+            </Select>
+
+            <RangePicker
+              format="DD/MM/YYYY"
+              value={dateRange}
+              onChange={setDateRange}
+              placeholder={["Từ ngày", "Đến ngày"]}
+            />
           </Space>
         </Card>
 
         <Card bordered={false}>
+          {searchText && (
+            <div style={{ marginBottom: 16 }}>
+              <Text>
+                Tìm thấy <strong>{filteredLogs.length}</strong> kết quả cho mã
+                đối tượng chứa "{searchText}"
+              </Text>
+            </div>
+          )}
           <Table
             columns={columns}
             dataSource={filteredLogs}
             loading={loading}
+            rowKey={(record) => record._id || record.id}
             pagination={{
-              total: filteredLogs.length,
-              pageSize: 20,
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: searchText ? filteredLogs.length : pagination.total,
               showSizeChanger: true,
               showTotal: (total) => `Tổng ${total} bản ghi`,
+              pageSizeOptions: ["10", "20", "50", "100"],
             }}
-            scroll={{ x: 1400 }}
+            onChange={handleTableChange}
+            scroll={{ x: 1500 }}
           />
         </Card>
+
+        {/* Modal hiển thị chi tiết */}
+        <Modal
+          title={
+            <Space>
+              <InfoCircleOutlined />
+              <span>Chi tiết Nhật ký</span>
+            </Space>
+          }
+          open={detailModalVisible}
+          onCancel={() => setDetailModalVisible(false)}
+          footer={[
+            <Button
+              key="close"
+              type="primary"
+              onClick={() => setDetailModalVisible(false)}
+            >
+              Đóng
+            </Button>,
+          ]}
+          width={800}
+        >
+          {renderDetailContent()}
+        </Modal>
       </div>
     </Layout>
   );

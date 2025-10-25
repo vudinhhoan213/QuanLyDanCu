@@ -4,7 +4,27 @@ const notificationService = require("./notificationService");
 
 module.exports = {
   async create(data) {
-    return EditRequest.create(data);
+    const doc = await EditRequest.create(data);
+
+    // Tạo audit log cho việc tạo yêu cầu
+    if (data.requestedBy) {
+      await auditLogService.create({
+        action: "EDIT_REQUEST_CREATED",
+        entityType: "EditRequest",
+        entityId: doc._id,
+        performedBy: data.requestedBy,
+        reason: data.reason || "Tạo yêu cầu chỉnh sửa thông tin",
+        before: {
+          title: data.title,
+          requestType: data.requestType,
+          description: data.description,
+          details: data.proposedChanges?.details,
+          proposedChanges: data.proposedChanges,
+        },
+      });
+    }
+
+    return doc;
   },
   async getAll(filter = {}, options = {}) {
     const { limit = 50, page = 1, sort = "-createdAt" } = options;
@@ -108,7 +128,12 @@ module.exports = {
       entityId: reqDoc._id,
       performedBy: reviewerUserId,
       reason: reqDoc.rejectionReason,
-      before: reqDoc.proposedChanges,
+      before: {
+        title: reqDoc.title,
+        requestType: reqDoc.requestType,
+        description: reqDoc.description,
+        proposedChanges: reqDoc.proposedChanges,
+      },
       after: null,
     });
 
