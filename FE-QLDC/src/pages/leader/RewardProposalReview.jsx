@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Table,
@@ -23,6 +23,7 @@ import {
 } from "@ant-design/icons";
 import Layout from "../../components/Layout";
 import dayjs from "dayjs";
+import { rewardService } from "../../services/rewardService";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -36,69 +37,65 @@ const RewardProposalReview = () => {
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [currentProposal, setCurrentProposal] = useState(null);
   const [reviewNote, setReviewNote] = useState("");
+  const [proposals, setProposals] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+  });
 
-  // Mock data
-  const [proposals, setProposals] = useState([
-    {
-      key: "1",
-      id: "RP-001",
-      citizen: "Nguyễn Văn A",
-      household: "HK-001",
-      studentName: "Nguyễn Văn B",
-      achievement: "Học sinh giỏi cấp trường",
-      school: "THPT Nguyễn Du",
-      grade: "Lớp 12A1",
-      description: "Đạt giải Nhất học sinh giỏi môn Toán",
-      submitDate: "2024-10-20",
-      status: "pending",
-    },
-    {
-      key: "2",
-      id: "RP-002",
-      citizen: "Trần Thị C",
-      household: "HK-002",
-      studentName: "Trần Văn D",
-      achievement: "Học sinh tiên tiến",
-      school: "THCS Lê Lợi",
-      grade: "Lớp 9A2",
-      description: "Đạt danh hiệu học sinh tiên tiến năm học 2023-2024",
-      submitDate: "2024-10-19",
-      status: "pending",
-    },
-    {
-      key: "3",
-      id: "RP-003",
-      citizen: "Lê Thị E",
-      household: "HK-003",
-      studentName: "Lê Văn F",
-      achievement: "Học sinh giỏi cấp quốc gia",
-      school: "THPT Chuyên Lê Hồng Phong",
-      grade: "Lớp 11A1",
-      description: "Giải Ba Olympic Toán học toàn quốc",
-      submitDate: "2024-10-18",
-      status: "approved",
-      reviewDate: "2024-10-19",
-      reviewer: "Admin",
-      reviewNote: "Đã xác minh giấy khen",
-      rewardAmount: "500,000 VNĐ",
-    },
-    {
-      key: "4",
-      id: "RP-004",
-      citizen: "Phạm Văn G",
-      household: "HK-004",
-      studentName: "Phạm Thị H",
-      achievement: "Học sinh giỏi",
-      school: "Tiểu học Nguyễn Trãi",
-      grade: "Lớp 5A",
-      description: "Học sinh giỏi cả năm",
-      submitDate: "2024-10-17",
-      status: "rejected",
-      reviewDate: "2024-10-18",
-      reviewer: "Admin",
-      reviewNote: "Thiếu bằng khen gốc",
-    },
-  ]);
+  // Fetch proposals from API
+  useEffect(() => {
+    fetchProposals();
+    fetchStats();
+  }, []);
+
+  const fetchProposals = async () => {
+    setLoading(true);
+    try {
+      const response = await rewardService.proposals.getAll();
+      const formattedProposals = response.docs.map((doc) => ({
+        key: doc._id,
+        id: doc._id,
+        _id: doc._id,
+        citizen: doc.citizen?.fullName || "N/A",
+        citizenId: doc.citizen?._id,
+        proposedBy: doc.proposedBy?.fullName || "N/A",
+        proposedById: doc.proposedBy?._id,
+        title: doc.title,
+        description: doc.description,
+        criteria: doc.criteria,
+        evidenceImages: doc.evidenceImages || [],
+        submitDate: doc.createdAt,
+        status: doc.status?.toLowerCase() || "pending",
+        reviewDate: doc.reviewedAt,
+        reviewer: doc.reviewedBy?.fullName || null,
+        reviewNote: doc.rejectionReason || "",
+        approvedAt: doc.approvedAt,
+      }));
+      setProposals(formattedProposals);
+    } catch (error) {
+      console.error("Error fetching proposals:", error);
+      message.error("Không thể tải danh sách đề xuất");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const statsData = await rewardService.proposals.getStats();
+      setStats({
+        total: statsData.total,
+        pending: statsData.pending,
+        approved: statsData.approved,
+        rejected: statsData.rejected,
+      });
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    }
+  };
 
   const statusConfig = {
     pending: {
@@ -118,44 +115,34 @@ const RewardProposalReview = () => {
     },
   };
 
-  const achievementConfig = {
-    "Học sinh giỏi cấp quốc gia": { color: "red", reward: "1,000,000 VNĐ" },
-    "Học sinh giỏi cấp tỉnh": { color: "orange", reward: "500,000 VNĐ" },
-    "Học sinh giỏi cấp trường": { color: "blue", reward: "300,000 VNĐ" },
-    "Học sinh tiên tiến": { color: "green", reward: "200,000 VNĐ" },
-    "Học sinh giỏi": { color: "cyan", reward: "200,000 VNĐ" },
-  };
-
   const columns = [
     {
       title: "Mã đề xuất",
       dataIndex: "id",
       key: "id",
-      render: (text) => <Text strong>{text}</Text>,
+      width: 220,
+      render: (text) => (
+        <Text strong style={{ fontSize: 12 }}>
+          {text.slice(0, 8)}...
+        </Text>
+      ),
     },
     {
-      title: "Người đề xuất",
+      title: "Người được đề xuất",
       dataIndex: "citizen",
       key: "citizen",
     },
     {
-      title: "Tên học sinh",
-      dataIndex: "studentName",
-      key: "studentName",
+      title: "Người đề xuất",
+      dataIndex: "proposedBy",
+      key: "proposedBy",
     },
     {
-      title: "Thành tích",
-      dataIndex: "achievement",
-      key: "achievement",
-      render: (achievement) => {
-        const config = achievementConfig[achievement] || { color: "default" };
-        return <Tag color={config.color}>{achievement}</Tag>;
-      },
-    },
-    {
-      title: "Trường",
-      dataIndex: "school",
-      key: "school",
+      title: "Tiêu đề",
+      dataIndex: "title",
+      key: "title",
+      width: 250,
+      render: (text) => <Text>{text}</Text>,
     },
     {
       title: "Ngày gửi",
@@ -180,6 +167,8 @@ const RewardProposalReview = () => {
       title: "Hành động",
       key: "action",
       align: "center",
+      fixed: "right",
+      width: 250,
       render: (_, record) => (
         <Space size="small">
           <Button
@@ -220,54 +209,54 @@ const RewardProposalReview = () => {
   };
 
   const handleReview = (record, action) => {
-    const rewardAmount =
-      achievementConfig[record.achievement]?.reward || "200,000 VNĐ";
-    setCurrentProposal({ ...record, reviewAction: action, rewardAmount });
+    setCurrentProposal({ ...record, reviewAction: action });
     setReviewNote("");
     setReviewModalVisible(true);
   };
 
-  const handleReviewConfirm = () => {
-    const updatedProposals = proposals.map((prop) => {
-      if (prop.key === currentProposal.key) {
-        return {
-          ...prop,
-          status: currentProposal.reviewAction,
-          reviewDate: dayjs().format("YYYY-MM-DD"),
-          reviewer: "Admin",
-          reviewNote: reviewNote,
-          rewardAmount: currentProposal.rewardAmount,
-        };
-      }
-      return prop;
-    });
+  const handleReviewConfirm = async () => {
+    if (!currentProposal) return;
 
-    setProposals(updatedProposals);
-    message.success(
-      currentProposal.reviewAction === "approved"
-        ? "Đã duyệt đề xuất khen thưởng thành công"
-        : "Đã từ chối đề xuất"
-    );
-    setReviewModalVisible(false);
-    setCurrentProposal(null);
-    setReviewNote("");
+    setLoading(true);
+    try {
+      if (currentProposal.reviewAction === "approved") {
+        await rewardService.proposals.approve(currentProposal._id, {
+          note: reviewNote,
+        });
+        message.success("Đã duyệt đề xuất khen thưởng thành công");
+      } else {
+        await rewardService.proposals.reject(currentProposal._id, {
+          reason: reviewNote || "Không có lý do",
+        });
+        message.success("Đã từ chối đề xuất");
+      }
+
+      // Refresh data
+      await fetchProposals();
+      await fetchStats();
+
+      setReviewModalVisible(false);
+      setCurrentProposal(null);
+      setReviewNote("");
+    } catch (error) {
+      console.error("Error reviewing proposal:", error);
+      message.error(
+        error.response?.data?.message ||
+          "Có lỗi xảy ra khi xử lý đề xuất. Vui lòng thử lại."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredProposals = proposals.filter((prop) => {
     const matchSearch = Object.values(prop).some((value) =>
-      value.toString().toLowerCase().includes(searchText.toLowerCase())
+      value?.toString().toLowerCase().includes(searchText.toLowerCase())
     );
     const matchStatus =
       selectedStatus === "all" || prop.status === selectedStatus;
     return matchSearch && matchStatus;
   });
-
-  const stats = {
-    total: proposals.length,
-    pending: proposals.filter((p) => p.status === "pending").length,
-    approved: proposals.filter((p) => p.status === "approved").length,
-    rejected: proposals.filter((p) => p.status === "rejected").length,
-  };
 
   return (
     <Layout>
@@ -364,69 +353,90 @@ const RewardProposalReview = () => {
           width={800}
         >
           {currentProposal && (
-            <Descriptions bordered column={2}>
-              <Descriptions.Item label="Mã đề xuất" span={2}>
-                <Text strong>{currentProposal.id}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Người đề xuất">
-                {currentProposal.citizen}
-              </Descriptions.Item>
-              <Descriptions.Item label="Hộ khẩu">
-                {currentProposal.household}
-              </Descriptions.Item>
-              <Descriptions.Item label="Tên học sinh" span={2}>
-                <Text strong>{currentProposal.studentName}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Trường">
-                {currentProposal.school}
-              </Descriptions.Item>
-              <Descriptions.Item label="Lớp">
-                {currentProposal.grade}
-              </Descriptions.Item>
-              <Descriptions.Item label="Thành tích" span={2}>
-                {achievementConfig[currentProposal.achievement] && (
-                  <Tag
-                    color={achievementConfig[currentProposal.achievement].color}
-                  >
-                    {currentProposal.achievement}
-                  </Tag>
+            <>
+              <Descriptions bordered column={2}>
+                <Descriptions.Item label="Mã đề xuất" span={2}>
+                  <Text strong style={{ fontSize: 12 }}>
+                    {currentProposal.id}
+                  </Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Người được đề xuất">
+                  {currentProposal.citizen}
+                </Descriptions.Item>
+                <Descriptions.Item label="Người đề xuất">
+                  {currentProposal.proposedBy}
+                </Descriptions.Item>
+                <Descriptions.Item label="Tiêu đề" span={2}>
+                  <Text strong>{currentProposal.title}</Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Mô tả" span={2}>
+                  {currentProposal.description}
+                </Descriptions.Item>
+                {currentProposal.criteria && (
+                  <Descriptions.Item label="Tiêu chí" span={2}>
+                    {currentProposal.criteria}
+                  </Descriptions.Item>
                 )}
-              </Descriptions.Item>
-              <Descriptions.Item label="Mô tả" span={2}>
-                {currentProposal.description}
-              </Descriptions.Item>
-              <Descriptions.Item label="Ngày gửi">
-                {dayjs(currentProposal.submitDate).format("DD/MM/YYYY")}
-              </Descriptions.Item>
-              <Descriptions.Item label="Trạng thái">
-                {statusConfig[currentProposal.status] && (
-                  <Tag
-                    color={statusConfig[currentProposal.status].color}
-                    icon={statusConfig[currentProposal.status].icon}
-                  >
-                    {statusConfig[currentProposal.status].text}
-                  </Tag>
+                <Descriptions.Item label="Ngày gửi">
+                  {dayjs(currentProposal.submitDate).format("DD/MM/YYYY HH:mm")}
+                </Descriptions.Item>
+                <Descriptions.Item label="Trạng thái">
+                  {statusConfig[currentProposal.status] && (
+                    <Tag
+                      color={statusConfig[currentProposal.status].color}
+                      icon={statusConfig[currentProposal.status].icon}
+                    >
+                      {statusConfig[currentProposal.status].text}
+                    </Tag>
+                  )}
+                </Descriptions.Item>
+                {currentProposal.reviewDate && (
+                  <>
+                    <Descriptions.Item label="Ngày duyệt">
+                      {dayjs(currentProposal.reviewDate).format(
+                        "DD/MM/YYYY HH:mm"
+                      )}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Người duyệt">
+                      {currentProposal.reviewer || "N/A"}
+                    </Descriptions.Item>
+                    {currentProposal.reviewNote && (
+                      <Descriptions.Item label="Ghi chú" span={2}>
+                        {currentProposal.reviewNote}
+                      </Descriptions.Item>
+                    )}
+                  </>
                 )}
-              </Descriptions.Item>
-              {currentProposal.reviewDate && (
-                <>
-                  <Descriptions.Item label="Ngày duyệt">
-                    {dayjs(currentProposal.reviewDate).format("DD/MM/YYYY")}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Người duyệt">
-                    {currentProposal.reviewer}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Giá trị khen thưởng">
-                    <Text strong style={{ color: "#52c41a" }}>
-                      {currentProposal.rewardAmount}
-                    </Text>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Ghi chú">
-                    {currentProposal.reviewNote}
-                  </Descriptions.Item>
-                </>
-              )}
-            </Descriptions>
+              </Descriptions>
+
+              {/* Evidence Images */}
+              {currentProposal.evidenceImages &&
+                currentProposal.evidenceImages.length > 0 && (
+                  <div style={{ marginTop: 16 }}>
+                    <Text strong>Hình ảnh minh chứng:</Text>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 8,
+                        flexWrap: "wrap",
+                        marginTop: 8,
+                      }}
+                    >
+                      <Image.PreviewGroup>
+                        {currentProposal.evidenceImages.map((img, idx) => (
+                          <Image
+                            key={idx}
+                            src={img}
+                            width={100}
+                            height={100}
+                            style={{ objectFit: "cover", borderRadius: 4 }}
+                          />
+                        ))}
+                      </Image.PreviewGroup>
+                    </div>
+                  </div>
+                )}
+            </>
           )}
         </Modal>
 
@@ -442,29 +452,23 @@ const RewardProposalReview = () => {
           onCancel={() => setReviewModalVisible(false)}
           okText="Xác nhận"
           cancelText="Hủy"
+          confirmLoading={loading}
         >
           {currentProposal && (
             <>
               <Descriptions bordered column={1}>
                 <Descriptions.Item label="Mã đề xuất">
-                  {currentProposal.id}
+                  <Text style={{ fontSize: 12 }}>{currentProposal.id}</Text>
                 </Descriptions.Item>
-                <Descriptions.Item label="Học sinh">
-                  {currentProposal.studentName}
+                <Descriptions.Item label="Người được đề xuất">
+                  {currentProposal.citizen}
                 </Descriptions.Item>
-                <Descriptions.Item label="Thành tích">
-                  {currentProposal.achievement}
+                <Descriptions.Item label="Tiêu đề">
+                  {currentProposal.title}
                 </Descriptions.Item>
                 <Descriptions.Item label="Mô tả">
                   {currentProposal.description}
                 </Descriptions.Item>
-                {currentProposal.reviewAction === "approved" && (
-                  <Descriptions.Item label="Giá trị khen thưởng">
-                    <Text strong style={{ color: "#52c41a", fontSize: 16 }}>
-                      {currentProposal.rewardAmount}
-                    </Text>
-                  </Descriptions.Item>
-                )}
               </Descriptions>
               <div style={{ marginTop: 16 }}>
                 <Text strong>
@@ -478,7 +482,11 @@ const RewardProposalReview = () => {
                   rows={4}
                   value={reviewNote}
                   onChange={(e) => setReviewNote(e.target.value)}
-                  placeholder="Nhập ghi chú (không bắt buộc)"
+                  placeholder={
+                    currentProposal.reviewAction === "approved"
+                      ? "Nhập ghi chú (không bắt buộc)"
+                      : "Nhập lý do từ chối (không bắt buộc)"
+                  }
                   style={{ marginTop: 8 }}
                 />
               </div>
