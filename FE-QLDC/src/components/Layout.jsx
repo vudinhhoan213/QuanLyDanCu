@@ -139,12 +139,6 @@ const Layout = ({ children }) => {
   // User menu dropdown
   const userMenuItems = [
     {
-      key: "profile",
-      icon: <UserOutlined />,
-      label: "Thông tin cá nhân",
-      onClick: () => navigate("/profile"),
-    },
-    {
       key: "logout",
       icon: <LogoutOutlined />,
       label: "Đăng xuất",

@@ -6,6 +6,7 @@ const router = express.Router();
 
 // Citizen endpoints (must come before /:id)
 router.get("/me", authenticate, citizenController.getMe);
+router.patch("/me", authenticate, citizenController.updateMe);
 router.get("/me/household", authenticate, citizenController.getMyHousehold);
 
 // Stats route must come before /:id

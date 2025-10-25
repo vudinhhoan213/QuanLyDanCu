@@ -20,6 +20,59 @@ module.exports = {
     }
   },
 
+  // Update current citizen info
+  async updateMe(req, res, next) {
+    try {
+      // Find citizen by user ID
+      let citizen = await Citizen.findOne({ user: req.user._id });
+
+      // Only allow updating certain fields
+      const allowedFields = [
+        "fullName",
+        "email",
+        "phone",
+        "dateOfBirth",
+        "gender",
+        "nationalId",
+        "ethnicity",
+        "nationality",
+        "educationLevel",
+        "occupation",
+      ];
+
+      const updateData = {};
+      for (const field of allowedFields) {
+        if (req.body[field] !== undefined) {
+          updateData[field] = req.body[field];
+        }
+      }
+
+      // If citizen doesn't exist, create new one
+      if (!citizen) {
+        const newCitizenData = {
+          ...updateData,
+          user: req.user._id,
+        };
+        citizen = await Citizen.create(newCitizenData);
+      } else {
+        // Update existing citizen
+        citizen = await Citizen.findByIdAndUpdate(citizen._id, updateData, {
+          new: true,
+          runValidators: true,
+        });
+      }
+
+      // Populate user and household
+      citizen = await Citizen.findById(citizen._id)
+        .populate("household")
+        .populate("user");
+
+      res.json(citizen);
+    } catch (err) {
+      next(err);
+    }
+  },
+
   // Get current citizen's household with all members
   async getMyHousehold(req, res, next) {
     try {
