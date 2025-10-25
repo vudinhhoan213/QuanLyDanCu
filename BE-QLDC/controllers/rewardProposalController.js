@@ -94,4 +94,14 @@ module.exports = {
       next(err);
     }
   },
+
+  async getMyProposals(req, res, next) {
+    try {
+      const userId = req.user._id;
+      const data = await rewardProposalService.getMyProposals(userId);
+      res.json(data);
+    } catch (err) {
+      next(err);
+    }
+  },
 };

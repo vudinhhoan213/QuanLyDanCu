@@ -34,6 +34,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Layout from "../../components/Layout";
 import { citizenService, editRequestService } from "../../services";
+import { rewardService } from "../../services/rewardService";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
@@ -72,8 +73,16 @@ const CitizenDashboard = () => {
         setMyRequests([]);
       }
 
-      // TODO: Fetch rewards khi có API
-      setMyRewards([]);
+      // Fetch reward proposals
+      try {
+        const rewardsResponse = await rewardService.proposals.getMyProposals();
+        const rewards = rewardsResponse.docs || rewardsResponse || [];
+        console.log("🏆 Reward Proposals:", rewards.length);
+        setMyRewards(rewards.slice(0, 5)); // Lấy 5 đề xuất gần nhất
+      } catch (err) {
+        console.log("⚠️ No reward proposals yet:", err.message);
+        setMyRewards([]);
+      }
     } catch (error) {
       console.error("❌ Error fetching dashboard data:", error);
       console.error("❌ Error response:", error.response?.data);
@@ -199,9 +208,9 @@ const CitizenDashboard = () => {
           <Col xs={24} sm={8}>
             <Card bordered={false} hoverable>
               <Statistic
-                title="Khen thưởng nhận được"
+                title="Đề xuất khen thưởng"
                 value={myRewards.length}
-                prefix={<GiftOutlined style={{ color: "#faad14" }} />}
+                prefix={<TrophyOutlined style={{ color: "#faad14" }} />}
                 valueStyle={{ color: "#faad14" }}
               />
             </Card>
@@ -285,7 +294,7 @@ const CitizenDashboard = () => {
                   block
                   onClick={() => navigate("/citizen/submit-edit-request")}
                 >
-                  Gửi yêu cầu chỉnh sửa
+                  Yêu cầu chỉnh sửa
                 </Button>
                 <Button
                   type="default"
@@ -400,13 +409,13 @@ const CitizenDashboard = () => {
             </Card>
           </Col>
 
-          {/* Recent Rewards */}
+          {/* Recent Reward Proposals */}
           <Col xs={24} lg={12}>
             <Card
               title={
                 <Space>
-                  <GiftOutlined />
-                  <span>Khen thưởng gần đây</span>
+                  <TrophyOutlined />
+                  <span>Đề xuất khen thưởng gần đây</span>
                 </Space>
               }
               extra={
@@ -419,12 +428,72 @@ const CitizenDashboard = () => {
               }
               bordered={false}
             >
-              <div style={{ textAlign: "center", padding: "40px 0" }}>
-                <GiftOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
-                <div style={{ marginTop: 16, color: "#999" }}>
-                  Chưa có khen thưởng nào
+              {myRewards.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <TrophyOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
+                  <div style={{ marginTop: 16, color: "#999" }}>
+                    Chưa có đề xuất khen thưởng nào
+                  </div>
+                  <Button
+                    type="primary"
+                    style={{ marginTop: 16 }}
+                    onClick={() => navigate("/citizen/submit-reward-proposal")}
+                  >
+                    Đề xuất khen thưởng
+                  </Button>
                 </div>
-              </div>
+              ) : (
+                <List
+                  itemLayout="horizontal"
+                  dataSource={myRewards}
+                  renderItem={(item) => (
+                    <List.Item>
+                      <List.Item.Meta
+                        avatar={
+                          <Avatar
+                            icon={
+                              statusConfig[item.status]?.icon || (
+                                <ClockCircleOutlined />
+                              )
+                            }
+                            style={{
+                              backgroundColor:
+                                item.status === "APPROVED"
+                                  ? "#52c41a"
+                                  : item.status === "REJECTED"
+                                  ? "#ff4d4f"
+                                  : "#faad14",
+                            }}
+                          />
+                        }
+                        title={
+                          <Space>
+                            <Text strong>{item.title}</Text>
+                            <Tag
+                              color={
+                                statusConfig[item.status]?.color || "default"
+                              }
+                            >
+                              {statusConfig[item.status]?.text || item.status}
+                            </Tag>
+                          </Space>
+                        }
+                        description={
+                          <Space direction="vertical" size={0}>
+                            <Text type="secondary">
+                              Người được đề xuất:{" "}
+                              {item.citizen?.fullName || "N/A"}
+                            </Text>
+                            <Text type="secondary">
+                              {dayjs(item.createdAt).format("DD/MM/YYYY")}
+                            </Text>
+                          </Space>
+                        }
+                      />
+                    </List.Item>
+                  )}
+                />
+              )}
             </Card>
           </Col>
         </Row>
