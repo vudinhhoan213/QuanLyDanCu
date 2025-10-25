@@ -48,4 +48,10 @@ export const citizenService = {
     const { data } = await api.get("/citizens/stats");
     return data;
   },
+
+  // Update my profile
+  updateMe: async (citizenData) => {
+    const { data } = await api.patch("/citizens/me", citizenData);
+    return data;
+  },
 };

@@ -15,6 +15,10 @@ import {
   Modal,
   Descriptions,
   Alert,
+  Form,
+  Input,
+  DatePicker,
+  Select,
 } from "antd";
 import {
   TeamOutlined,
@@ -29,23 +33,45 @@ import {
   WomanOutlined,
   EyeOutlined,
   CloseCircleOutlined,
+  IdcardOutlined,
+  CalendarOutlined,
+  HomeOutlined,
+  EditOutlined,
+  SaveOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  LockOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Layout from "../../components/Layout";
-import { citizenService, editRequestService } from "../../services";
+import {
+  citizenService,
+  editRequestService,
+  authService,
+} from "../../services";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 const CitizenDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [householdData, setHouseholdData] = useState(null);
+  const [citizenInfo, setCitizenInfo] = useState(null);
   const [myRequests, setMyRequests] = useState([]);
   const [myRewards, setMyRewards] = useState([]);
   const [isHouseholdModalVisible, setIsHouseholdModalVisible] = useState(false);
+  const [isEditProfileModalVisible, setIsEditProfileModalVisible] =
+    useState(false);
+  const [isChangePasswordModalVisible, setIsChangePasswordModalVisible] =
+    useState(false);
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [profileForm] = Form.useForm();
+  const [passwordForm] = Form.useForm();
 
   useEffect(() => {
     fetchDashboardData();
@@ -55,6 +81,15 @@ const CitizenDashboard = () => {
     try {
       setLoading(true);
       console.log("🔍 Fetching dashboard data for user:", user);
+
+      // Fetch citizen info
+      try {
+        const citizenResponse = await citizenService.getMe();
+        console.log("👤 Citizen info:", citizenResponse);
+        setCitizenInfo(citizenResponse);
+      } catch (err) {
+        console.log("⚠️ Could not fetch citizen info:", err.message);
+      }
 
       // Fetch household data
       const householdResponse = await citizenService.getMyHousehold();
@@ -101,6 +136,67 @@ const CitizenDashboard = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditProfile = () => {
+    profileForm.setFieldsValue({
+      fullName: citizenInfo.fullName,
+      email: citizenInfo.email || "",
+      phone: citizenInfo.phone || "",
+      nationalId: citizenInfo.nationalId || "",
+      dateOfBirth: citizenInfo.dateOfBirth
+        ? dayjs(citizenInfo.dateOfBirth)
+        : null,
+      gender: citizenInfo.gender,
+      ethnicity: citizenInfo.ethnicity || "Kinh",
+      nationality: citizenInfo.nationality || "Việt Nam",
+      educationLevel: citizenInfo.educationLevel || "",
+      occupation: citizenInfo.occupation || "",
+    });
+    setIsEditProfileModalVisible(true);
+  };
+
+  const handleUpdateProfile = async (values) => {
+    setUpdateLoading(true);
+    try {
+      const updateData = {
+        ...values,
+        dateOfBirth: values.dateOfBirth
+          ? values.dateOfBirth.toISOString()
+          : null,
+      };
+      const updatedCitizen = await citizenService.updateMe(updateData);
+      setCitizenInfo(updatedCitizen);
+      message.success("Cập nhật thông tin thành công!");
+      setIsEditProfileModalVisible(false);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      message.error(
+        error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại"
+      );
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (values) => {
+    setPasswordLoading(true);
+    try {
+      await authService.changePassword(
+        values.currentPassword,
+        values.newPassword
+      );
+      message.success("Đổi mật khẩu thành công!");
+      passwordForm.resetFields();
+      setIsChangePasswordModalVisible(false);
+    } catch (error) {
+      console.error("Error changing password:", error);
+      message.error(
+        error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại"
+      );
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -165,7 +261,8 @@ const CitizenDashboard = () => {
             </Col>
             <Col flex="auto">
               <Title level={3} style={{ color: "white", marginBottom: 4 }}>
-                Chào mừng trở lại, {user?.fullName || user?.username}!
+                Chào mừng trở lại,{" "}
+                {citizenInfo?.fullName || user?.fullName || user?.username}!
               </Title>
               <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 16 }}>
                 Hộ khẩu: {household?.code} | {members.length} thành viên
@@ -207,6 +304,136 @@ const CitizenDashboard = () => {
             </Card>
           </Col>
         </Row>
+
+        {/* Personal Information */}
+        {citizenInfo && (
+          <Card
+            title={
+              <Space>
+                <IdcardOutlined />
+                <span>Thông tin cá nhân</span>
+              </Space>
+            }
+            extra={
+              <Space>
+                <Button
+                  type="primary"
+                  icon={<EditOutlined />}
+                  onClick={handleEditProfile}
+                >
+                  Chỉnh sửa
+                </Button>
+                <Button
+                  icon={<LockOutlined />}
+                  onClick={() => setIsChangePasswordModalVisible(true)}
+                >
+                  Đổi mật khẩu
+                </Button>
+              </Space>
+            }
+            bordered={false}
+            style={{ marginBottom: 24 }}
+          >
+            <Row gutter={[24, 16]}>
+              <Col xs={24} md={8}>
+                <div style={{ textAlign: "center" }}>
+                  <Avatar
+                    size={100}
+                    icon={
+                      citizenInfo.gender === "MALE" ? (
+                        <ManOutlined />
+                      ) : (
+                        <WomanOutlined />
+                      )
+                    }
+                    style={{
+                      backgroundColor:
+                        citizenInfo.gender === "MALE" ? "#1890ff" : "#eb2f96",
+                      marginBottom: 16,
+                    }}
+                  />
+                  <Title level={4} style={{ marginBottom: 4 }}>
+                    {citizenInfo.fullName}
+                  </Title>
+                  {citizenInfo.citizenCode && (
+                    <Tag color="blue">{citizenInfo.citizenCode}</Tag>
+                  )}
+                </div>
+              </Col>
+              <Col xs={24} md={16}>
+                <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+                  <Descriptions.Item
+                    label={
+                      <Space>
+                        <IdcardOutlined />
+                        <span>CCCD/CMND</span>
+                      </Space>
+                    }
+                  >
+                    {citizenInfo.nationalId || <Tag>Chưa có</Tag>}
+                  </Descriptions.Item>
+                  <Descriptions.Item
+                    label={
+                      <Space>
+                        <CalendarOutlined />
+                        <span>Ngày sinh</span>
+                      </Space>
+                    }
+                  >
+                    {citizenInfo.dateOfBirth ? (
+                      <Space>
+                        <span>
+                          {dayjs(citizenInfo.dateOfBirth).format("DD/MM/YYYY")}
+                        </span>
+                        <Tag color="purple">
+                          {dayjs().diff(citizenInfo.dateOfBirth, "year")} tuổi
+                        </Tag>
+                      </Space>
+                    ) : (
+                      <Tag>Chưa có</Tag>
+                    )}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Giới tính">
+                    <Tag
+                      color={citizenInfo.gender === "MALE" ? "blue" : "magenta"}
+                    >
+                      {citizenInfo.gender === "MALE"
+                        ? "Nam"
+                        : citizenInfo.gender === "FEMALE"
+                        ? "Nữ"
+                        : "Khác"}
+                    </Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Quan hệ với chủ hộ">
+                    {citizenInfo.relationshipToHead ? (
+                      <Tag color="orange">{citizenInfo.relationshipToHead}</Tag>
+                    ) : citizenInfo.isHead ? (
+                      <Tag color="gold">Chủ hộ</Tag>
+                    ) : (
+                      <Tag>Chưa xác định</Tag>
+                    )}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Dân tộc" span={2}>
+                    {citizenInfo.ethnicity || "Kinh"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Quốc tịch" span={2}>
+                    {citizenInfo.nationality || "Việt Nam"}
+                  </Descriptions.Item>
+                  {citizenInfo.educationLevel && (
+                    <Descriptions.Item label="Trình độ học vấn" span={2}>
+                      {citizenInfo.educationLevel}
+                    </Descriptions.Item>
+                  )}
+                  {citizenInfo.occupation && (
+                    <Descriptions.Item label="Nghề nghiệp" span={2}>
+                      {citizenInfo.occupation}
+                    </Descriptions.Item>
+                  )}
+                </Descriptions>
+              </Col>
+            </Row>
+          </Card>
+        )}
 
         <Row gutter={[16, 16]}>
           {/* Household Info */}
@@ -580,6 +807,283 @@ const CitizenDashboard = () => {
               </Card>
             </div>
           )}
+        </Modal>
+
+        {/* Edit Profile Modal */}
+        <Modal
+          title={
+            <Space>
+              <EditOutlined />
+              <span>Chỉnh sửa thông tin cá nhân</span>
+            </Space>
+          }
+          open={isEditProfileModalVisible}
+          onCancel={() => setIsEditProfileModalVisible(false)}
+          footer={null}
+          width={800}
+        >
+          <Form
+            form={profileForm}
+            layout="vertical"
+            onFinish={handleUpdateProfile}
+          >
+            <Row gutter={16}>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="fullName"
+                  label="Họ và tên"
+                  rules={[{ required: true, message: "Vui lòng nhập họ tên" }]}
+                >
+                  <Input
+                    prefix={<UserOutlined />}
+                    size="large"
+                    placeholder="Họ và tên đầy đủ"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="email"
+                  label="Email"
+                  rules={[{ type: "email", message: "Email không hợp lệ" }]}
+                >
+                  <Input
+                    prefix={<MailOutlined />}
+                    size="large"
+                    placeholder="Email"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="phone"
+                  label="Số điện thoại"
+                  rules={[
+                    {
+                      pattern: /^[0-9]{10}$/,
+                      message: "Số điện thoại không hợp lệ (10 số)",
+                    },
+                  ]}
+                >
+                  <Input
+                    prefix={<PhoneOutlined />}
+                    size="large"
+                    placeholder="Số điện thoại"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="nationalId"
+                  label="CCCD/CMND"
+                  rules={[
+                    {
+                      pattern: /^[0-9]{9,12}$/,
+                      message: "CCCD/CMND không hợp lệ (9-12 số)",
+                    },
+                  ]}
+                >
+                  <Input
+                    prefix={<IdcardOutlined />}
+                    size="large"
+                    placeholder="Số CCCD/CMND"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="dateOfBirth"
+                  label="Ngày sinh"
+                  rules={[
+                    { required: true, message: "Vui lòng chọn ngày sinh" },
+                  ]}
+                >
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    size="large"
+                    format="DD/MM/YYYY"
+                    placeholder="Chọn ngày sinh"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="gender"
+                  label="Giới tính"
+                  rules={[
+                    { required: true, message: "Vui lòng chọn giới tính" },
+                  ]}
+                >
+                  <Select size="large" placeholder="Chọn giới tính">
+                    <Option value="MALE">Nam</Option>
+                    <Option value="FEMALE">Nữ</Option>
+                    <Option value="OTHER">Khác</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col xs={24} md={12}>
+                <Form.Item name="ethnicity" label="Dân tộc">
+                  <Input size="large" placeholder="Dân tộc" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item name="nationality" label="Quốc tịch">
+                  <Input size="large" placeholder="Quốc tịch" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col xs={24} md={12}>
+                <Form.Item name="educationLevel" label="Trình độ học vấn">
+                  <Select size="large" placeholder="Chọn trình độ">
+                    <Option value="Tiểu học">Tiểu học</Option>
+                    <Option value="THCS">THCS</Option>
+                    <Option value="THPT">THPT</Option>
+                    <Option value="Trung cấp">Trung cấp</Option>
+                    <Option value="Cao đẳng">Cao đẳng</Option>
+                    <Option value="Đại học">Đại học</Option>
+                    <Option value="Thạc sĩ">Thạc sĩ</Option>
+                    <Option value="Tiến sĩ">Tiến sĩ</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item name="occupation" label="Nghề nghiệp">
+                  <Input size="large" placeholder="Nghề nghiệp" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Form.Item>
+              <Space>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  size="large"
+                  icon={<SaveOutlined />}
+                  loading={updateLoading}
+                >
+                  Lưu thay đổi
+                </Button>
+                <Button
+                  size="large"
+                  onClick={() => setIsEditProfileModalVisible(false)}
+                >
+                  Hủy
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Modal>
+
+        {/* Change Password Modal */}
+        <Modal
+          title={
+            <Space>
+              <LockOutlined />
+              <span>Đổi mật khẩu</span>
+            </Space>
+          }
+          open={isChangePasswordModalVisible}
+          onCancel={() => setIsChangePasswordModalVisible(false)}
+          footer={null}
+          width={500}
+        >
+          <Form
+            form={passwordForm}
+            layout="vertical"
+            onFinish={handleChangePassword}
+          >
+            <Form.Item
+              name="currentPassword"
+              label="Mật khẩu hiện tại"
+              rules={[
+                {
+                  required: true,
+                  message: "Vui lòng nhập mật khẩu hiện tại",
+                },
+              ]}
+            >
+              <Input.Password
+                prefix={<LockOutlined />}
+                size="large"
+                placeholder="Nhập mật khẩu hiện tại"
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="newPassword"
+              label="Mật khẩu mới"
+              rules={[
+                { required: true, message: "Vui lòng nhập mật khẩu mới" },
+                { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" },
+              ]}
+            >
+              <Input.Password
+                prefix={<LockOutlined />}
+                size="large"
+                placeholder="Nhập mật khẩu mới"
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="confirmPassword"
+              label="Xác nhận mật khẩu mới"
+              dependencies={["newPassword"]}
+              rules={[
+                {
+                  required: true,
+                  message: "Vui lòng xác nhận mật khẩu mới",
+                },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (!value || getFieldValue("newPassword") === value) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(
+                      new Error("Mật khẩu xác nhận không khớp!")
+                    );
+                  },
+                }),
+              ]}
+            >
+              <Input.Password
+                prefix={<LockOutlined />}
+                size="large"
+                placeholder="Nhập lại mật khẩu mới"
+              />
+            </Form.Item>
+
+            <Form.Item>
+              <Space>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  size="large"
+                  icon={<SaveOutlined />}
+                  loading={passwordLoading}
+                >
+                  Đổi mật khẩu
+                </Button>
+                <Button
+                  size="large"
+                  onClick={() => setIsChangePasswordModalVisible(false)}
+                >
+                  Hủy
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
         </Modal>
       </div>
     </Layout>
