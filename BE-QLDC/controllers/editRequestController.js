@@ -184,4 +184,60 @@ module.exports = {
       next(err);
     }
   },
+
+  // Citizen can cancel their own pending request
+  async cancel(req, res, next) {
+    try {
+      const request = await EditRequest.findById(req.params.id).populate(
+        "requestedBy",
+        "fullName username"
+      );
+
+      if (!request) {
+        return res.status(404).json({ message: "Yêu cầu không tồn tại" });
+      }
+
+      // Check if the request belongs to the current user
+      if (request.requestedBy._id.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          message: "Bạn không có quyền hủy yêu cầu này",
+        });
+      }
+
+      // Only allow cancelling pending requests
+      if (request.status !== "PENDING") {
+        return res.status(400).json({
+          message: "Chỉ có thể hủy yêu cầu đang chờ duyệt",
+        });
+      }
+
+      // Delete related notifications before deleting the request
+      try {
+        const { Notification } = require("../models");
+
+        // Xóa tất cả thông báo liên quan đến yêu cầu này
+        const deleteResult = await Notification.deleteMany({
+          entityType: "EditRequest",
+          entityId: req.params.id,
+        });
+
+        console.log(
+          `🗑️ Deleted ${deleteResult.deletedCount} notifications related to request ${req.params.id}`
+        );
+      } catch (notifError) {
+        console.error("❌ Error deleting notifications:", notifError);
+        // Continue to delete request even if notification deletion fails
+      }
+
+      // Delete the request
+      await EditRequest.findByIdAndDelete(req.params.id);
+
+      res.json({
+        success: true,
+        message: "Đã hủy yêu cầu thành công",
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
 };

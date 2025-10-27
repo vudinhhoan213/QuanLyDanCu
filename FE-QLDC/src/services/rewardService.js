@@ -37,6 +37,12 @@ export const rewardService = {
       const { data } = await api.get("/rewards/stats");
       return data;
     },
+
+    // Cancel proposal (by citizen) - only for PENDING proposals
+    cancel: async (id) => {
+      const { data } = await api.post(`/rewards/${id}/cancel`);
+      return data;
+    },
   },
 
   // Reward Events

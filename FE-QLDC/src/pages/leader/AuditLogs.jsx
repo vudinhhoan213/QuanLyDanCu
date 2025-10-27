@@ -37,7 +37,6 @@ const AuditLogs = () => {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [selectedAction, setSelectedAction] = useState("");
-  const [selectedEntityType, setSelectedEntityType] = useState("");
   const [dateRange, setDateRange] = useState(null);
   const [logs, setLogs] = useState([]);
   const [pagination, setPagination] = useState({
@@ -51,13 +50,7 @@ const AuditLogs = () => {
   // Fetch audit logs từ API
   useEffect(() => {
     fetchAuditLogs();
-  }, [
-    pagination.current,
-    pagination.pageSize,
-    selectedAction,
-    selectedEntityType,
-    dateRange,
-  ]);
+  }, [pagination.current, pagination.pageSize, selectedAction, dateRange]);
 
   const fetchAuditLogs = async () => {
     try {
@@ -70,11 +63,6 @@ const AuditLogs = () => {
       // Thêm filter theo action (chỉ khi có giá trị)
       if (selectedAction && selectedAction !== "") {
         params.action = selectedAction;
-      }
-
-      // Thêm filter theo entityType (chỉ khi có giá trị)
-      if (selectedEntityType && selectedEntityType !== "") {
-        params.entityType = selectedEntityType;
       }
 
       // Thêm filter theo date range
@@ -128,20 +116,39 @@ const AuditLogs = () => {
 
   const columns = [
     {
+      title: "STT",
+      key: "index",
+      width: 80,
+      align: "center",
+      render: (_, __, index) => (
+        <Text strong style={{ color: "#1890ff" }}>
+          #{(pagination.current - 1) * pagination.pageSize + index + 1}
+        </Text>
+      ),
+    },
+    {
       title: "Thời gian",
       dataIndex: "createdAt",
       key: "createdAt",
-      width: 180,
-      render: (text) => dayjs(text).format("DD/MM/YYYY HH:mm:ss"),
+      width: 160,
+      render: (text) => (
+        <div>
+          <div>{dayjs(text).format("DD/MM/YYYY")}</div>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {dayjs(text).format("HH:mm:ss")}
+          </Text>
+        </div>
+      ),
     },
     {
       title: "Người thực hiện",
       dataIndex: "performedBy",
       key: "performedBy",
+      width: 180,
       render: (user) => (
         <Space>
           <UserOutlined />
-          {user?.username || user?.fullName || "Hệ thống"}
+          <Text>{user?.username || user?.fullName || "Hệ thống"}</Text>
         </Space>
       ),
     },
@@ -149,7 +156,8 @@ const AuditLogs = () => {
       title: "Hành động",
       dataIndex: "action",
       key: "action",
-      width: 150,
+      width: 130,
+      align: "center",
       render: (action) => {
         const config = getActionDisplay(action);
         return <Tag color={config.color}>{config.text}</Tag>;
@@ -159,47 +167,25 @@ const AuditLogs = () => {
       title: "Loại đối tượng",
       dataIndex: "entityType",
       key: "entityType",
-      width: 180,
+      width: 200,
       render: (type) => {
         const config = entityTypeConfig[type] || { text: type, icon: null };
         return (
           <Space>
             {config.icon}
-            {config.text}
+            <Text>{config.text}</Text>
           </Space>
         );
       },
     },
     {
-      title: "Mã đối tượng",
-      dataIndex: "entityId",
-      key: "entityId",
-      width: 120,
-      render: (id) => (
-        <Tooltip title={id}>{id ? id.substring(0, 8) + "..." : "-"}</Tooltip>
-      ),
-    },
-    {
-      title: "Lý do",
-      dataIndex: "reason",
-      key: "reason",
-      render: (reason) => reason || "-",
-    },
-    {
-      title: "IP Address",
-      dataIndex: "ipAddress",
-      key: "ipAddress",
-      width: 130,
-      render: (ip) => ip || "-",
-    },
-    {
       title: "Thao tác",
       key: "action",
-      width: 100,
-      fixed: "right",
+      width: 120,
+      align: "center",
       render: (_, record) => (
         <Button
-          type="link"
+          type="primary"
           size="small"
           icon={<EyeOutlined />}
           onClick={() => handleViewDetail(record)}
@@ -210,13 +196,15 @@ const AuditLogs = () => {
     },
   ];
 
-  // Tìm kiếm theo mã đối tượng (entityId)
+  // Tìm kiếm theo người thực hiện
   const filteredLogs = logs.filter((log) => {
     if (!searchText) return true;
 
     const searchLower = searchText.toLowerCase();
-    // Tìm kiếm chính xác theo entityId
-    return log.entityId?.toLowerCase().includes(searchLower);
+    // Tìm kiếm theo username hoặc fullName của người thực hiện
+    const username = log.performedBy?.username?.toLowerCase() || "";
+    const fullName = log.performedBy?.fullName?.toLowerCase() || "";
+    return username.includes(searchLower) || fullName.includes(searchLower);
   });
 
   const handleTableChange = (newPagination) => {
@@ -235,18 +223,14 @@ const AuditLogs = () => {
   const handleClearFilters = () => {
     setSearchText("");
     setSelectedAction("");
-    setSelectedEntityType("");
     setDateRange(null);
     setPagination({ ...pagination, current: 1 });
   };
 
   // Đếm số lượng filter đang active
-  const activeFilterCount = [
-    searchText,
-    selectedAction,
-    selectedEntityType,
-    dateRange,
-  ].filter(Boolean).length;
+  const activeFilterCount = [searchText, selectedAction, dateRange].filter(
+    Boolean
+  ).length;
 
   const renderDetailContent = () => {
     if (!selectedLog) return null;
@@ -260,7 +244,7 @@ const AuditLogs = () => {
           <Descriptions.Item label="Hành động">
             {getActionDisplay(selectedLog.action).text}
           </Descriptions.Item>
-          <Descriptions.Item label="Loại đối tượng">
+          <Descriptions.Item label="Loại yêu cầu">
             {entityTypeConfig[selectedLog.entityType]?.text ||
               selectedLog.entityType}
           </Descriptions.Item>
@@ -271,9 +255,6 @@ const AuditLogs = () => {
           </Descriptions.Item>
           <Descriptions.Item label="Thời gian">
             {dayjs(selectedLog.createdAt).format("DD/MM/YYYY HH:mm:ss")}
-          </Descriptions.Item>
-          <Descriptions.Item label="IP Address">
-            {selectedLog.ipAddress || "-"}
           </Descriptions.Item>
           {reason && (
             <Descriptions.Item label="Lý do">
@@ -292,11 +273,6 @@ const AuditLogs = () => {
               {before.title && (
                 <Descriptions.Item label="Tiêu đề">
                   {before.title}
-                </Descriptions.Item>
-              )}
-              {before.requestType && (
-                <Descriptions.Item label="Loại yêu cầu">
-                  {before.requestType}
                 </Descriptions.Item>
               )}
               {before.description && (
@@ -467,16 +443,7 @@ const AuditLogs = () => {
                 <Text strong>Bộ lọc đang áp dụng:</Text>
                 {searchText && (
                   <Tag closable onClose={() => setSearchText("")} color="blue">
-                    Mã: {searchText}
-                  </Tag>
-                )}
-                {selectedEntityType && (
-                  <Tag
-                    closable
-                    onClose={() => setSelectedEntityType("")}
-                    color="green"
-                  >
-                    Loại: {entityTypeConfig[selectedEntityType]?.text}
+                    Người thực hiện: {searchText}
                   </Tag>
                 )}
                 {selectedAction && (
@@ -504,58 +471,13 @@ const AuditLogs = () => {
 
           <Space wrap style={{ width: "100%" }}>
             <Input
-              placeholder="Tìm kiếm theo mã đối tượng..."
+              placeholder="Tìm kiếm theo người thực hiện..."
               prefix={<SearchOutlined />}
               style={{ width: 280 }}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               allowClear
             />
-
-            <Select
-              placeholder="Chọn loại đối tượng"
-              style={{ width: 220 }}
-              value={selectedEntityType || undefined}
-              onChange={setSelectedEntityType}
-              allowClear
-            >
-              <Option value="EditRequest">
-                <Space>
-                  <FileTextOutlined />
-                  Yêu cầu chỉnh sửa
-                </Space>
-              </Option>
-              <Option value="RewardProposal">
-                <Space>
-                  <AuditOutlined />
-                  Đề xuất khen thưởng
-                </Space>
-              </Option>
-              <Option value="Citizen">
-                <Space>
-                  <UserOutlined />
-                  Nhân khẩu
-                </Space>
-              </Option>
-              <Option value="Household">
-                <Space>
-                  <FileTextOutlined />
-                  Hộ khẩu
-                </Space>
-              </Option>
-              <Option value="User">
-                <Space>
-                  <UserOutlined />
-                  Người dùng
-                </Space>
-              </Option>
-              <Option value="Notification">
-                <Space>
-                  <InfoCircleOutlined />
-                  Thông báo
-                </Space>
-              </Option>
-            </Select>
 
             <Select
               placeholder="Chọn hành động"
@@ -593,8 +515,8 @@ const AuditLogs = () => {
           {searchText && (
             <div style={{ marginBottom: 16 }}>
               <Text>
-                Tìm thấy <strong>{filteredLogs.length}</strong> kết quả cho mã
-                đối tượng chứa "{searchText}"
+                Tìm thấy <strong>{filteredLogs.length}</strong> kết quả cho
+                người thực hiện chứa "{searchText}"
               </Text>
             </div>
           )}
@@ -612,7 +534,6 @@ const AuditLogs = () => {
               pageSizeOptions: ["10", "20", "50", "100"],
             }}
             onChange={handleTableChange}
-            scroll={{ x: 1500 }}
           />
         </Card>
 

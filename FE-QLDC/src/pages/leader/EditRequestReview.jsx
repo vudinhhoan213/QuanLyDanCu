@@ -103,10 +103,15 @@ const EditRequestReview = () => {
 
   const columns = [
     {
-      title: "Mã yêu cầu",
-      dataIndex: "id",
-      key: "id",
-      render: (text) => <Text strong>{text}</Text>,
+      title: "STT",
+      key: "index",
+      width: 70,
+      align: "center",
+      render: (_, __, index) => (
+        <Text strong style={{ color: "#1890ff" }}>
+          #{index + 1}
+        </Text>
+      ),
     },
     {
       title: "Công dân",
@@ -327,7 +332,6 @@ const EditRequestReview = () => {
               showSizeChanger: true,
               showTotal: (total) => `Tổng ${total} yêu cầu`,
             }}
-            scroll={{ x: 1200 }}
           />
         </Card>
 
@@ -345,9 +349,6 @@ const EditRequestReview = () => {
         >
           {currentRequest && (
             <Descriptions bordered column={2}>
-              <Descriptions.Item label="Mã yêu cầu" span={2}>
-                <Text strong>{currentRequest.id}</Text>
-              </Descriptions.Item>
               <Descriptions.Item label="Công dân">
                 {currentRequest.citizen}
               </Descriptions.Item>
@@ -423,9 +424,6 @@ const EditRequestReview = () => {
           {currentRequest && (
             <>
               <Descriptions bordered column={1}>
-                <Descriptions.Item label="Mã yêu cầu">
-                  {currentRequest.id}
-                </Descriptions.Item>
                 <Descriptions.Item label="Công dân">
                   {currentRequest.citizen}
                 </Descriptions.Item>

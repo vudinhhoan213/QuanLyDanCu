@@ -53,7 +53,6 @@ import Layout from "../../components/Layout";
 import {
   citizenService,
   editRequestService,
-  authService,
   notificationService,
   uploadService,
 } from "../../services";
@@ -77,15 +76,9 @@ const CitizenDashboard = () => {
     useState(false);
   const [isEditProfileModalVisible, setIsEditProfileModalVisible] =
     useState(false);
-  const [isChangePasswordModalVisible, setIsChangePasswordModalVisible] =
-    useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
-  const [passwordLoading, setPasswordLoading] = useState(false);
   const [profileForm] = Form.useForm();
-  const [passwordForm] = Form.useForm();
   const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
-  const [avatarForm] = Form.useForm();
-  const [avatarPreviewError, setAvatarPreviewError] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
 
@@ -231,26 +224,6 @@ const CitizenDashboard = () => {
       );
     } finally {
       setUpdateLoading(false);
-    }
-  };
-
-  const handleChangePassword = async (values) => {
-    setPasswordLoading(true);
-    try {
-      await authService.changePassword(
-        values.currentPassword,
-        values.newPassword
-      );
-      message.success("Đổi mật khẩu thành công!");
-      passwordForm.resetFields();
-      setIsChangePasswordModalVisible(false);
-    } catch (error) {
-      console.error("Error changing password:", error);
-      message.error(
-        error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại"
-      );
-    } finally {
-      setPasswordLoading(false);
     }
   };
 
@@ -490,31 +463,23 @@ const CitizenDashboard = () => {
               </Space>
             }
             extra={
-              <Space>
-                <Button
-                  type="primary"
-                  icon={<EditOutlined />}
-                  onClick={handleEditProfile}
-                >
-                  Chỉnh sửa
-                </Button>
-                <Button
-                  icon={<LockOutlined />}
-                  onClick={() => setIsChangePasswordModalVisible(true)}
-                >
-                  Đổi mật khẩu
-                </Button>
-              </Space>
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={handleEditProfile}
+              >
+                Chỉnh sửa
+              </Button>
             }
             bordered={false}
             style={{ marginBottom: 24 }}
           >
-            <Row gutter={[24, 16]}>
-              <Col xs={24} md={8}>
-                <div style={{ textAlign: "center" }}>
+            <Row gutter={24}>
+              <Col xs={24} sm={24} md={6}>
+                <div style={{ textAlign: "center", padding: "20px 0" }}>
                   <Avatar
                     size={100}
-                    src={citizenInfo.avatarUrl}
+                    src={uploadService.getAvatarUrl(citizenInfo.avatarUrl)}
                     icon={
                       !citizenInfo.avatarUrl &&
                       (citizenInfo.gender === "MALE" ? (
@@ -530,45 +495,64 @@ const CitizenDashboard = () => {
                         ? "#1890ff"
                         : "#eb2f96",
                       marginBottom: 16,
+                      border: "3px solid #f0f0f0",
                     }}
                   />
-                  <Title level={4} style={{ marginBottom: 4 }}>
+                  <Title level={4} style={{ marginBottom: 8 }}>
                     {citizenInfo.fullName}
                   </Title>
                   {citizenInfo.citizenCode && (
-                    <Tag color="blue">{citizenInfo.citizenCode}</Tag>
+                    <Tag color="blue" style={{ fontSize: "13px" }}>
+                      {citizenInfo.citizenCode}
+                    </Tag>
                   )}
                 </div>
               </Col>
-              <Col xs={24} md={16}>
-                <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+              <Col xs={24} sm={24} md={18}>
+                <Descriptions
+                  column={{ xs: 1, sm: 1, md: 2 }}
+                  bordered
+                  size="middle"
+                  labelStyle={{
+                    fontWeight: 600,
+                    backgroundColor: "#fafafa",
+                    width: "auto",
+                    minWidth: "120px",
+                    whiteSpace: "nowrap",
+                  }}
+                  contentStyle={{
+                    backgroundColor: "#fff",
+                    wordBreak: "break-word",
+                    padding: "12px 16px",
+                  }}
+                >
                   <Descriptions.Item
                     label={
-                      <Space>
-                        <IdcardOutlined />
-                        <span>CCCD/CMND</span>
-                      </Space>
+                      <>
+                        <IdcardOutlined /> CCCD/CMND
+                      </>
                     }
                   >
-                    {citizenInfo.nationalId || <Tag>Chưa có</Tag>}
+                    <Text strong>
+                      {citizenInfo.nationalId || <Tag>Chưa có</Tag>}
+                    </Text>
                   </Descriptions.Item>
                   <Descriptions.Item
                     label={
-                      <Space>
-                        <CalendarOutlined />
-                        <span>Ngày sinh</span>
-                      </Space>
+                      <>
+                        <CalendarOutlined /> Ngày sinh
+                      </>
                     }
                   >
                     {citizenInfo.dateOfBirth ? (
-                      <Space>
-                        <span>
+                      <>
+                        <Text strong style={{ marginRight: 8 }}>
                           {dayjs(citizenInfo.dateOfBirth).format("DD/MM/YYYY")}
-                        </span>
+                        </Text>
                         <Tag color="purple">
                           {dayjs().diff(citizenInfo.dateOfBirth, "year")} tuổi
                         </Tag>
-                      </Space>
+                      </>
                     ) : (
                       <Tag>Chưa có</Tag>
                     )}
@@ -584,7 +568,7 @@ const CitizenDashboard = () => {
                         : "Khác"}
                     </Tag>
                   </Descriptions.Item>
-                  <Descriptions.Item label="Quan hệ với chủ hộ">
+                  <Descriptions.Item label="Quan hệ">
                     {citizenInfo.relationshipToHead ? (
                       <Tag color="orange">{citizenInfo.relationshipToHead}</Tag>
                     ) : citizenInfo.isHead ? (
@@ -593,20 +577,44 @@ const CitizenDashboard = () => {
                       <Tag>Chưa xác định</Tag>
                     )}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Dân tộc" span={2}>
+                  <Descriptions.Item label="Dân tộc">
                     {citizenInfo.ethnicity || "Kinh"}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Quốc tịch" span={2}>
+                  <Descriptions.Item label="Quốc tịch">
                     {citizenInfo.nationality || "Việt Nam"}
                   </Descriptions.Item>
                   {citizenInfo.educationLevel && (
-                    <Descriptions.Item label="Trình độ học vấn" span={2}>
-                      {citizenInfo.educationLevel}
+                    <Descriptions.Item label="Học vấn" span={2}>
+                      <Tag color="cyan">{citizenInfo.educationLevel}</Tag>
                     </Descriptions.Item>
                   )}
                   {citizenInfo.occupation && (
                     <Descriptions.Item label="Nghề nghiệp" span={2}>
                       {citizenInfo.occupation}
+                    </Descriptions.Item>
+                  )}
+                  {citizenInfo.email && (
+                    <Descriptions.Item
+                      label={
+                        <>
+                          <MailOutlined /> Email
+                        </>
+                      }
+                      span={2}
+                    >
+                      <Text copyable>{citizenInfo.email}</Text>
+                    </Descriptions.Item>
+                  )}
+                  {citizenInfo.phone && (
+                    <Descriptions.Item
+                      label={
+                        <>
+                          <PhoneOutlined /> SĐT
+                        </>
+                      }
+                      span={2}
+                    >
+                      <Text copyable>{citizenInfo.phone}</Text>
                     </Descriptions.Item>
                   )}
                 </Descriptions>
@@ -1399,106 +1407,6 @@ const CitizenDashboard = () => {
               </div>
             </>
           )}
-        </Modal>
-
-        {/* Change Password Modal */}
-        <Modal
-          title={
-            <Space>
-              <LockOutlined />
-              <span>Đổi mật khẩu</span>
-            </Space>
-          }
-          open={isChangePasswordModalVisible}
-          onCancel={() => setIsChangePasswordModalVisible(false)}
-          footer={null}
-          width={500}
-        >
-          <Form
-            form={passwordForm}
-            layout="vertical"
-            onFinish={handleChangePassword}
-          >
-            <Form.Item
-              name="currentPassword"
-              label="Mật khẩu hiện tại"
-              rules={[
-                {
-                  required: true,
-                  message: "Vui lòng nhập mật khẩu hiện tại",
-                },
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                size="large"
-                placeholder="Nhập mật khẩu hiện tại"
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="newPassword"
-              label="Mật khẩu mới"
-              rules={[
-                { required: true, message: "Vui lòng nhập mật khẩu mới" },
-                { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" },
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                size="large"
-                placeholder="Nhập mật khẩu mới"
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="confirmPassword"
-              label="Xác nhận mật khẩu mới"
-              dependencies={["newPassword"]}
-              rules={[
-                {
-                  required: true,
-                  message: "Vui lòng xác nhận mật khẩu mới",
-                },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (!value || getFieldValue("newPassword") === value) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(
-                      new Error("Mật khẩu xác nhận không khớp!")
-                    );
-                  },
-                }),
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                size="large"
-                placeholder="Nhập lại mật khẩu mới"
-              />
-            </Form.Item>
-
-            <Form.Item>
-              <Space>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  size="large"
-                  icon={<SaveOutlined />}
-                  loading={passwordLoading}
-                >
-                  Đổi mật khẩu
-                </Button>
-                <Button
-                  size="large"
-                  onClick={() => setIsChangePasswordModalVisible(false)}
-                >
-                  Hủy
-                </Button>
-              </Space>
-            </Form.Item>
-          </Form>
         </Modal>
 
         {/* Avatar Update Modal */}

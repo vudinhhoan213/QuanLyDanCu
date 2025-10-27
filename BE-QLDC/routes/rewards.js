@@ -32,4 +32,11 @@ router.post(
   rewardProposalController.reject
 );
 
+// Citizen can cancel their own pending proposal
+router.post(
+  "/:id/cancel",
+  authenticate,
+  rewardProposalController.cancel
+);
+
 module.exports = router;

@@ -135,4 +135,40 @@ module.exports = {
       next(err);
     }
   },
+
+  // Citizen can cancel their own pending proposal
+  async cancel(req, res, next) {
+    try {
+      const { RewardProposal } = require("../models");
+      const proposal = await RewardProposal.findById(req.params.id);
+
+      if (!proposal) {
+        return res.status(404).json({ message: "Đề xuất không tồn tại" });
+      }
+
+      // Check if the proposal belongs to the current user
+      if (proposal.proposedBy.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          message: "Bạn không có quyền hủy đề xuất này",
+        });
+      }
+
+      // Only allow cancelling pending proposals
+      if (proposal.status !== "PENDING") {
+        return res.status(400).json({
+          message: "Chỉ có thể hủy đề xuất đang chờ duyệt",
+        });
+      }
+
+      // Delete the proposal
+      await RewardProposal.findByIdAndDelete(req.params.id);
+
+      res.json({
+        success: true,
+        message: "Đã hủy đề xuất thành công",
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
 };

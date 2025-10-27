@@ -30,4 +30,7 @@ router.post(
   editRequestController.reject
 );
 
+// Citizen can cancel their own pending request
+router.post("/:id/cancel", authenticate, editRequestController.cancel);
+
 module.exports = router;

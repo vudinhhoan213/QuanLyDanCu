@@ -9,11 +9,17 @@ import {
   Space,
   message,
   Alert,
+  Divider,
 } from "antd";
 import {
   FileTextOutlined,
   SendOutlined,
   ArrowLeftOutlined,
+  UserAddOutlined,
+  UserDeleteOutlined,
+  EditOutlined,
+  SwapOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Layout from "../../components/Layout";
@@ -29,14 +35,30 @@ const SubmitEditRequest = () => {
   const [loading, setLoading] = useState(false);
 
   const requestTypes = [
-    { value: "ADD_MEMBER", label: "Thêm nhân khẩu" },
-    { value: "EDIT_INFO", label: "Chỉnh sửa thông tin" },
-    { value: "REMOVE_MEMBER", label: "Xóa nhân khẩu" },
-    { value: "TEMP_ABSENCE", label: "Đăng ký tạm vắng" },
-    { value: "TEMP_RESIDENCE", label: "Đăng ký tạm trú" },
-    { value: "MOVE_OUT", label: "Chuyển đi" },
-    { value: "MOVE_IN", label: "Chuyển đến" },
-    { value: "OTHER", label: "Khác" },
+    { value: "ADD_MEMBER", label: "Thêm nhân khẩu", icon: <UserAddOutlined /> },
+    {
+      value: "EDIT_INFO",
+      label: "Chỉnh sửa thông tin",
+      icon: <EditOutlined />,
+    },
+    {
+      value: "REMOVE_MEMBER",
+      label: "Xóa nhân khẩu",
+      icon: <UserDeleteOutlined />,
+    },
+    {
+      value: "TEMP_ABSENCE",
+      label: "Đăng ký tạm vắng",
+      icon: <SwapOutlined />,
+    },
+    {
+      value: "TEMP_RESIDENCE",
+      label: "Đăng ký tạm trú",
+      icon: <SwapOutlined />,
+    },
+    { value: "MOVE_OUT", label: "Chuyển đi", icon: <SwapOutlined /> },
+    { value: "MOVE_IN", label: "Chuyển đến", icon: <SwapOutlined /> },
+    { value: "OTHER", label: "Khác", icon: <InfoCircleOutlined /> },
   ];
 
   const handleSubmit = async (values) => {
@@ -146,25 +168,10 @@ const SubmitEditRequest = () => {
 
         {/* Info Alert */}
         <Alert
-          message="Lưu ý"
-          description={
-            <div>
-              <p>
-                • Yêu cầu của bạn sẽ được gửi đến Tổ trưởng để xem xét và phê
-                duyệt.
-              </p>
-              <p>
-                • Vui lòng điền đầy đủ thông tin và mô tả rõ ràng nội dung cần
-                chỉnh sửa.
-              </p>
-              <p>
-                • Bạn có thể theo dõi trạng thái yêu cầu tại trang "Yêu Cầu Của
-                Tôi".
-              </p>
-            </div>
-          }
+          message="Yêu cầu sẽ được gửi đến Tổ trưởng để xem xét và phê duyệt"
           type="info"
           showIcon
+          closable
           style={{ marginBottom: 24 }}
         />
 
@@ -188,7 +195,10 @@ const SubmitEditRequest = () => {
               <Select placeholder="Chọn loại yêu cầu" size="large">
                 {requestTypes.map((type) => (
                   <Option key={type.value} value={type.value}>
-                    {type.label}
+                    <Space>
+                      {type.icon}
+                      {type.label}
+                    </Space>
                   </Option>
                 ))}
               </Select>
@@ -224,18 +234,16 @@ const SubmitEditRequest = () => {
               />
             </Form.Item>
 
-            <Form.Item
-              name="details"
-              label="Nội dung cụ thể (không bắt buộc)"
-              tooltip="Thông tin chi tiết về những gì cần thay đổi"
-            >
+            <Form.Item name="details" label="Nội dung cụ thể (không bắt buộc)">
               <TextArea
-                placeholder="VD: Đổi địa chỉ từ '123 ABC' sang '456 XYZ'"
+                placeholder="Thông tin chi tiết về những gì cần thay đổi (VD: Số điện thoại: 0123456789 → 0987654321)"
                 rows={4}
                 showCount
                 maxLength={500}
               />
             </Form.Item>
+
+            <Divider />
 
             <Form.Item>
               <Space>

@@ -48,4 +48,10 @@ export const editRequestService = {
     const { data } = await api.get("/requests/stats");
     return data;
   },
+
+  // Cancel edit request (by citizen) - only for PENDING requests
+  cancelRequest: async (id) => {
+    const { data } = await api.post(`/requests/${id}/cancel`);
+    return data;
+  },
 };

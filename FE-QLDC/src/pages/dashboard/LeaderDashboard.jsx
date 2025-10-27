@@ -55,7 +55,6 @@ import {
   citizenService,
   editRequestService,
   rewardService,
-  authService,
   notificationService,
   uploadService,
 } from "../../services";
@@ -81,15 +80,9 @@ const LeaderDashboard = () => {
     useState(false);
   const [isEditProfileModalVisible, setIsEditProfileModalVisible] =
     useState(false);
-  const [isChangePasswordModalVisible, setIsChangePasswordModalVisible] =
-    useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
-  const [passwordLoading, setPasswordLoading] = useState(false);
   const [profileForm] = Form.useForm();
-  const [passwordForm] = Form.useForm();
   const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
-  const [avatarForm] = Form.useForm();
-  const [avatarPreviewError, setAvatarPreviewError] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
 
@@ -267,26 +260,6 @@ const LeaderDashboard = () => {
       );
     } finally {
       setUpdateLoading(false);
-    }
-  };
-
-  const handleChangePassword = async (values) => {
-    setPasswordLoading(true);
-    try {
-      await authService.changePassword(
-        values.currentPassword,
-        values.newPassword
-      );
-      message.success("Đổi mật khẩu thành công!");
-      passwordForm.resetFields();
-      setIsChangePasswordModalVisible(false);
-    } catch (error) {
-      console.error("Error changing password:", error);
-      message.error(
-        error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại"
-      );
-    } finally {
-      setPasswordLoading(false);
     }
   };
 
@@ -514,28 +487,14 @@ const LeaderDashboard = () => {
             <Col>
               <Space>
                 {leaderInfo ? (
-                  <>
-                    <Button
-                      type="primary"
-                      size="large"
-                      icon={<EditOutlined />}
-                      onClick={handleEditProfile}
-                    >
-                      Chỉnh sửa
-                    </Button>
-                    <Button
-                      size="large"
-                      icon={<LockOutlined />}
-                      onClick={() => setIsChangePasswordModalVisible(true)}
-                      style={{
-                        background: "rgba(255, 255, 255, 0.2)",
-                        border: "1px solid rgba(255, 255, 255, 0.3)",
-                        color: "white",
-                      }}
-                    >
-                      Đổi mật khẩu
-                    </Button>
-                  </>
+                  <Button
+                    type="primary"
+                    size="large"
+                    icon={<EditOutlined />}
+                    onClick={handleEditProfile}
+                  >
+                    Chỉnh sửa
+                  </Button>
                 ) : (
                   <Button
                     type="primary"
@@ -994,106 +953,6 @@ const LeaderDashboard = () => {
                 <Button
                   size="large"
                   onClick={() => setIsEditProfileModalVisible(false)}
-                >
-                  Hủy
-                </Button>
-              </Space>
-            </Form.Item>
-          </Form>
-        </Modal>
-
-        {/* Change Password Modal */}
-        <Modal
-          title={
-            <Space>
-              <LockOutlined />
-              <span>Đổi mật khẩu</span>
-            </Space>
-          }
-          open={isChangePasswordModalVisible}
-          onCancel={() => setIsChangePasswordModalVisible(false)}
-          footer={null}
-          width={500}
-        >
-          <Form
-            form={passwordForm}
-            layout="vertical"
-            onFinish={handleChangePassword}
-          >
-            <Form.Item
-              name="currentPassword"
-              label="Mật khẩu hiện tại"
-              rules={[
-                {
-                  required: true,
-                  message: "Vui lòng nhập mật khẩu hiện tại",
-                },
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                size="large"
-                placeholder="Nhập mật khẩu hiện tại"
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="newPassword"
-              label="Mật khẩu mới"
-              rules={[
-                { required: true, message: "Vui lòng nhập mật khẩu mới" },
-                { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" },
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                size="large"
-                placeholder="Nhập mật khẩu mới"
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="confirmPassword"
-              label="Xác nhận mật khẩu mới"
-              dependencies={["newPassword"]}
-              rules={[
-                {
-                  required: true,
-                  message: "Vui lòng xác nhận mật khẩu mới",
-                },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (!value || getFieldValue("newPassword") === value) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(
-                      new Error("Mật khẩu xác nhận không khớp!")
-                    );
-                  },
-                }),
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                size="large"
-                placeholder="Nhập lại mật khẩu mới"
-              />
-            </Form.Item>
-
-            <Form.Item>
-              <Space>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  size="large"
-                  icon={<SaveOutlined />}
-                  loading={passwordLoading}
-                >
-                  Đổi mật khẩu
-                </Button>
-                <Button
-                  size="large"
-                  onClick={() => setIsChangePasswordModalVisible(false)}
                 >
                   Hủy
                 </Button>

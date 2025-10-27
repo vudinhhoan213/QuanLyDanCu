@@ -12,6 +12,8 @@ import {
   Tag,
   message,
   Typography,
+  Form,
+  Input,
 } from "antd";
 import {
   HomeOutlined,
@@ -25,6 +27,8 @@ import {
   MenuUnfoldOutlined,
   AuditOutlined,
   TrophyOutlined,
+  LockOutlined,
+  SaveOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -32,6 +36,7 @@ import {
   notificationService,
   citizenService,
   uploadService,
+  authService,
 } from "../services";
 import dayjs from "dayjs";
 
@@ -44,7 +49,11 @@ const Layout = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [isNotificationModalVisible, setIsNotificationModalVisible] =
     useState(false);
+  const [isChangePasswordModalVisible, setIsChangePasswordModalVisible] =
+    useState(false);
   const [avatarUrl, setAvatarUrl] = useState(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordForm] = Form.useForm();
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -144,6 +153,26 @@ const Layout = ({ children }) => {
     } catch (error) {
       console.error("Error marking all as read:", error);
       message.error("Không thể đánh dấu tất cả đã đọc");
+    }
+  };
+
+  const handleChangePassword = async (values) => {
+    setPasswordLoading(true);
+    try {
+      await authService.changePassword(
+        values.currentPassword,
+        values.newPassword
+      );
+      message.success("Đổi mật khẩu thành công!");
+      passwordForm.resetFields();
+      setIsChangePasswordModalVisible(false);
+    } catch (error) {
+      console.error("Error changing password:", error);
+      message.error(
+        error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại"
+      );
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -252,6 +281,14 @@ const Layout = ({ children }) => {
 
   // User menu dropdown
   const userMenuItems = [
+    {
+      key: "change-password",
+      icon: <LockOutlined />,
+      label: "Đổi mật khẩu",
+      onClick: () => {
+        setIsChangePasswordModalVisible(true);
+      },
+    },
     {
       key: "logout",
       icon: <LogoutOutlined />,
@@ -480,6 +517,112 @@ const Layout = ({ children }) => {
             </div>
           </>
         )}
+      </Modal>
+
+      {/* Change Password Modal */}
+      <Modal
+        title={
+          <Space>
+            <LockOutlined />
+            <span>Đổi mật khẩu</span>
+          </Space>
+        }
+        open={isChangePasswordModalVisible}
+        onCancel={() => {
+          passwordForm.resetFields();
+          setIsChangePasswordModalVisible(false);
+        }}
+        footer={null}
+        width={500}
+      >
+        <Form
+          form={passwordForm}
+          layout="vertical"
+          onFinish={handleChangePassword}
+        >
+          <Form.Item
+            name="currentPassword"
+            label="Mật khẩu hiện tại"
+            rules={[
+              {
+                required: true,
+                message: "Vui lòng nhập mật khẩu hiện tại",
+              },
+            ]}
+          >
+            <Input.Password
+              prefix={<LockOutlined />}
+              size="large"
+              placeholder="Nhập mật khẩu hiện tại"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="newPassword"
+            label="Mật khẩu mới"
+            rules={[
+              { required: true, message: "Vui lòng nhập mật khẩu mới" },
+              { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" },
+            ]}
+          >
+            <Input.Password
+              prefix={<LockOutlined />}
+              size="large"
+              placeholder="Nhập mật khẩu mới"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="confirmPassword"
+            label="Xác nhận mật khẩu mới"
+            dependencies={["newPassword"]}
+            rules={[
+              {
+                required: true,
+                message: "Vui lòng xác nhận mật khẩu mới",
+              },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue("newPassword") === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error("Mật khẩu xác nhận không khớp!")
+                  );
+                },
+              }),
+            ]}
+          >
+            <Input.Password
+              prefix={<LockOutlined />}
+              size="large"
+              placeholder="Nhập lại mật khẩu mới"
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button
+                type="primary"
+                htmlType="submit"
+                size="large"
+                icon={<SaveOutlined />}
+                loading={passwordLoading}
+              >
+                Đổi mật khẩu
+              </Button>
+              <Button
+                size="large"
+                onClick={() => {
+                  passwordForm.resetFields();
+                  setIsChangePasswordModalVisible(false);
+                }}
+              >
+                Hủy
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
       </Modal>
     </AntLayout>
   );

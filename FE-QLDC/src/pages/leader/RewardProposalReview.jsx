@@ -117,13 +117,13 @@ const RewardProposalReview = () => {
 
   const columns = [
     {
-      title: "Mã đề xuất",
-      dataIndex: "id",
-      key: "id",
-      width: 220,
-      render: (text) => (
-        <Text strong style={{ fontSize: 12 }}>
-          {text.slice(0, 8)}...
+      title: "STT",
+      key: "index",
+      width: 70,
+      align: "center",
+      render: (_, __, index) => (
+        <Text strong style={{ color: "#1890ff" }}>
+          #{index + 1}
         </Text>
       ),
     },
@@ -167,7 +167,6 @@ const RewardProposalReview = () => {
       title: "Hành động",
       key: "action",
       align: "center",
-      fixed: "right",
       width: 250,
       render: (_, record) => (
         <Space size="small">
@@ -336,7 +335,6 @@ const RewardProposalReview = () => {
               showSizeChanger: true,
               showTotal: (total) => `Tổng ${total} đề xuất`,
             }}
-            scroll={{ x: 1400 }}
           />
         </Card>
 
@@ -355,11 +353,6 @@ const RewardProposalReview = () => {
           {currentProposal && (
             <>
               <Descriptions bordered column={2}>
-                <Descriptions.Item label="Mã đề xuất" span={2}>
-                  <Text strong style={{ fontSize: 12 }}>
-                    {currentProposal.id}
-                  </Text>
-                </Descriptions.Item>
                 <Descriptions.Item label="Người được đề xuất">
                   {currentProposal.citizen}
                 </Descriptions.Item>
@@ -457,9 +450,6 @@ const RewardProposalReview = () => {
           {currentProposal && (
             <>
               <Descriptions bordered column={1}>
-                <Descriptions.Item label="Mã đề xuất">
-                  <Text style={{ fontSize: 12 }}>{currentProposal.id}</Text>
-                </Descriptions.Item>
                 <Descriptions.Item label="Người được đề xuất">
                   {currentProposal.citizen}
                 </Descriptions.Item>
