@@ -20,6 +20,7 @@ import {
   DatePicker,
   Select,
   Badge,
+  Upload,
 } from "antd";
 import {
   TeamOutlined,
@@ -42,6 +43,9 @@ import {
   MailOutlined,
   PhoneOutlined,
   LockOutlined,
+  CameraOutlined,
+  UploadOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -51,6 +55,7 @@ import {
   editRequestService,
   authService,
   notificationService,
+  uploadService,
 } from "../../services";
 import dayjs from "dayjs";
 
@@ -78,6 +83,11 @@ const CitizenDashboard = () => {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [profileForm] = Form.useForm();
   const [passwordForm] = Form.useForm();
+  const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
+  const [avatarForm] = Form.useForm();
+  const [avatarPreviewError, setAvatarPreviewError] = useState(false);
+  const [fileList, setFileList] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -92,6 +102,7 @@ const CitizenDashboard = () => {
       try {
         const citizenResponse = await citizenService.getMe();
         console.log("👤 Citizen info:", citizenResponse);
+        console.log("🖼️ Citizen avatarUrl:", citizenResponse?.avatarUrl);
         setCitizenInfo(citizenResponse);
       } catch (err) {
         console.log("⚠️ Could not fetch citizen info:", err.message);
@@ -184,6 +195,7 @@ const CitizenDashboard = () => {
   const handleEditProfile = () => {
     profileForm.setFieldsValue({
       fullName: citizenInfo.fullName,
+      avatarUrl: citizenInfo.avatarUrl || "",
       email: citizenInfo.email || "",
       phone: citizenInfo.phone || "",
       nationalId: citizenInfo.nationalId || "",
@@ -239,6 +251,53 @@ const CitizenDashboard = () => {
       );
     } finally {
       setPasswordLoading(false);
+    }
+  };
+
+  const handleUpdateAvatar = async () => {
+    if (fileList.length === 0) {
+      message.warning("Vui lòng chọn ảnh đại diện");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const file = fileList[0].originFileObj;
+      console.log("📤 Uploading avatar file:", file.name);
+
+      const response = await uploadService.uploadAvatar(file);
+      console.log("📥 Upload response:", response);
+
+      // Update citizen info với avatar mới
+      setCitizenInfo(response.citizen);
+      message.success("Cập nhật ảnh đại diện thành công!");
+
+      // Reset form
+      setFileList([]);
+      setIsAvatarModalVisible(false);
+
+      // Refresh dashboard data
+      fetchDashboardData();
+    } catch (error) {
+      console.error("❌ Error uploading avatar:", error);
+      message.error(
+        error.response?.data?.message || "Có lỗi xảy ra khi upload ảnh"
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    try {
+      await uploadService.deleteAvatar();
+      const updatedCitizen = await citizenService.getMe();
+      setCitizenInfo(updatedCitizen);
+      message.success("Đã xóa ảnh đại diện");
+      fetchDashboardData();
+    } catch (error) {
+      console.error("❌ Error deleting avatar:", error);
+      message.error("Có lỗi xảy ra khi xóa ảnh");
     }
   };
 
@@ -332,7 +391,43 @@ const CitizenDashboard = () => {
         >
           <Row align="middle" gutter={16}>
             <Col>
-              <Avatar size={64} icon={<UserOutlined />} />
+              <div style={{ position: "relative", display: "inline-block" }}>
+                <Avatar
+                  size={64}
+                  src={uploadService.getAvatarUrl(citizenInfo?.avatarUrl)}
+                  icon={!citizenInfo?.avatarUrl && <UserOutlined />}
+                  style={{
+                    backgroundColor: citizenInfo?.avatarUrl
+                      ? "#fff"
+                      : "#1890ff",
+                  }}
+                  onError={(e) => {
+                    console.error(
+                      "❌ Avatar image failed to load:",
+                      citizenInfo?.avatarUrl
+                    );
+                    console.log("📋 Full citizenInfo:", citizenInfo);
+                    return true; // Fallback to icon
+                  }}
+                />
+                <Button
+                  type="primary"
+                  shape="circle"
+                  icon={<CameraOutlined />}
+                  size="small"
+                  onClick={() => {
+                    setFileList([]);
+                    setAvatarPreviewError(false);
+                    setIsAvatarModalVisible(true);
+                  }}
+                  style={{
+                    position: "absolute",
+                    bottom: -2,
+                    right: -2,
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+                  }}
+                />
+              </div>
             </Col>
             <Col flex="auto">
               <Title level={3} style={{ color: "white", marginBottom: 4 }}>
@@ -419,16 +514,21 @@ const CitizenDashboard = () => {
                 <div style={{ textAlign: "center" }}>
                   <Avatar
                     size={100}
+                    src={citizenInfo.avatarUrl}
                     icon={
-                      citizenInfo.gender === "MALE" ? (
+                      !citizenInfo.avatarUrl &&
+                      (citizenInfo.gender === "MALE" ? (
                         <ManOutlined />
                       ) : (
                         <WomanOutlined />
-                      )
+                      ))
                     }
                     style={{
-                      backgroundColor:
-                        citizenInfo.gender === "MALE" ? "#1890ff" : "#eb2f96",
+                      backgroundColor: citizenInfo.avatarUrl
+                        ? "#fff"
+                        : citizenInfo.gender === "MALE"
+                        ? "#1890ff"
+                        : "#eb2f96",
                       marginBottom: 16,
                     }}
                   />
@@ -1036,6 +1136,28 @@ const CitizenDashboard = () => {
             </Row>
 
             <Row gutter={16}>
+              <Col xs={24}>
+                <Form.Item
+                  name="avatarUrl"
+                  label="URL ảnh đại diện"
+                  rules={[
+                    {
+                      type: "url",
+                      message:
+                        "Vui lòng nhập URL hợp lệ (bắt đầu với http:// hoặc https://)",
+                    },
+                  ]}
+                >
+                  <Input
+                    prefix={<UserOutlined />}
+                    size="large"
+                    placeholder="https://example.com/avatar.jpg"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
               <Col xs={24} md={12}>
                 <Form.Item
                   name="phone"
@@ -1377,6 +1499,109 @@ const CitizenDashboard = () => {
               </Space>
             </Form.Item>
           </Form>
+        </Modal>
+
+        {/* Avatar Update Modal */}
+        <Modal
+          title="Cập nhật ảnh đại diện"
+          open={isAvatarModalVisible}
+          onCancel={() => {
+            setFileList([]);
+            setIsAvatarModalVisible(false);
+          }}
+          footer={null}
+          width={500}
+        >
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            {/* Avatar hiện tại */}
+            <Avatar
+              size={100}
+              src={uploadService.getAvatarUrl(citizenInfo?.avatarUrl)}
+              icon={<UserOutlined />}
+              style={{
+                backgroundColor: "#1890ff",
+              }}
+            />
+            <div style={{ marginTop: 8 }}>
+              <Text type="secondary">Ảnh đại diện hiện tại</Text>
+            </div>
+          </div>
+
+          {/* Upload component */}
+          <Upload
+            listType="picture-card"
+            fileList={fileList}
+            onChange={({ fileList: newFileList }) => setFileList(newFileList)}
+            beforeUpload={(file) => {
+              // Kiểm tra file type
+              const isImage = file.type.startsWith("image/");
+              if (!isImage) {
+                message.error("Bạn chỉ có thể upload file ảnh!");
+                return Upload.LIST_IGNORE;
+              }
+              // Kiểm tra file size (5MB)
+              const isLt5M = file.size / 1024 / 1024 < 5;
+              if (!isLt5M) {
+                message.error("Ảnh phải nhỏ hơn 5MB!");
+                return Upload.LIST_IGNORE;
+              }
+              return false; // Prevent auto upload
+            }}
+            onPreview={(file) => {
+              // Preview ảnh
+              const url = URL.createObjectURL(file.originFileObj);
+              window.open(url);
+            }}
+            maxCount={1}
+          >
+            {fileList.length < 1 && (
+              <div>
+                <UploadOutlined style={{ fontSize: 32, color: "#1890ff" }} />
+                <div style={{ marginTop: 8 }}>Chọn ảnh</div>
+                <div style={{ fontSize: 12, color: "#999" }}>
+                  JPG, PNG, GIF (Max: 5MB)
+                </div>
+              </div>
+            )}
+          </Upload>
+
+          {/* Buttons */}
+          <Space
+            style={{
+              width: "100%",
+              justifyContent: "space-between",
+              marginTop: 24,
+            }}
+          >
+            {citizenInfo?.avatarUrl && (
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                onClick={handleDeleteAvatar}
+              >
+                Xóa ảnh
+              </Button>
+            )}
+            <Space style={{ marginLeft: "auto" }}>
+              <Button
+                onClick={() => {
+                  setFileList([]);
+                  setIsAvatarModalVisible(false);
+                }}
+              >
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                icon={<UploadOutlined />}
+                onClick={handleUpdateAvatar}
+                loading={uploading}
+                disabled={fileList.length === 0}
+              >
+                Upload
+              </Button>
+            </Space>
+          </Space>
         </Modal>
       </div>
     </Layout>
