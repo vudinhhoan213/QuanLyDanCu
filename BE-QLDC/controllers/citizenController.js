@@ -5,6 +5,7 @@ module.exports = {
   // Get current citizen info
   async getMe(req, res, next) {
     try {
+      console.log("📥 getMe request for user:", req.user._id);
       // req.user._id là user ID, cần tìm citizen có user này
       const citizen = await Citizen.findOne({ user: req.user._id })
         .populate("household")
@@ -14,8 +15,11 @@ module.exports = {
         return res.status(404).json({ message: "Citizen profile not found" });
       }
 
+      console.log("👤 Sending citizen:", citizen._id);
+      console.log("🖼️ avatarUrl:", citizen.avatarUrl);
       res.json(citizen);
     } catch (err) {
+      console.error("❌ Error in getMe:", err);
       next(err);
     }
   },
@@ -23,12 +27,17 @@ module.exports = {
   // Update current citizen info
   async updateMe(req, res, next) {
     try {
+      console.log("📤 updateMe request body:", req.body);
+      console.log("🖼️ avatarUrl in request:", req.body.avatarUrl);
+
       // Find citizen by user ID
       let citizen = await Citizen.findOne({ user: req.user._id });
+      console.log("👤 Found citizen:", citizen?._id);
 
       // Only allow updating certain fields
       const allowedFields = [
         "fullName",
+        "avatarUrl",
         "email",
         "phone",
         "dateOfBirth",
@@ -46,6 +55,7 @@ module.exports = {
           updateData[field] = req.body[field];
         }
       }
+      console.log("📝 Update data:", updateData);
 
       // If citizen doesn't exist, create new one
       if (!citizen) {
@@ -67,8 +77,11 @@ module.exports = {
         .populate("household")
         .populate("user");
 
+      console.log("📥 Sending updated citizen:", citizen._id);
+      console.log("🖼️ avatarUrl in response:", citizen.avatarUrl);
       res.json(citizen);
     } catch (err) {
+      console.error("❌ Error in updateMe:", err);
       next(err);
     }
   },

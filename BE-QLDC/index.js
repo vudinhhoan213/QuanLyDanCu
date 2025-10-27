@@ -44,9 +44,14 @@ const rewardDistributionRoutes = require("./routes/reward-distributions");
 const studentAchievementRoutes = require("./routes/student-achievements");
 const auditRoutes = require("./routes/audit");
 const setupRoutes = require("./routes/setup");
+const uploadRoutes = require("./routes/upload");
 
 app.use(cors());
 app.use(express.json());
+
+// Serve static files từ thư mục uploads
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+console.log("📁 Serving static files from:", path.join(__dirname, "uploads"));
 
 const connectDB = async () => {
   try {
@@ -73,6 +78,7 @@ const startServer = async () => {
   app.use("/notifications", notificationRoutes);
   app.use("/audit", auditRoutes);
   app.use("/setup", setupRoutes);
+  app.use("/upload", uploadRoutes);
 
   // Basic health route
   app.get("/health", (req, res) => res.json({ ok: true }));

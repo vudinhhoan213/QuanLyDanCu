@@ -28,7 +28,11 @@ import {
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { notificationService } from "../services";
+import {
+  notificationService,
+  citizenService,
+  uploadService,
+} from "../services";
 import dayjs from "dayjs";
 
 const { Header, Sider, Content } = AntLayout;
@@ -40,11 +44,28 @@ const Layout = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [isNotificationModalVisible, setIsNotificationModalVisible] =
     useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
 
   const isLeader = user?.role === "TO_TRUONG";
+
+  // Fetch user avatar
+  const fetchUserAvatar = useCallback(async () => {
+    try {
+      const citizenInfo = await citizenService.getMe();
+      setAvatarUrl(citizenInfo.avatarUrl);
+    } catch (error) {
+      console.log("Could not fetch avatar:", error.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserAvatar();
+    }
+  }, [user, fetchUserAvatar]);
 
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
@@ -89,8 +110,9 @@ const Layout = ({ children }) => {
   useEffect(() => {
     if (user) {
       fetchNotifications();
+      fetchUserAvatar(); // Refresh avatar khi navigate
     }
-  }, [location.pathname, user, fetchNotifications]);
+  }, [location.pathname, user, fetchNotifications, fetchUserAvatar]);
 
   const handleMarkAsRead = async (notificationId) => {
     try {
@@ -322,7 +344,13 @@ const Layout = ({ children }) => {
                   cursor: "pointer",
                 }}
               >
-                <Avatar icon={<UserOutlined />} />
+                <Avatar
+                  src={uploadService.getAvatarUrl(avatarUrl)}
+                  icon={<UserOutlined />}
+                  style={{
+                    backgroundColor: avatarUrl ? "#fff" : "#1890ff",
+                  }}
+                />
                 <span>{user?.fullName || user?.username}</span>
               </div>
             </Dropdown>
