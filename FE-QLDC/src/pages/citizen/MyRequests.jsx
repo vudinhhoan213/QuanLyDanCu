@@ -420,7 +420,13 @@ const MyRequests = () => {
           width={800}
         >
           {currentRequest && (
-            <div>
+            <div
+              style={{
+                maxHeight: "600px",
+                overflowY: "auto",
+                paddingRight: "8px",
+              }}
+            >
               <Descriptions bordered column={1}>
                 <Descriptions.Item label="Mã yêu cầu">
                   <Text style={{ fontSize: 12 }}>{currentRequest._id}</Text>
@@ -548,7 +554,15 @@ const MyRequests = () => {
                     style={{ marginTop: 16 }}
                   >
                     <pre
-                      style={{ whiteSpace: "pre-wrap", wordWrap: "break-word" }}
+                      style={{
+                        whiteSpace: "pre-wrap",
+                        wordWrap: "break-word",
+                        maxHeight: "300px",
+                        overflowY: "auto",
+                        backgroundColor: "#f5f5f5",
+                        padding: "12px",
+                        borderRadius: "4px",
+                      }}
                     >
                       {JSON.stringify(currentRequest.proposedChanges, null, 2)}
                     </pre>

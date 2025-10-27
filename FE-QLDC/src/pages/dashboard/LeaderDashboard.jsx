@@ -18,6 +18,8 @@ import {
   Input,
   DatePicker,
   Select,
+  Badge,
+  List,
 } from "antd";
 import {
   TeamOutlined,
@@ -37,6 +39,7 @@ import {
   MailOutlined,
   PhoneOutlined,
   LockOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -48,6 +51,7 @@ import {
   editRequestService,
   rewardService,
   authService,
+  notificationService,
 } from "../../services";
 
 const { Title, Text } = Typography;
@@ -65,6 +69,10 @@ const LeaderDashboard = () => {
     rewards: { total: 0, increase: 0, percentage: 0 },
   });
   const [recentRequests, setRecentRequests] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isNotificationModalVisible, setIsNotificationModalVisible] =
+    useState(false);
   const [isEditProfileModalVisible, setIsEditProfileModalVisible] =
     useState(false);
   const [isChangePasswordModalVisible, setIsChangePasswordModalVisible] =
@@ -143,6 +151,34 @@ const LeaderDashboard = () => {
               status: req.status || "pending",
             }))
           );
+        }
+
+        // Fetch notifications (chỉ lấy yêu cầu mới, không lấy phản hồi)
+        try {
+          const notificationsResponse = await notificationService.getAll({
+            limit: 50,
+            sort: "-createdAt",
+          });
+          const allNotifs =
+            notificationsResponse.docs || notificationsResponse || [];
+
+          // Filter: CHỈ lấy thông báo "yêu cầu mới" (title có "Mới")
+          // Loại bỏ thông báo phản hồi (title có "được duyệt" hoặc "bị từ chối")
+          const newRequestNotifs = allNotifs.filter((n) => {
+            const title = n.title || "";
+            return title.includes("Mới"); // "Yêu Cầu Chỉnh Sửa Mới", "Đề Xuất Khen Thưởng Mới"
+          });
+
+          console.log(
+            `📊 Total notifications: ${allNotifs.length}, New requests: ${newRequestNotifs.length}`
+          );
+          setNotifications(newRequestNotifs);
+          const unread = newRequestNotifs.filter((n) => !n.isRead).length;
+          setUnreadCount(unread);
+        } catch (err) {
+          console.log("⚠️ No notifications yet:", err.message);
+          setNotifications([]);
+          setUnreadCount(0);
         }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -236,6 +272,39 @@ const LeaderDashboard = () => {
       );
     } finally {
       setPasswordLoading(false);
+    }
+  };
+
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      await notificationService.markAsRead(notificationId);
+      setNotifications((prev) =>
+        prev.map((n) => (n._id === notificationId ? { ...n, isRead: true } : n))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+      message.success("Đã đánh dấu đã đọc");
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      message.error("Không thể đánh dấu đã đọc");
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      const unreadIds = notifications
+        .filter((n) => !n.isRead)
+        .map((n) => n._id);
+      if (unreadIds.length === 0) {
+        message.info("Không có thông báo chưa đọc");
+        return;
+      }
+      await notificationService.markAllAsRead(unreadIds);
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+      message.success("Đã đánh dấu tất cả đã đọc");
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+      message.error("Không thể đánh dấu tất cả đã đọc");
     }
   };
 
@@ -919,6 +988,120 @@ const LeaderDashboard = () => {
               </Space>
             </Form.Item>
           </Form>
+        </Modal>
+
+        {/* Notifications Modal */}
+        <Modal
+          title={
+            <Space>
+              <Badge count={unreadCount} offset={[10, 0]}>
+                <BellOutlined />
+              </Badge>
+              <span>Thông báo</span>
+            </Space>
+          }
+          open={isNotificationModalVisible}
+          onCancel={() => setIsNotificationModalVisible(false)}
+          footer={[
+            <Button
+              key="close"
+              onClick={() => setIsNotificationModalVisible(false)}
+            >
+              Đóng
+            </Button>,
+          ]}
+          width={800}
+        >
+          {notifications.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 0" }}>
+              <BellOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
+              <div style={{ marginTop: 16, color: "#999" }}>
+                Chưa có thông báo nào
+              </div>
+            </div>
+          ) : (
+            <>
+              {unreadCount > 0 && (
+                <div style={{ marginBottom: 16, textAlign: "right" }}>
+                  <Button type="link" onClick={handleMarkAllAsRead}>
+                    Đánh dấu tất cả đã đọc
+                  </Button>
+                </div>
+              )}
+              <div
+                style={{
+                  maxHeight: "500px",
+                  overflowY: "auto",
+                  paddingRight: "8px",
+                }}
+              >
+                <List
+                  itemLayout="horizontal"
+                  dataSource={notifications}
+                  renderItem={(item) => (
+                    <List.Item
+                      style={{
+                        backgroundColor: item.isRead
+                          ? "transparent"
+                          : "#e6f7ff",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        marginBottom: "8px",
+                        cursor: item.isRead ? "default" : "pointer",
+                      }}
+                      onClick={() => !item.isRead && handleMarkAsRead(item._id)}
+                      actions={
+                        !item.isRead
+                          ? [
+                              <Button
+                                key="mark-read"
+                                type="link"
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkAsRead(item._id);
+                                }}
+                              >
+                                Đánh dấu đã đọc
+                              </Button>,
+                            ]
+                          : []
+                      }
+                    >
+                      <List.Item.Meta
+                        avatar={
+                          <Badge dot={!item.isRead}>
+                            <Avatar
+                              icon={<BellOutlined />}
+                              style={{
+                                backgroundColor: item.isRead
+                                  ? "#d9d9d9"
+                                  : "#1890ff",
+                              }}
+                            />
+                          </Badge>
+                        }
+                        title={
+                          <Space>
+                            <Text strong={!item.isRead}>{item.title}</Text>
+                            {!item.isRead && <Tag color="blue">Mới</Tag>}
+                          </Space>
+                        }
+                        description={
+                          <Space direction="vertical" size={0}>
+                            <Text type="secondary">{item.message}</Text>
+                            <Text type="secondary" style={{ fontSize: "12px" }}>
+                              {dayjs(item.createdAt).format("DD/MM/YYYY HH:mm")}
+                            </Text>
+                          </Space>
+                        }
+                      />
+                    </List.Item>
+                  )}
+                />
+              </div>
+            </>
+          )}
         </Modal>
       </div>
     </Layout>

@@ -1,4 +1,4 @@
-import api from "./index";
+import api from "../lib/api";
 
 const notificationService = {
   // Lấy tất cả thông báo của user hiện tại

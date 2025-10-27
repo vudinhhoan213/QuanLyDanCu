@@ -5,6 +5,37 @@ module.exports = {
     try {
       const payload = { ...req.body, proposedBy: req.user && req.user._id };
       const doc = await rewardProposalService.create(payload);
+
+      // Tạo notification cho leaders
+      try {
+        const { User, Notification } = require("../models");
+        const leaders = await User.find({ role: "TO_TRUONG" });
+
+        if (leaders.length > 0) {
+          const notifications = leaders.map((leader) => ({
+            toUser: leader._id,
+            fromUser: req.user._id,
+            title: "Đề Xuất Khen Thưởng Mới",
+            message: `${
+              req.user.fullName || req.user.username
+            } đã gửi đề xuất khen thưởng${
+              payload.reason ? `: ${payload.reason}` : ""
+            }`,
+            type: "REWARD",
+            entityType: "RewardProposal",
+            entityId: doc._id,
+            priority: "NORMAL",
+          }));
+
+          await Notification.insertMany(notifications);
+          console.log(
+            `📬 Created ${notifications.length} notifications for leaders (reward proposal)`
+          );
+        }
+      } catch (notifError) {
+        console.error("❌ Error creating notifications:", notifError);
+      }
+
       res.status(201).json(doc);
     } catch (err) {
       next(err);

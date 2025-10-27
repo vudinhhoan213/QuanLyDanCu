@@ -1,13 +1,13 @@
-const { Notification } = require('../models');
+const { Notification } = require("../models");
 
 module.exports = {
   async create(data) {
     return Notification.create(data);
   },
   async getAll(filter = {}, options = {}) {
-    const { limit = 50, page = 1, sort = '-createdAt' } = options;
+    const { limit = 50, page = 1, sort = "-createdAt" } = options;
     const docs = await Notification.find(filter)
-      .populate('toUser fromUser')
+      .populate("toUser fromUser")
       .sort(sort)
       .limit(limit)
       .skip((page - 1) * limit);
@@ -15,7 +15,7 @@ module.exports = {
     return { docs, total, page, limit };
   },
   async getById(id) {
-    return Notification.findById(id).populate('toUser fromUser');
+    return Notification.findById(id).populate("toUser fromUser");
   },
   async update(id, data) {
     return Notification.findByIdAndUpdate(id, data, { new: true });
@@ -31,4 +31,3 @@ module.exports = {
     );
   },
 };
-

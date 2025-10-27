@@ -148,4 +148,11 @@ module.exports = {
     });
     return { total, pending, approved, rejected };
   },
+
+  async getMyProposals(userId) {
+    const docs = await RewardProposal.find({ proposedBy: userId })
+      .populate("citizen proposedBy reviewedBy")
+      .sort({ createdAt: -1 });
+    return { docs, total: docs.length };
+  },
 };

@@ -19,6 +19,7 @@ import {
   Input,
   DatePicker,
   Select,
+  Badge,
 } from "antd";
 import {
   TeamOutlined,
@@ -49,6 +50,7 @@ import {
   citizenService,
   editRequestService,
   authService,
+  notificationService,
 } from "../../services";
 import dayjs from "dayjs";
 
@@ -63,7 +65,11 @@ const CitizenDashboard = () => {
   const [citizenInfo, setCitizenInfo] = useState(null);
   const [myRequests, setMyRequests] = useState([]);
   const [myRewards, setMyRewards] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [isHouseholdModalVisible, setIsHouseholdModalVisible] = useState(false);
+  const [isNotificationModalVisible, setIsNotificationModalVisible] =
+    useState(false);
   const [isEditProfileModalVisible, setIsEditProfileModalVisible] =
     useState(false);
   const [isChangePasswordModalVisible, setIsChangePasswordModalVisible] =
@@ -116,6 +122,34 @@ const CitizenDashboard = () => {
       } catch (err) {
         console.log("⚠️ No reward proposals yet:", err.message);
         setMyRewards([]);
+      }
+
+      // Fetch notifications (chỉ lấy phản hồi, không lấy yêu cầu mới)
+      try {
+        const notificationsResponse = await notificationService.getAll({
+          limit: 50,
+          sort: "-createdAt",
+        });
+        const allNotifs =
+          notificationsResponse.docs || notificationsResponse || [];
+
+        // Filter: CHỈ lấy thông báo "phản hồi" (title có "được duyệt" hoặc "bị từ chối")
+        // Loại bỏ thông báo "yêu cầu mới"
+        const responseNotifs = allNotifs.filter((n) => {
+          const title = n.title || "";
+          return title.includes("được duyệt") || title.includes("bị từ chối");
+        });
+
+        console.log(
+          `📊 Total notifications: ${allNotifs.length}, Responses: ${responseNotifs.length}`
+        );
+        setNotifications(responseNotifs);
+        const unread = responseNotifs.filter((n) => !n.isRead).length;
+        setUnreadCount(unread);
+      } catch (err) {
+        console.log("⚠️ No notifications yet:", err.message);
+        setNotifications([]);
+        setUnreadCount(0);
       }
     } catch (error) {
       console.error("❌ Error fetching dashboard data:", error);
@@ -205,6 +239,39 @@ const CitizenDashboard = () => {
       );
     } finally {
       setPasswordLoading(false);
+    }
+  };
+
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      await notificationService.markAsRead(notificationId);
+      setNotifications((prev) =>
+        prev.map((n) => (n._id === notificationId ? { ...n, isRead: true } : n))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+      message.success("Đã đánh dấu đã đọc");
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      message.error("Không thể đánh dấu đã đọc");
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      const unreadIds = notifications
+        .filter((n) => !n.isRead)
+        .map((n) => n._id);
+      if (unreadIds.length === 0) {
+        message.info("Không có thông báo chưa đọc");
+        return;
+      }
+      await notificationService.markAllAsRead(unreadIds);
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+      message.success("Đã đánh dấu tất cả đã đọc");
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+      message.error("Không thể đánh dấu tất cả đã đọc");
     }
   };
 
@@ -302,11 +369,16 @@ const CitizenDashboard = () => {
             </Card>
           </Col>
           <Col xs={24} sm={8}>
-            <Card bordered={false} hoverable>
+            <Card
+              bordered={false}
+              hoverable
+              onClick={() => setIsNotificationModalVisible(true)}
+              style={{ cursor: "pointer" }}
+            >
               <Statistic
-                title="Đề xuất khen thưởng"
-                value={myRewards.length}
-                prefix={<TrophyOutlined style={{ color: "#faad14" }} />}
+                title="Thông báo chưa đọc"
+                value={unreadCount}
+                prefix={<BellOutlined style={{ color: "#faad14" }} />}
                 valueStyle={{ color: "#faad14" }}
               />
             </Card>
@@ -635,31 +707,130 @@ const CitizenDashboard = () => {
             </Card>
           </Col>
 
-          {/* Recent Reward Proposals */}
+          {/* Recent Notifications */}
           <Col xs={24} lg={12}>
             <Card
               title={
                 <Space>
-                  <TrophyOutlined />
-                  <span>Đề xuất khen thưởng gần đây</span>
+                  <Badge count={unreadCount} offset={[10, 0]}>
+                    <BellOutlined />
+                  </Badge>
+                  <span>Thông báo</span>
                 </Space>
               }
               extra={
-                <Button
-                  type="link"
-                  onClick={() => navigate("/citizen/my-rewards")}
-                >
-                  Xem tất cả
-                </Button>
+                <Space>
+                  {unreadCount > 0 && (
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={handleMarkAllAsRead}
+                    >
+                      Đánh dấu tất cả đã đọc
+                    </Button>
+                  )}
+                  <Button
+                    type="link"
+                    onClick={() => setIsNotificationModalVisible(true)}
+                  >
+                    Xem tất cả
+                  </Button>
+                </Space>
               }
               bordered={false}
             >
-              <div style={{ textAlign: "center", padding: "40px 0" }}>
-                <GiftOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
-                <div style={{ marginTop: 16, color: "#999" }}>
-                  Chưa có khen thưởng nào
+              {notifications.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <BellOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
+                  <div style={{ marginTop: 16, color: "#999" }}>
+                    Chưa có thông báo nào
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+                  <List
+                    itemLayout="horizontal"
+                    dataSource={notifications}
+                    renderItem={(item) => (
+                      <List.Item
+                        style={{
+                          backgroundColor: item.isRead
+                            ? "transparent"
+                            : "#e6f7ff",
+                          padding: "12px",
+                          borderRadius: "8px",
+                          marginBottom: "8px",
+                          cursor: "pointer",
+                        }}
+                        onClick={() =>
+                          !item.isRead && handleMarkAsRead(item._id)
+                        }
+                        actions={
+                          !item.isRead
+                            ? [
+                                <Button
+                                  key="mark-read"
+                                  type="link"
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkAsRead(item._id);
+                                  }}
+                                >
+                                  Đánh dấu đã đọc
+                                </Button>,
+                              ]
+                            : []
+                        }
+                      >
+                        <List.Item.Meta
+                          avatar={
+                            <Badge dot={!item.isRead}>
+                              <Avatar
+                                icon={<BellOutlined />}
+                                style={{
+                                  backgroundColor: item.isRead
+                                    ? "#d9d9d9"
+                                    : "#1890ff",
+                                }}
+                              />
+                            </Badge>
+                          }
+                          title={
+                            <Space>
+                              <Text strong={!item.isRead}>{item.title}</Text>
+                              {!item.isRead && <Tag color="blue">Mới</Tag>}
+                            </Space>
+                          }
+                          description={
+                            <Space direction="vertical" size={0}>
+                              <Text
+                                type="secondary"
+                                style={{
+                                  display: "-webkit-box",
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: "vertical",
+                                  overflow: "hidden",
+                                }}
+                              >
+                                {item.message}
+                              </Text>
+                              <Text
+                                type="secondary"
+                                style={{ fontSize: "12px" }}
+                              >
+                                {dayjs(item.createdAt).format(
+                                  "DD/MM/YYYY HH:mm"
+                                )}
+                              </Text>
+                            </Space>
+                          }
+                        />
+                      </List.Item>
+                    )}
+                  />
+                </div>
+              )}
             </Card>
           </Col>
         </Row>
@@ -992,6 +1163,120 @@ const CitizenDashboard = () => {
               </Space>
             </Form.Item>
           </Form>
+        </Modal>
+
+        {/* Notifications Modal */}
+        <Modal
+          title={
+            <Space>
+              <Badge count={unreadCount} offset={[10, 0]}>
+                <BellOutlined />
+              </Badge>
+              <span>Thông báo</span>
+            </Space>
+          }
+          open={isNotificationModalVisible}
+          onCancel={() => setIsNotificationModalVisible(false)}
+          footer={[
+            <Button
+              key="close"
+              onClick={() => setIsNotificationModalVisible(false)}
+            >
+              Đóng
+            </Button>,
+          ]}
+          width={800}
+        >
+          {notifications.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 0" }}>
+              <BellOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
+              <div style={{ marginTop: 16, color: "#999" }}>
+                Chưa có thông báo nào
+              </div>
+            </div>
+          ) : (
+            <>
+              {unreadCount > 0 && (
+                <div style={{ marginBottom: 16, textAlign: "right" }}>
+                  <Button type="link" onClick={handleMarkAllAsRead}>
+                    Đánh dấu tất cả đã đọc
+                  </Button>
+                </div>
+              )}
+              <div
+                style={{
+                  maxHeight: "500px",
+                  overflowY: "auto",
+                  paddingRight: "8px",
+                }}
+              >
+                <List
+                  itemLayout="horizontal"
+                  dataSource={notifications}
+                  renderItem={(item) => (
+                    <List.Item
+                      style={{
+                        backgroundColor: item.isRead
+                          ? "transparent"
+                          : "#e6f7ff",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        marginBottom: "8px",
+                        cursor: item.isRead ? "default" : "pointer",
+                      }}
+                      onClick={() => !item.isRead && handleMarkAsRead(item._id)}
+                      actions={
+                        !item.isRead
+                          ? [
+                              <Button
+                                key="mark-read"
+                                type="link"
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkAsRead(item._id);
+                                }}
+                              >
+                                Đánh dấu đã đọc
+                              </Button>,
+                            ]
+                          : []
+                      }
+                    >
+                      <List.Item.Meta
+                        avatar={
+                          <Badge dot={!item.isRead}>
+                            <Avatar
+                              icon={<BellOutlined />}
+                              style={{
+                                backgroundColor: item.isRead
+                                  ? "#d9d9d9"
+                                  : "#1890ff",
+                              }}
+                            />
+                          </Badge>
+                        }
+                        title={
+                          <Space>
+                            <Text strong={!item.isRead}>{item.title}</Text>
+                            {!item.isRead && <Tag color="blue">Mới</Tag>}
+                          </Space>
+                        }
+                        description={
+                          <Space direction="vertical" size={0}>
+                            <Text type="secondary">{item.message}</Text>
+                            <Text type="secondary" style={{ fontSize: "12px" }}>
+                              {dayjs(item.createdAt).format("DD/MM/YYYY HH:mm")}
+                            </Text>
+                          </Space>
+                        }
+                      />
+                    </List.Item>
+                  )}
+                />
+              </div>
+            </>
+          )}
         </Modal>
 
         {/* Change Password Modal */}
