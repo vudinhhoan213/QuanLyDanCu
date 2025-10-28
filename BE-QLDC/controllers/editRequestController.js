@@ -61,7 +61,7 @@ module.exports = {
       // Tạo notification cho leaders
       try {
         const { User, Notification } = require("../models");
-        const leaders = await User.find({ role: "TO_TRUONG" });
+        const leaders = await User.find({ role: "TO_TRUONG", isActive: true });
 
         if (leaders.length > 0) {
           const notifications = leaders.map((leader) => ({

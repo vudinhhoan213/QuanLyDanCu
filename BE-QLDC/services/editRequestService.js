@@ -93,7 +93,7 @@ module.exports = {
     });
 
     await notificationService.create({
-      toUser: reqDoc.requestedBy, // requester
+      toUser: reqDoc.requestedBy._id || reqDoc.requestedBy, // requester
       fromUser: reviewerUserId,
       title: "Yêu cầu chỉnh sửa đã được duyệt",
       message: "Yêu cầu chỉnh sửa thông tin nhân khẩu của bạn đã được duyệt.",
@@ -138,7 +138,7 @@ module.exports = {
     });
 
     await notificationService.create({
-      toUser: reqDoc.requestedBy,
+      toUser: reqDoc.requestedBy._id || reqDoc.requestedBy,
       fromUser: reviewerUserId,
       title: "Yêu cầu chỉnh sửa bị từ chối",
       message: `Yêu cầu chỉnh sửa bị từ chối. Lý do: ${reqDoc.rejectionReason}`,

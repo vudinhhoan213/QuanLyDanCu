@@ -341,10 +341,15 @@ const LeaderDashboard = () => {
 
   const requestColumns = [
     {
-      title: "Mã yêu cầu",
-      dataIndex: "id",
-      key: "id",
-      render: (text) => <Text strong>{text}</Text>,
+      title: "STT",
+      key: "index",
+      width: 70,
+      align: "center",
+      render: (_, __, index) => (
+        <Text strong style={{ color: "#1890ff" }}>
+          #{index + 1}
+        </Text>
+      ),
     },
     {
       title: "Công dân",
@@ -680,31 +685,104 @@ const LeaderDashboard = () => {
           </Col>
         </Row>
 
-        {/* Recent Requests Table */}
+        {/* Notifications Card */}
         <Card
           title={
             <Space>
-              <FileTextOutlined />
-              <span>Yêu cầu chỉnh sửa gần đây</span>
+              <span>Thông báo yêu cầu mới</span>
             </Space>
           }
           extra={
-            <Button
-              type="primary"
-              onClick={() => navigate("/leader/edit-requests")}
-            >
-              Xem tất cả
-            </Button>
+            unreadCount > 0 && (
+              <Button type="link" onClick={handleMarkAllAsRead}>
+                Đánh dấu tất cả đã đọc
+              </Button>
+            )
           }
           bordered={false}
+          style={{ marginBottom: 24 }}
         >
-          <Table
-            columns={requestColumns}
-            dataSource={recentRequests}
-            pagination={{ pageSize: 5 }}
-            loading={loading}
-            scroll={{ x: 800 }}
-          />
+          {notifications.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 0" }}>
+              <BellOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
+              <div style={{ marginTop: 16, color: "#999" }}>
+                Chưa có yêu cầu mới nào
+              </div>
+            </div>
+          ) : (
+            <List
+              itemLayout="horizontal"
+              dataSource={notifications.slice(0, 5)}
+              renderItem={(item) => (
+                <List.Item
+                  style={{
+                    backgroundColor: item.isRead ? "transparent" : "#e6f7ff",
+                    padding: "12px",
+                    borderRadius: "8px",
+                    marginBottom: "8px",
+                    cursor: item.isRead ? "default" : "pointer",
+                  }}
+                  onClick={() => !item.isRead && handleMarkAsRead(item._id)}
+                  actions={
+                    !item.isRead
+                      ? [
+                          <Button
+                            key="mark-read"
+                            type="link"
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMarkAsRead(item._id);
+                            }}
+                          >
+                            Đánh dấu đã đọc
+                          </Button>,
+                        ]
+                      : []
+                  }
+                >
+                  <List.Item.Meta
+                    avatar={
+                      <Badge dot={!item.isRead}>
+                        <Avatar
+                          icon={<BellOutlined />}
+                          style={{
+                            backgroundColor: item.isRead
+                              ? "#d9d9d9"
+                              : "#1890ff",
+                          }}
+                        />
+                      </Badge>
+                    }
+                    title={
+                      <Space>
+                        <Text strong={!item.isRead}>{item.title}</Text>
+                        {!item.isRead && <Tag color="blue">Mới</Tag>}
+                      </Space>
+                    }
+                    description={
+                      <Space direction="vertical" size={0}>
+                        <Text type="secondary">{item.message}</Text>
+                        <Text type="secondary" style={{ fontSize: "12px" }}>
+                          {dayjs(item.createdAt).format("DD/MM/YYYY HH:mm")}
+                        </Text>
+                      </Space>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
+          )}
+          {notifications.length > 5 && (
+            <div style={{ textAlign: "center", marginTop: 16 }}>
+              <Button
+                type="link"
+                onClick={() => setIsNotificationModalVisible(true)}
+              >
+                Xem tất cả {notifications.length} thông báo
+              </Button>
+            </div>
+          )}
         </Card>
 
         {/* Quick Actions */}

@@ -82,29 +82,14 @@ const Layout = ({ children }) => {
       const response = await notificationService.getAll({ limit: 100 });
       const allNotifs = response.docs || [];
 
-      // Filter notifications based on user role
-      let filteredNotifs = allNotifs;
-      if (isLeader) {
-        // Leader: CHỈ xem thông báo "yêu cầu mới"
-        filteredNotifs = allNotifs.filter((n) => {
-          const title = n.title || "";
-          return title.includes("Mới");
-        });
-      } else {
-        // Citizen: CHỈ xem thông báo "phản hồi"
-        filteredNotifs = allNotifs.filter((n) => {
-          const title = n.title || "";
-          return title.includes("được duyệt") || title.includes("bị từ chối");
-        });
-      }
-
-      setNotifications(filteredNotifs);
-      const unread = filteredNotifs.filter((n) => !n.isRead).length;
+      // Backend đã filter đúng theo toUser rồi, không cần filter thêm!
+      setNotifications(allNotifs);
+      const unread = allNotifs.filter((n) => !n.isRead).length;
       setUnreadCount(unread);
     } catch (error) {
       console.error("Error fetching notifications:", error);
     }
-  }, [isLeader]);
+  }, []);
 
   useEffect(() => {
     if (user) {

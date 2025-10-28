@@ -9,7 +9,7 @@ module.exports = {
       // Tạo notification cho leaders
       try {
         const { User, Notification } = require("../models");
-        const leaders = await User.find({ role: "TO_TRUONG" });
+        const leaders = await User.find({ role: "TO_TRUONG", isActive: true });
 
         if (leaders.length > 0) {
           const notifications = leaders.map((leader) => ({
@@ -158,6 +158,24 @@ module.exports = {
         return res.status(400).json({
           message: "Chỉ có thể hủy đề xuất đang chờ duyệt",
         });
+      }
+
+      // Delete related notifications before deleting the proposal
+      try {
+        const { Notification } = require("../models");
+
+        // Xóa tất cả thông báo liên quan đến đề xuất này
+        const deleteResult = await Notification.deleteMany({
+          entityType: "RewardProposal",
+          entityId: req.params.id,
+        });
+
+        console.log(
+          `🗑️ Deleted ${deleteResult.deletedCount} notifications related to proposal ${req.params.id}`
+        );
+      } catch (notifError) {
+        console.error("❌ Error deleting notifications:", notifError);
+        // Continue to delete proposal even if notification deletion fails
       }
 
       // Delete the proposal

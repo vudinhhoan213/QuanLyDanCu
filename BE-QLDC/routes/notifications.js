@@ -4,10 +4,11 @@ const { authenticate, isLeader } = require('../middleware/auth');
 
 const router = express.Router();
 
-// For non-leaders, restrict listing to own notifications
+// Restrict listing to own notifications for ALL users
 router.get('/', authenticate, (req, res, next) => {
-  if (req.user && req.user.role !== 'TO_TRUONG') {
-    req.query.toUser = req.user._id; // enforce filter
+  // Mỗi user chỉ nhận thông báo gửi cho chính họ
+  if (req.user) {
+    req.query.toUser = req.user._id; // enforce filter for ALL roles
   }
   return notificationController.getAll(req, res, next);
 });

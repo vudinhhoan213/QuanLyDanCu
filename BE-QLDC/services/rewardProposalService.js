@@ -83,7 +83,7 @@ module.exports = {
     });
 
     await notificationService.create({
-      toUser: doc.proposedBy,
+      toUser: doc.proposedBy._id || doc.proposedBy,
       fromUser: reviewerUserId,
       title: "Đề xuất khen thưởng đã được duyệt",
       message: "Đề xuất khen thưởng của bạn đã được duyệt.",
@@ -125,7 +125,7 @@ module.exports = {
     });
 
     await notificationService.create({
-      toUser: doc.proposedBy,
+      toUser: doc.proposedBy._id || doc.proposedBy,
       fromUser: reviewerUserId,
       title: "Đề xuất khen thưởng bị từ chối",
       message: `Đề xuất khen thưởng bị từ chối. Lý do: ${doc.rejectionReason}`,

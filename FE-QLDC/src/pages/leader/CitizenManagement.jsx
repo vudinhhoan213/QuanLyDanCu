@@ -14,6 +14,7 @@ import {
   message,
   Popconfirm,
   Avatar,
+  Descriptions,
 } from "antd";
 import {
   PlusOutlined,
@@ -30,7 +31,7 @@ import Layout from "../../components/Layout";
 import { citizenService, householdService } from "../../services";
 import dayjs from "dayjs";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { Option } = Select;
 
 const CitizenManagement = () => {
@@ -96,74 +97,73 @@ const CitizenManagement = () => {
 
   const columns = [
     {
-      title: "Họ và tên",
+      title: "Thông tin nhân khẩu",
       dataIndex: "fullName",
       key: "fullName",
-      fixed: "left",
-      width: 200,
       render: (text, record) => (
-        <Space>
-          <Avatar
-            size="small"
-            icon={record.gender === "Nam" ? <ManOutlined /> : <WomanOutlined />}
-            style={{
-              backgroundColor: record.gender === "Nam" ? "#1890ff" : "#eb2f96",
-            }}
-          />
-          <span style={{ fontWeight: "bold" }}>{text}</span>
-        </Space>
+        <div>
+          <Space style={{ marginBottom: 4 }}>
+            <Avatar
+              size="default"
+              icon={
+                record.gender === "Nam" ? <ManOutlined /> : <WomanOutlined />
+              }
+              style={{
+                backgroundColor:
+                  record.gender === "Nam" ? "#1890ff" : "#eb2f96",
+              }}
+            />
+            <div>
+              <div
+                style={{ fontWeight: 600, fontSize: "14px", color: "#262626" }}
+              >
+                {text}
+              </div>
+              <Space size={4} style={{ fontSize: "12px", color: "#8c8c8c" }}>
+                <span>{record.gender}</span>
+                <span>•</span>
+                <span>{dayjs(record.dateOfBirth).format("DD/MM/YYYY")}</span>
+                {record.idCard && (
+                  <>
+                    <span>•</span>
+                    <span>{record.idCard}</span>
+                  </>
+                )}
+              </Space>
+            </div>
+          </Space>
+        </div>
       ),
     },
     {
-      title: "Mã NK",
-      dataIndex: "id",
-      key: "id",
-      width: 100,
-    },
-    {
-      title: "Ngày sinh",
-      dataIndex: "dateOfBirth",
-      key: "dateOfBirth",
-      width: 120,
-      render: (date) => dayjs(date).format("DD/MM/YYYY"),
-    },
-    {
-      title: "Giới tính",
-      dataIndex: "gender",
-      key: "gender",
-      width: 100,
-      align: "center",
-      render: (gender) => (
-        <Tag color={gender === "Nam" ? "blue" : "pink"}>{gender}</Tag>
-      ),
-    },
-    {
-      title: "CCCD/CMND",
-      dataIndex: "idCard",
-      key: "idCard",
-      width: 150,
-      render: (text) => text || <Tag color="default">Chưa có</Tag>,
-    },
-    {
-      title: "Hộ khẩu",
+      title: "Hộ khẩu & Quan hệ",
       dataIndex: "household",
       key: "household",
-      width: 120,
-    },
-    {
-      title: "Quan hệ",
-      dataIndex: "relationship",
-      key: "relationship",
-      width: 120,
-      render: (rel) => <Tag color="purple">{rel}</Tag>,
+      render: (household, record) => (
+        <div>
+          <div style={{ marginBottom: 4, fontSize: "13px" }}>
+            <Tag color="blue" style={{ margin: 0 }}>
+              {household}
+            </Tag>
+          </div>
+          {record.relationship && (
+            <Tag color="purple" style={{ fontSize: "12px" }}>
+              {record.relationship}
+            </Tag>
+          )}
+        </div>
+      ),
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      width: 120,
+      align: "center",
       render: (status) => (
-        <Tag color={status === "active" ? "green" : "default"}>
+        <Tag
+          color={status === "active" ? "success" : "default"}
+          style={{ fontSize: "13px", padding: "2px 12px" }}
+        >
           {status === "active" ? "Hoạt động" : "Không hoạt động"}
         </Tag>
       ),
@@ -171,27 +171,22 @@ const CitizenManagement = () => {
     {
       title: "Hành động",
       key: "action",
-      fixed: "right",
-      width: 200,
       align: "center",
       render: (_, record) => (
         <Space size="small">
           <Button
-            type="link"
+            type="primary"
+            ghost
             size="small"
             icon={<EyeOutlined />}
             onClick={() => handleView(record)}
-          >
-            Xem
-          </Button>
+          />
           <Button
-            type="link"
+            type="default"
             size="small"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
-          >
-            Sửa
-          </Button>
+          />
           <Popconfirm
             title="⚠️ Xóa vĩnh viễn nhân khẩu này?"
             description="Dữ liệu sẽ bị xóa hoàn toàn khỏi hệ thống và không thể khôi phục!"
@@ -200,9 +195,12 @@ const CitizenManagement = () => {
             cancelText="Hủy"
             okButtonProps={{ danger: true }}
           >
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              Xóa
-            </Button>
+            <Button
+              type="primary"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+            />
           </Popconfirm>
         </Space>
       ),
@@ -311,8 +309,10 @@ const CitizenManagement = () => {
   };
 
   const filteredCitizens = citizens.filter((citizen) =>
-    Object.values(citizen).some((value) =>
-      value.toString().toLowerCase().includes(searchText.toLowerCase())
+    Object.values(citizen).some(
+      (value) =>
+        value != null &&
+        value.toString().toLowerCase().includes(searchText.toLowerCase())
     )
   );
 
@@ -320,31 +320,93 @@ const CitizenManagement = () => {
     <Layout>
       <div>
         {/* Page Header */}
-        <div style={{ marginBottom: 24 }}>
-          <Title level={2} style={{ marginBottom: 8 }}>
-            Quản Lý Nhân Khẩu
-          </Title>
+        <div
+          style={{
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            borderRadius: "12px",
+            padding: "24px 32px",
+            marginBottom: 24,
+            boxShadow: "0 4px 12px rgba(102, 126, 234, 0.15)",
+          }}
+        >
+          <Space align="center" size={16}>
+            <div
+              style={{
+                background: "rgba(255, 255, 255, 0.2)",
+                borderRadius: "12px",
+                padding: "12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <UserOutlined style={{ fontSize: "28px", color: "#fff" }} />
+            </div>
+            <div>
+              <Title
+                level={2}
+                style={{ margin: 0, color: "#fff", fontSize: "24px" }}
+              >
+                Quản Lý Nhân Khẩu
+              </Title>
+              <div
+                style={{
+                  color: "rgba(255, 255, 255, 0.9)",
+                  fontSize: "14px",
+                  marginTop: "4px",
+                }}
+              >
+                Quản lý thông tin cá nhân của các nhân khẩu trong khu vực
+              </div>
+            </div>
+          </Space>
         </div>
 
         {/* Action Bar */}
-        <Card bordered={false} style={{ marginBottom: 16 }}>
-          <Space style={{ width: "100%", justifyContent: "space-between" }}>
+        <Card
+          bordered={false}
+          style={{
+            marginBottom: 16,
+            borderRadius: "12px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          }}
+        >
+          <Space
+            style={{ width: "100%", justifyContent: "space-between" }}
+            wrap
+          >
             <Input
-              placeholder="Tìm kiếm nhân khẩu..."
-              prefix={<SearchOutlined />}
-              style={{ width: 300 }}
+              placeholder="Tìm kiếm theo tên, CCCD, số điện thoại..."
+              prefix={<SearchOutlined style={{ color: "#bfbfbf" }} />}
+              style={{
+                width: 350,
+                borderRadius: "8px",
+              }}
+              size="large"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               allowClear
             />
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleAdd}
+              size="large"
+              style={{ borderRadius: "8px" }}
+            >
               Thêm nhân khẩu mới
             </Button>
           </Space>
         </Card>
 
         {/* Table */}
-        <Card bordered={false}>
+        <Card
+          bordered={false}
+          style={{
+            borderRadius: "12px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          }}
+        >
           <Table
             columns={columns}
             dataSource={filteredCitizens}
@@ -355,7 +417,9 @@ const CitizenManagement = () => {
               showSizeChanger: true,
               showTotal: (total) => `Tổng ${total} nhân khẩu`,
             }}
-            scroll={{ x: 1400 }}
+            rowClassName={(record, index) =>
+              index % 2 === 0 ? "" : "table-row-light"
+            }
           />
         </Card>
 
@@ -400,139 +464,53 @@ const CitizenManagement = () => {
           width={800}
         >
           {viewingCitizen && (
-            <div style={{ padding: "10px 0" }}>
-              <Card
-                title="Thông tin cá nhân"
-                bordered={false}
-                style={{ marginBottom: 16 }}
-              >
-                <Space
-                  direction="vertical"
-                  size="middle"
-                  style={{ width: "100%" }}
+            <Descriptions bordered column={2} size="small">
+              <Descriptions.Item label="Họ và tên" span={2}>
+                <Text strong>{viewingCitizen.fullName}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Mã nhân khẩu">
+                <Tag color="blue">{viewingCitizen.id}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Giới tính">
+                <Tag color={viewingCitizen.gender === "Nam" ? "blue" : "pink"}>
+                  {viewingCitizen.gender}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Ngày sinh">
+                {dayjs(viewingCitizen.dateOfBirth).format("DD/MM/YYYY")}
+              </Descriptions.Item>
+              <Descriptions.Item label="CCCD/CMND">
+                {viewingCitizen.idCard || <Tag color="default">Chưa có</Tag>}
+              </Descriptions.Item>
+              <Descriptions.Item label="Số điện thoại" span={2}>
+                {viewingCitizen.phone || <Tag color="default">Chưa có</Tag>}
+              </Descriptions.Item>
+              <Descriptions.Item label="Hộ khẩu">
+                {viewingCitizen.household === "Chưa có hộ khẩu" ? (
+                  <Tag color="default">Chưa có hộ khẩu</Tag>
+                ) : (
+                  <Tag color="blue">{viewingCitizen.household}</Tag>
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="Quan hệ với chủ hộ">
+                {viewingCitizen.relationship ? (
+                  <Tag color="purple">{viewingCitizen.relationship}</Tag>
+                ) : (
+                  <Tag color="default">N/A</Tag>
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="Trạng thái" span={2}>
+                <Tag
+                  color={
+                    viewingCitizen.status === "active" ? "success" : "default"
+                  }
                 >
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "16px",
-                    }}
-                  >
-                    <div>
-                      <strong style={{ color: "#666" }}>Họ và tên:</strong>
-                      <div style={{ fontSize: "16px", marginTop: "4px" }}>
-                        {viewingCitizen.fullName}
-                      </div>
-                    </div>
-                    <div>
-                      <strong style={{ color: "#666" }}>Mã nhân khẩu:</strong>
-                      <div style={{ fontSize: "16px", marginTop: "4px" }}>
-                        <Tag color="blue">{viewingCitizen.id}</Tag>
-                      </div>
-                    </div>
-                    <div>
-                      <strong style={{ color: "#666" }}>Ngày sinh:</strong>
-                      <div style={{ fontSize: "16px", marginTop: "4px" }}>
-                        {dayjs(viewingCitizen.dateOfBirth).format("DD/MM/YYYY")}
-                      </div>
-                    </div>
-                    <div>
-                      <strong style={{ color: "#666" }}>Giới tính:</strong>
-                      <div style={{ marginTop: "4px" }}>
-                        <Tag
-                          color={
-                            viewingCitizen.gender === "Nam" ? "blue" : "pink"
-                          }
-                        >
-                          {viewingCitizen.gender}
-                        </Tag>
-                      </div>
-                    </div>
-                    <div>
-                      <strong style={{ color: "#666" }}>CCCD/CMND:</strong>
-                      <div style={{ fontSize: "16px", marginTop: "4px" }}>
-                        {viewingCitizen.idCard || (
-                          <Tag color="default">Chưa có</Tag>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <strong style={{ color: "#666" }}>Số điện thoại:</strong>
-                      <div style={{ fontSize: "16px", marginTop: "4px" }}>
-                        {viewingCitizen.phone || (
-                          <Tag color="default">Chưa có</Tag>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </Space>
-              </Card>
-
-              <Card
-                title="Thông tin hộ khẩu"
-                bordered={false}
-                style={{ marginBottom: 16 }}
-              >
-                <Space
-                  direction="vertical"
-                  size="middle"
-                  style={{ width: "100%" }}
-                >
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "16px",
-                    }}
-                  >
-                    <div>
-                      <strong style={{ color: "#666" }}>Hộ khẩu:</strong>
-                      <div style={{ fontSize: "16px", marginTop: "4px" }}>
-                        {viewingCitizen.household === "Chưa có hộ khẩu" ? (
-                          <Tag color="default">Chưa có hộ khẩu</Tag>
-                        ) : (
-                          <Tag color="blue">{viewingCitizen.household}</Tag>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <strong style={{ color: "#666" }}>
-                        Quan hệ với chủ hộ:
-                      </strong>
-                      <div style={{ marginTop: "4px" }}>
-                        {viewingCitizen.relationship ? (
-                          <Tag color="purple">
-                            {viewingCitizen.relationship}
-                          </Tag>
-                        ) : (
-                          <Tag color="default">N/A</Tag>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </Space>
-              </Card>
-
-              <Card title="Trạng thái" bordered={false}>
-                <div>
-                  <strong style={{ color: "#666" }}>
-                    Trạng thái hiện tại:
-                  </strong>
-                  <div style={{ marginTop: "8px" }}>
-                    <Tag
-                      color={
-                        viewingCitizen.status === "active" ? "green" : "default"
-                      }
-                      style={{ fontSize: "14px", padding: "4px 12px" }}
-                    >
-                      {viewingCitizen.status === "active"
-                        ? "Hoạt động"
-                        : "Không hoạt động"}
-                    </Tag>
-                  </div>
-                </div>
-              </Card>
-            </div>
+                  {viewingCitizen.status === "active"
+                    ? "Hoạt động"
+                    : "Không hoạt động"}
+                </Tag>
+              </Descriptions.Item>
+            </Descriptions>
           )}
         </Modal>
 

@@ -34,7 +34,7 @@ import { useNavigate } from "react-router-dom";
 import Layout from "../../components/Layout";
 import { householdService, citizenService } from "../../services";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { Option } = Select;
 
 const HouseholdManagement = () => {
@@ -98,52 +98,76 @@ const HouseholdManagement = () => {
 
   const columns = [
     {
-      title: "Mã hộ khẩu",
+      title: "Thông tin hộ khẩu",
       dataIndex: "id",
       key: "id",
-      render: (text) => (
-        <Space>
-          <TeamOutlined style={{ color: "#1890ff" }} />
-          <span style={{ fontWeight: "bold" }}>{text}</span>
-        </Space>
+      render: (text, record) => (
+        <div>
+          <Space style={{ marginBottom: 4 }}>
+            <Avatar
+              size="default"
+              icon={<TeamOutlined />}
+              style={{ backgroundColor: "#1890ff" }}
+            />
+            <div>
+              <div
+                style={{ fontWeight: 600, fontSize: "14px", color: "#262626" }}
+              >
+                {text}
+              </div>
+              <Space size={4} style={{ fontSize: "12px", color: "#8c8c8c" }}>
+                <UserOutlined style={{ fontSize: "11px" }} />
+                <span>{record.headOfHousehold}</span>
+                {record.phone && (
+                  <>
+                    <span>•</span>
+                    <PhoneOutlined style={{ fontSize: "11px" }} />
+                    <span>{record.phone}</span>
+                  </>
+                )}
+              </Space>
+            </div>
+          </Space>
+        </div>
       ),
-    },
-    {
-      title: "Chủ hộ",
-      dataIndex: "headOfHousehold",
-      key: "headOfHousehold",
     },
     {
       title: "Địa chỉ",
       dataIndex: "address",
       key: "address",
-      ellipsis: true,
+      render: (address) => (
+        <div style={{ fontSize: "13px" }}>
+          <Space size={4}>
+            <EnvironmentOutlined
+              style={{ color: "#8c8c8c", fontSize: "12px" }}
+            />
+            <span style={{ color: "#595959" }}>{address}</span>
+          </Space>
+        </div>
+      ),
     },
     {
-      title: "Số thành viên",
+      title: "Thành viên",
       dataIndex: "members",
       key: "members",
       align: "center",
       render: (num) => (
-        <Tag color="blue">
-          {num} {num > 1 ? "người" : "người"}
+        <Tag color="blue" style={{ fontSize: "13px", padding: "4px 12px" }}>
+          <TeamOutlined style={{ marginRight: 4 }} />
+          {num} người
         </Tag>
       ),
-    },
-    {
-      title: "Số điện thoại",
-      dataIndex: "phone",
-      key: "phone",
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
+      align: "center",
       render: (status) => {
         const statusConfig = {
-          ACTIVE: { color: "green", text: "Hoạt động" },
-          MOVED: { color: "orange", text: "Đã chuyển đi" },
-          SPLIT: { color: "blue", text: "Đã tách hộ" },
+          ACTIVE: { color: "success", text: "Hoạt động" },
+          MOVED: { color: "warning", text: "Đã chuyển đi" },
+          SPLIT: { color: "processing", text: "Đã tách hộ" },
           MERGED: { color: "purple", text: "Đã gộp hộ" },
           INACTIVE: { color: "default", text: "Không hoạt động" },
         };
@@ -151,33 +175,35 @@ const HouseholdManagement = () => {
           color: "default",
           text: status,
         };
-        return <Tag color={config.color}>{config.text}</Tag>;
+        return (
+          <Tag
+            color={config.color}
+            style={{ fontSize: "13px", padding: "2px 12px" }}
+          >
+            {config.text}
+          </Tag>
+        );
       },
     },
     {
       title: "Hành động",
       key: "action",
       align: "center",
-      width: 200,
-      fixed: "right",
       render: (_, record) => (
         <Space size="small">
           <Button
-            type="link"
+            type="primary"
+            ghost
             size="small"
             icon={<EyeOutlined />}
             onClick={() => handleView(record)}
-          >
-            Xem
-          </Button>
+          />
           <Button
-            type="link"
+            type="default"
             size="small"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
-          >
-            Sửa
-          </Button>
+          />
           <Popconfirm
             title="⚠️ Xóa vĩnh viễn hộ khẩu này?"
             description={
@@ -193,9 +219,12 @@ const HouseholdManagement = () => {
             cancelText="Hủy"
             okButtonProps={{ danger: true }}
           >
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              Xóa
-            </Button>
+            <Button
+              type="primary"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+            />
           </Popconfirm>
         </Space>
       ),
@@ -360,8 +389,10 @@ const HouseholdManagement = () => {
   };
 
   const filteredHouseholds = households.filter((household) =>
-    Object.values(household).some((value) =>
-      value.toString().toLowerCase().includes(searchText.toLowerCase())
+    Object.values(household).some(
+      (value) =>
+        value != null &&
+        value.toString().toLowerCase().includes(searchText.toLowerCase())
     )
   );
 
@@ -369,31 +400,93 @@ const HouseholdManagement = () => {
     <Layout>
       <div>
         {/* Page Header */}
-        <div style={{ marginBottom: 24 }}>
-          <Title level={2} style={{ marginBottom: 8 }}>
-            Quản Lý Hộ Khẩu
-          </Title>
+        <div
+          style={{
+            background: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
+            borderRadius: "12px",
+            padding: "24px 32px",
+            marginBottom: 24,
+            boxShadow: "0 4px 12px rgba(17, 153, 142, 0.15)",
+          }}
+        >
+          <Space align="center" size={16}>
+            <div
+              style={{
+                background: "rgba(255, 255, 255, 0.2)",
+                borderRadius: "12px",
+                padding: "12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <HomeOutlined style={{ fontSize: "28px", color: "#fff" }} />
+            </div>
+            <div>
+              <Title
+                level={2}
+                style={{ margin: 0, color: "#fff", fontSize: "24px" }}
+              >
+                Quản Lý Hộ Khẩu
+              </Title>
+              <div
+                style={{
+                  color: "rgba(255, 255, 255, 0.9)",
+                  fontSize: "14px",
+                  marginTop: "4px",
+                }}
+              >
+                Quản lý thông tin các hộ gia đình trong khu vực
+              </div>
+            </div>
+          </Space>
         </div>
 
         {/* Action Bar */}
-        <Card bordered={false} style={{ marginBottom: 16 }}>
-          <Space style={{ width: "100%", justifyContent: "space-between" }}>
+        <Card
+          bordered={false}
+          style={{
+            marginBottom: 16,
+            borderRadius: "12px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          }}
+        >
+          <Space
+            style={{ width: "100%", justifyContent: "space-between" }}
+            wrap
+          >
             <Input
-              placeholder="Tìm kiếm hộ khẩu..."
-              prefix={<SearchOutlined />}
-              style={{ width: 300 }}
+              placeholder="Tìm kiếm theo mã hộ khẩu, chủ hộ, địa chỉ..."
+              prefix={<SearchOutlined style={{ color: "#bfbfbf" }} />}
+              style={{
+                width: 350,
+                borderRadius: "8px",
+              }}
+              size="large"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               allowClear
             />
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleAdd}
+              size="large"
+              style={{ borderRadius: "8px" }}
+            >
               Thêm hộ khẩu mới
             </Button>
           </Space>
         </Card>
 
         {/* Table */}
-        <Card bordered={false}>
+        <Card
+          bordered={false}
+          style={{
+            borderRadius: "12px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          }}
+        >
           <Table
             columns={columns}
             dataSource={filteredHouseholds}
@@ -404,7 +497,9 @@ const HouseholdManagement = () => {
               showSizeChanger: true,
               showTotal: (total) => `Tổng ${total} hộ khẩu`,
             }}
-            scroll={{ x: 1200 }}
+            rowClassName={(record, index) =>
+              index % 2 === 0 ? "" : "table-row-light"
+            }
           />
         </Card>
 
@@ -437,83 +532,68 @@ const HouseholdManagement = () => {
           width={900}
         >
           {viewingHousehold && (
-            <div style={{ padding: "10px 0" }}>
-              <Card
-                title={
-                  <Space>
-                    <HomeOutlined />
-                    <span>Thông tin hộ khẩu</span>
-                  </Space>
-                }
-                bordered={false}
+            <div>
+              <Descriptions
+                column={2}
+                bordered
+                size="small"
                 style={{ marginBottom: 16 }}
               >
-                <Descriptions column={2} bordered>
-                  <Descriptions.Item label="Mã hộ khẩu" span={1}>
-                    <Tag color="blue" style={{ fontSize: "14px" }}>
-                      {viewingHousehold.id}
-                    </Tag>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Trạng thái" span={1}>
-                    {(() => {
-                      const statusConfig = {
-                        ACTIVE: { color: "green", text: "Hoạt động" },
-                        MOVED: { color: "orange", text: "Đã chuyển đi" },
-                        SPLIT: { color: "blue", text: "Đã tách hộ" },
-                        MERGED: { color: "purple", text: "Đã gộp hộ" },
-                        INACTIVE: { color: "default", text: "Không hoạt động" },
-                      };
-                      const config = statusConfig[viewingHousehold.status] || {
-                        color: "default",
-                        text: viewingHousehold.status,
-                      };
-                      return (
-                        <Tag color={config.color} style={{ fontSize: "14px" }}>
-                          {config.text}
-                        </Tag>
-                      );
-                    })()}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Chủ hộ" span={1}>
-                    <Space>
-                      <UserOutlined />
-                      <strong>{viewingHousehold.headOfHousehold}</strong>
-                    </Space>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Số điện thoại" span={1}>
-                    <Space>
-                      <PhoneOutlined />
-                      {viewingHousehold.phone || (
-                        <Tag color="default">Chưa có</Tag>
-                      )}
-                    </Space>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Địa chỉ" span={2}>
-                    <Space>
-                      <EnvironmentOutlined />
-                      {viewingHousehold.address}
-                    </Space>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Số thành viên" span={2}>
-                    <Tag color="blue" style={{ fontSize: "14px" }}>
-                      {viewingHousehold.members} người
-                    </Tag>
-                  </Descriptions.Item>
-                </Descriptions>
-              </Card>
-
-              <Card
-                title={
+                <Descriptions.Item label="Mã hộ khẩu">
+                  <Tag color="blue">{viewingHousehold.id}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Trạng thái">
+                  {(() => {
+                    const statusConfig = {
+                      ACTIVE: { color: "success", text: "Hoạt động" },
+                      MOVED: { color: "warning", text: "Đã chuyển đi" },
+                      SPLIT: { color: "processing", text: "Đã tách hộ" },
+                      MERGED: { color: "purple", text: "Đã gộp hộ" },
+                      INACTIVE: { color: "default", text: "Không hoạt động" },
+                    };
+                    const config = statusConfig[viewingHousehold.status] || {
+                      color: "default",
+                      text: viewingHousehold.status,
+                    };
+                    return <Tag color={config.color}>{config.text}</Tag>;
+                  })()}
+                </Descriptions.Item>
+                <Descriptions.Item label="Chủ hộ">
                   <Space>
-                    <TeamOutlined />
-                    <span>
-                      Danh sách thành viên (
-                      {viewingHousehold.membersList?.length || 0} người)
-                    </span>
+                    <UserOutlined />
+                    <Text strong>{viewingHousehold.headOfHousehold}</Text>
                   </Space>
-                }
-                bordered={false}
+                </Descriptions.Item>
+                <Descriptions.Item label="Số điện thoại">
+                  <Space>
+                    <PhoneOutlined />
+                    {viewingHousehold.phone || (
+                      <Tag color="default">Chưa có</Tag>
+                    )}
+                  </Space>
+                </Descriptions.Item>
+                <Descriptions.Item label="Địa chỉ" span={2}>
+                  <Space>
+                    <EnvironmentOutlined />
+                    {viewingHousehold.address}
+                  </Space>
+                </Descriptions.Item>
+              </Descriptions>
+
+              <div
+                style={{
+                  marginBottom: 8,
+                  paddingBottom: 8,
+                  borderBottom: "1px solid #f0f0f0",
+                }}
               >
+                <Text strong>
+                  <TeamOutlined /> Danh sách thành viên (
+                  {viewingHousehold.membersList?.length || 0} người)
+                </Text>
+              </div>
+
+              <div style={{ maxHeight: "300px", overflowY: "auto" }}>
                 {viewingHousehold.membersList &&
                 viewingHousehold.membersList.length > 0 ? (
                   <List
@@ -595,7 +675,7 @@ const HouseholdManagement = () => {
                     <div>Chưa có thành viên nào</div>
                   </div>
                 )}
-              </Card>
+              </div>
             </div>
           )}
         </Modal>
