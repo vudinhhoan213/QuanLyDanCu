@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Button,
@@ -31,6 +31,15 @@ const { Header, Content, Footer } = Layout;
 const HomePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // 🔹 Thêm ref cho các phần để điều hướng cuộn
+  const heroRef = useRef(null);
+  const featureRef = useRef(null);
+  const contactRef = useRef(null);
+
+  const scrollToSection = (ref) => {
+    ref.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   const features = [
     {
@@ -66,16 +75,15 @@ const HomePage = () => {
   };
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
+    <Layout style={{ minHeight: "100vh", background: "#fff" }}>
       {/* Header */}
       <Header
         style={{
           position: "fixed",
           zIndex: 1000,
           width: "100%",
-          background: "rgba(0, 21, 41, 0.95)",
-          backdropFilter: "blur(10px)",
-          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+          background: "#ffffff",
+          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
           padding: "0 50px",
         }}
       >
@@ -92,7 +100,11 @@ const HomePage = () => {
             <SafetyOutlined style={{ fontSize: 28, color: "#1890ff" }} />
             <Title
               level={4}
-              style={{ color: "white", margin: 0, fontWeight: "bold" }}
+              style={{
+                color: "#1f1f1f",
+                margin: 0,
+                fontWeight: "bold",
+              }}
             >
               QUẢN LÝ DÂN CƯ
             </Title>
@@ -100,130 +112,230 @@ const HomePage = () => {
           <Space size="large">
             <Button
               type="link"
-              style={{ color: "white" }}
-              onClick={() => navigate("/")}
+              style={{
+                color: "#1f1f1f",
+                fontWeight: "500",
+                fontSize: 16,
+                transition: "all 0.3s ease",
+              }}
+              onClick={() => scrollToSection(heroRef)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-3px)";
+                e.currentTarget.style.color = "#1890ff";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.color = "#1f1f1f";
+              }}
             >
               Trang chủ
             </Button>
-            <Button type="link" style={{ color: "white" }}>
+
+            <Button
+              type="link"
+              style={{
+                color: "#1f1f1f",
+                fontWeight: "500",
+                fontSize: 16,
+                transition: "all 0.3s ease",
+              }}
+              onClick={() => scrollToSection(featureRef)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-3px)";
+                e.currentTarget.style.color = "#1890ff";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.color = "#1f1f1f";
+              }}
+            >
               Giới thiệu
             </Button>
-            <Button type="link" style={{ color: "white" }}>
+
+            <Button
+              type="link"
+              style={{
+                color: "#1f1f1f",
+                fontWeight: "500",
+                fontSize: 16,
+                transition: "all 0.3s ease",
+              }}
+              onClick={() => scrollToSection(contactRef)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-3px)";
+                e.currentTarget.style.color = "#1890ff";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.color = "#1f1f1f";
+              }}
+            >
               Liên hệ
             </Button>
-            {user ? (
-              <Button type="primary" onClick={handleGetStarted}>
-                Vào hệ thống
-              </Button>
-            ) : (
-              <Button type="primary" onClick={() => navigate("/login")}>
-                Đăng nhập
-              </Button>
-            )}
+
+            <Button
+              type="primary"
+              onClick={() => navigate("/login")}
+              style={{
+                transition: "all 0.3s ease",
+                fontWeight: "bold",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-3px)";
+                e.currentTarget.style.boxShadow =
+                  "0 6px 12px rgba(24, 144, 255, 0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              Đăng nhập
+            </Button>
           </Space>
         </div>
       </Header>
 
       {/* Hero Section */}
-      <Content style={{ marginTop: 64 }}>
+      <Content ref={heroRef} style={{ marginTop: 64 }}>
         <div
           style={{
-            minHeight: "calc(100vh - 64px)",
-            backgroundImage:
-              "url(https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ7g14K2Main1VUMYyLhXKTfK3x8dq8ZnuI7A&s)",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundAttachment: "fixed",
-            position: "relative",
+            backgroundColor: "#fff",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            paddingTop: 120,
           }}
         >
-          {/* Overlay */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "linear-gradient(135deg, rgba(0, 21, 41, 0.88) 0%, rgba(24, 144, 255, 0.75) 100%)",
-            }}
-          />
+          <div style={{ textAlign: "center", paddingBottom: 60 }}>
+            <SafetyOutlined style={{ fontSize: 100, color: "#1890ff" }} />
+            <Title
+              level={1}
+              style={{
+                color: "#1f1f1f",
+                fontSize: 56,
+                fontWeight: "bold",
+                marginBottom: 12,
+              }}
+            >
+              HỆ THỐNG QUẢN LÝ DÂN CƯ
+            </Title>
+            <Paragraph
+              style={{
+                color: "#4f4f4f",
+                fontSize: 18,
+                maxWidth: 700,
+                margin: "0 auto 40px",
+                lineHeight: 1.8,
+              }}
+            >
+              Giải pháp hiện đại, toàn diện cho quản lý hộ khẩu, nhân khẩu và
+              khen thưởng. Mang đến sự tiện lợi và hiệu quả cho cộng đồng.
+            </Paragraph>
+            <Space size="large">
+              <Button
+                type="primary"
+                size="large"
+                onClick={handleGetStarted}
+                style={{
+                  height: 50,
+                  padding: "0 40px",
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  transition: "all 0.3s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-3px)";
+                  e.currentTarget.style.boxShadow =
+                    "0 6px 12px rgba(24, 144, 255, 0.4)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                {user ? "Vào Hệ Thống" : "Bắt Đầu Ngay"}
+              </Button>
 
-          {/* Hero Content */}
+              <Button
+                size="large"
+                style={{
+                  height: 50,
+                  padding: "0 40px",
+                  fontSize: 16,
+                  color: "#1890ff",
+                  borderColor: "#1890ff",
+                  background: "white",
+                  fontWeight: "500",
+                  transition: "all 0.3s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-3px)";
+                  e.currentTarget.style.boxShadow =
+                    "0 6px 12px rgba(24, 144, 255, 0.2)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                Tìm Hiểu Thêm
+              </Button>
+            </Space>
+          </div>
+
+          {/* Banner ảnh có hiệu ứng hover */}
           <div
             style={{
-              position: "relative",
-              zIndex: 10,
-              padding: "100px 50px 80px",
-              maxWidth: "1400px",
-              margin: "0 auto",
+              display: "flex",
+              width: "100%",
+              height: "350px",
+              overflow: "hidden",
+              borderTop: "1px solid #f0f0f0",
+              borderBottom: "1px solid #f0f0f0",
             }}
           >
-            {/* Hero Title */}
-            <div style={{ textAlign: "center", marginBottom: 80 }}>
-              <SafetyOutlined
+            {[
+              "https://sf-static.upanhlaylink.com/img/image_202510284b86a8f5f949dd9205083569a9fdcf65.jpg",
+              "https://sf-static.upanhlaylink.com/img/image_20251028b2bb7e707290d92f4439eaf14d472e5f.jpg",
+              "https://sf-static.upanhlaylink.com/img/image_202510286583d56a83611bc5a7cc8332600d089b.jpg",
+              "https://sf-static.upanhlaylink.com/img/image_20251028428b51d13cbd12c0c5588b8de5f5e37c.jpg",
+            ].map((src, i) => (
+              <div
+                key={i}
                 style={{
-                  fontSize: 120,
-                  color: "white",
-                  marginBottom: 24,
-                  animation: "pulse 2s ease-in-out infinite",
+                  width: "25%",
+                  overflow: "hidden",
+                  position: "relative",
+                  borderRight: i < 3 ? "1px solid #e8e8e8" : "none",
+                  transition: "all 0.4s ease",
                 }}
-              />
-              <Title
-                level={1}
-                style={{
-                  color: "white",
-                  fontSize: 56,
-                  fontWeight: "bold",
-                  marginBottom: 16,
-                  textShadow: "0 2px 8px rgba(0,0,0,0.3)",
+                onMouseEnter={(e) => {
+                  const img = e.currentTarget.querySelector("img");
+                  img.style.transform = "scale(1.08)";
                 }}
-              >
-                HỆ THỐNG QUẢN LÝ DÂN CƯ
-              </Title>
-              <Paragraph
-                style={{
-                  color: "white",
-                  fontSize: 20,
-                  maxWidth: 700,
-                  margin: "0 auto 40px",
-                  lineHeight: 1.8,
-                  textShadow: "0 1px 4px rgba(0,0,0,0.3)",
+                onMouseLeave={(e) => {
+                  const img = e.currentTarget.querySelector("img");
+                  img.style.transform = "scale(1)";
                 }}
               >
-                Giải pháp hiện đại, toàn diện cho quản lý hộ khẩu, nhân khẩu và
-                khen thưởng. Mang đến sự tiện lợi và hiệu quả cho cộng đồng.
-              </Paragraph>
-              <Space size="large">
-                <Button
-                  type="primary"
-                  size="large"
-                  onClick={handleGetStarted}
+                <img
+                  src={src}
+                  alt={`banner${i}`}
                   style={{
-                    height: 50,
-                    padding: "0 40px",
-                    fontSize: 16,
-                    fontWeight: "bold",
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    transition: "transform 0.4s ease",
                   }}
-                >
-                  {user ? "Vào Hệ Thống" : "Bắt Đầu Ngay"}
-                </Button>
-                <Button
-                  size="large"
-                  style={{
-                    height: 50,
-                    padding: "0 40px",
-                    fontSize: 16,
-                    background: "rgba(255, 255, 255, 0.2)",
-                    color: "white",
-                    borderColor: "white",
-                  }}
-                >
-                  Tìm Hiểu Thêm
-                </Button>
-              </Space>
-            </div>
+                />
+              </div>
+            ))}
+          </div>
 
-            {/* Features Section */}
-            <Row gutter={[24, 24]} style={{ marginBottom: 80 }}>
+          {/* Features */}
+          <div ref={featureRef} style={{ maxWidth: "1400px", width: "100%", padding: "80px 40px" }}>
+            <Row gutter={[24, 24]}>
               {features.map((feature, index) => (
                 <Col xs={24} sm={12} lg={6} key={index}>
                   <Card
@@ -231,188 +343,120 @@ const HomePage = () => {
                     style={{
                       textAlign: "center",
                       height: "100%",
-                      background: "rgba(255, 255, 255, 0.95)",
-                      backdropFilter: "blur(10px)",
-                      border: "none",
-                      borderRadius: 12,
+                      border: "1px solid #e0e0e0",
+                      borderRadius: 16,
                       transition: "all 0.3s ease",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+                      background: "#fff",
                     }}
-                    bodyStyle={{ padding: "32px 24px" }}
+                    bodyStyle={{ padding: "40px 24px" }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = "translateY(-8px)";
                       e.currentTarget.style.boxShadow =
-                        "0 12px 24px rgba(0,0,0,0.15)";
+                        "0 12px 24px rgba(0,0,0,0.12)";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = "translateY(0)";
                       e.currentTarget.style.boxShadow =
-                        "0 2px 8px rgba(0,0,0,0.1)";
+                        "0 2px 6px rgba(0,0,0,0.05)";
                     }}
                   >
                     <div style={{ marginBottom: 16 }}>{feature.icon}</div>
-                    <Title level={4} style={{ marginBottom: 12 }}>
+                    <Title level={4} style={{ marginBottom: 12, fontWeight: "bold" }}>
                       {feature.title}
                     </Title>
-                    <Paragraph style={{ color: "#666", marginBottom: 0 }}>
+                    <Paragraph style={{ color: "#595959", fontSize: 15, lineHeight: 1.6 }}>
                       {feature.description}
                     </Paragraph>
                   </Card>
                 </Col>
               ))}
             </Row>
-
-            {/* Stats Section */}
-            <Row gutter={[24, 24]}>
-              <Col xs={24} md={8}>
-                <Card
-                  style={{
-                    textAlign: "center",
-                    background: "rgba(255, 255, 255, 0.15)",
-                    backdropFilter: "blur(10px)",
-                    border: "1px solid rgba(255, 255, 255, 0.3)",
-                    borderRadius: 12,
-                  }}
-                  bodyStyle={{ padding: "40px 24px" }}
-                >
-                  <Title
-                    level={2}
-                    style={{ color: "white", marginBottom: 8, fontSize: 48 }}
-                  >
-                    1000+
-                  </Title>
-                  <Text style={{ color: "white", fontSize: 18 }}>
-                    Hộ gia đình
-                  </Text>
-                </Card>
-              </Col>
-              <Col xs={24} md={8}>
-                <Card
-                  style={{
-                    textAlign: "center",
-                    background: "rgba(255, 255, 255, 0.15)",
-                    backdropFilter: "blur(10px)",
-                    border: "1px solid rgba(255, 255, 255, 0.3)",
-                    borderRadius: 12,
-                  }}
-                  bodyStyle={{ padding: "40px 24px" }}
-                >
-                  <Title
-                    level={2}
-                    style={{ color: "white", marginBottom: 8, fontSize: 48 }}
-                  >
-                    5000+
-                  </Title>
-                  <Text style={{ color: "white", fontSize: 18 }}>Công dân</Text>
-                </Card>
-              </Col>
-              <Col xs={24} md={8}>
-                <Card
-                  style={{
-                    textAlign: "center",
-                    background: "rgba(255, 255, 255, 0.15)",
-                    backdropFilter: "blur(10px)",
-                    border: "1px solid rgba(255, 255, 255, 0.3)",
-                    borderRadius: 12,
-                  }}
-                  bodyStyle={{ padding: "40px 24px" }}
-                >
-                  <Title
-                    level={2}
-                    style={{ color: "white", marginBottom: 8, fontSize: 48 }}
-                  >
-                    24/7
-                  </Title>
-                  <Text style={{ color: "white", fontSize: 18 }}>Hỗ trợ</Text>
-                </Card>
-              </Col>
-            </Row>
           </div>
         </div>
       </Content>
 
       {/* Footer */}
-      <Footer style={{ background: "#001529", padding: "48px 50px 24px" }}>
+      <Footer
+        ref={contactRef}
+        style={{
+          background: "#fafafa",
+          padding: "64px 50px 24px",
+          borderTop: "1px solid #e8e8e8",
+          marginTop: 100,
+        }}
+      >
         <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
           <Row gutter={[48, 32]}>
             <Col xs={24} md={8}>
-              <Space
-                direction="vertical"
-                size="middle"
-                style={{ width: "100%" }}
-              >
+              <Space direction="vertical" size="middle">
                 <Space size="middle">
                   <SafetyOutlined style={{ fontSize: 32, color: "#1890ff" }} />
-                  <Title level={4} style={{ color: "white", margin: 0 }}>
+                  <Title level={4} style={{ color: "#1f1f1f", margin: 0 }}>
                     QUẢN LÝ DÂN CƯ
                   </Title>
                 </Space>
-                <Paragraph
-                  style={{
-                    color: "rgba(255, 255, 255, 0.65)",
-                    marginBottom: 0,
-                  }}
-                >
-                  Hệ thống quản lý dân cư hiện đại, giúp tổ chức và quản lý
-                  thông tin hộ khẩu, nhân khẩu một cách hiệu quả và chính xác.
+                <Paragraph style={{ color: "#555" }}>
+                  Hệ thống quản lý dân cư hiện đại, giúp tổ chức và quản lý thông tin hộ khẩu, nhân khẩu hiệu quả.
                 </Paragraph>
               </Space>
             </Col>
-            <Col xs={24} md={8}>
-              <Title level={5} style={{ color: "white", marginBottom: 16 }}>
-                Liên Hệ
-              </Title>
-              <Space
-                direction="vertical"
-                size="middle"
-                style={{ width: "100%" }}
-              >
-                <Space>
-                  <EnvironmentOutlined
-                    style={{ color: "#1890ff", fontSize: 16 }}
-                  />
-                  <Text style={{ color: "rgba(255, 255, 255, 0.65)" }}>
-                    Phường 1, Quận 1, TP.HCM
-                  </Text>
-                </Space>
-                <Space>
-                  <PhoneOutlined style={{ color: "#1890ff", fontSize: 16 }} />
-                  <Text style={{ color: "rgba(255, 255, 255, 0.65)" }}>
-                    0123 456 789
-                  </Text>
-                </Space>
-                <Space>
-                  <MailOutlined style={{ color: "#1890ff", fontSize: 16 }} />
-                  <Text style={{ color: "rgba(255, 255, 255, 0.65)" }}>
-                    contact@qldc.vn
-                  </Text>
-                </Space>
-              </Space>
-            </Col>
-            <Col xs={24} md={8}>
-              <Title level={5} style={{ color: "white", marginBottom: 16 }}>
-                Theo Dõi Chúng Tôi
-              </Title>
-              <Space size="large">
-                <FacebookOutlined
-                  style={{ fontSize: 24, color: "#1890ff", cursor: "pointer" }}
-                />
-                <TwitterOutlined
-                  style={{ fontSize: 24, color: "#1890ff", cursor: "pointer" }}
-                />
-                <LinkedinOutlined
-                  style={{ fontSize: 24, color: "#1890ff", cursor: "pointer" }}
-                />
-              </Space>
-            </Col>
+            <Col xs={24} md={9}>
+  <Title level={5} style={{ color: "#1f1f1f", marginBottom: 16 }}>
+    Liên Hệ
+  </Title>
+  <Space direction="vertical" size="middle">
+    <Space>
+      <EnvironmentOutlined style={{ color: "#1890ff", fontSize: 26 }} />
+      <Text style={{ color: "#333", fontSize: 15 }}>
+        Phường 1, Quận 1, TP.HCM
+      </Text>
+    </Space>
+    <Space>
+      <PhoneOutlined style={{ color: "#1890ff", fontSize: 26 }} />
+      <Text style={{ color: "#333", fontSize: 15 }}>0123 456 789</Text>
+    </Space>
+    <Space>
+      <MailOutlined style={{ color: "#1890ff", fontSize: 26 }} />
+      <Text style={{ color: "#333", fontSize: 15 }}>contact@qldc.vn</Text>
+    </Space>
+  </Space>
+</Col>
+
+            <Col xs={24} md={6} style={{ textAlign: "left" }}>
+  <Title level={5} style={{ color: "#1f1f1f", marginBottom: 16 }}>
+    Theo Dõi Chúng Tôi
+  </Title>
+  <Space
+    direction="vertical"
+    size="middle"
+    style={{ alignItems: "flex-start", width: "100%" }}
+  >
+    <Space>
+      <FacebookOutlined style={{ fontSize: 26, color: "#1890ff" }} />
+      <Text style={{ color: "#333", fontSize: 15 }}>
+        Facebook: /QuanLyDanCu
+      </Text>
+    </Space>
+    <Space>
+      <TwitterOutlined style={{ fontSize: 26, color: "#1890ff" }} />
+      <Text style={{ color: "#333", fontSize: 15 }}>
+        Twitter: @QLDanCu
+      </Text>
+    </Space>
+    <Space>
+      <LinkedinOutlined style={{ fontSize: 26, color: "#1890ff" }} />
+      <Text style={{ color: "#333", fontSize: 15 }}>
+        LinkedIn: /company/quanlydancu
+      </Text>
+    </Space>
+  </Space>
+</Col>
+
           </Row>
-          <Divider
-            style={{
-              borderColor: "rgba(255, 255, 255, 0.2)",
-              margin: "32px 0 24px",
-            }}
-          />
+          <Divider />
           <div style={{ textAlign: "center" }}>
-            <Text style={{ color: "rgba(255, 255, 255, 0.45)" }}>
+            <Text style={{ color: "#888" }}>
               © 2024 Hệ Thống Quản Lý Dân Cư. All rights reserved.
             </Text>
           </div>
