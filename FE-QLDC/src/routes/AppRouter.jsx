@@ -1,5 +1,6 @@
 "use client";
 
+import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { ProtectedRoute } from "./ProtectedRoute";
@@ -20,6 +21,15 @@ import CitizenManagement from "../pages/leader/CitizenManagement";
 import EditRequestReview from "../pages/leader/EditRequestReview";
 import RewardProposalReview from "../pages/leader/RewardProposalReview";
 import AuditLogs from "../pages/leader/AuditLogs";
+import RewardEventList from "../pages/leader/RewardEventList";
+import RewardEventAdd from "../pages/leader/RewardEventAdd";
+import RewardEventEdit from "../pages/leader/RewardEventEdit";
+import RewardEventRegistrations from "../pages/leader/RewardEventRegistrations";
+import RewardEventSchedule from "../pages/leader/RewardEventSchedule";
+import RewardDistributions from "../pages/leader/RewardDistributions";
+
+// Lazy load StudentAchievements để tránh lỗi khi import
+const StudentAchievements = lazy(() => import("../pages/leader/StudentAchievements"));
 
 // Citizen Pages (Old - sẽ migrate dần)
 import MyHousehold from "../pages/citizen/MyHousehold";
@@ -27,6 +37,9 @@ import SubmitEditRequest from "../pages/citizen/SubmitEditRequest";
 import SubmitRewardProposal from "../pages/citizen/SubmitRewardProposal";
 import MyRequests from "../pages/citizen/MyRequests";
 import MyRewards from "../pages/citizen/MyRewards";
+import EventList from "../pages/citizen/EventList";
+import MyRegistrations from "../pages/citizen/MyRegistrations";
+import SpecialEvents from "../pages/citizen/SpecialEvents";
 
 // Error Pages
 import NotFoundPage from "../pages/errors/NotFoundPage";
@@ -92,6 +105,64 @@ const AppRouter = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/leader/reward-events"
+          element={
+            <ProtectedRoute requiredRole="leader">
+              <RewardEventList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leader/reward-events/add"
+          element={
+            <ProtectedRoute requiredRole="leader">
+              <RewardEventAdd />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leader/reward-events/:id/edit"
+          element={
+            <ProtectedRoute requiredRole="leader">
+              <RewardEventEdit />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leader/reward-events/:id/registrations"
+          element={
+            <ProtectedRoute requiredRole="leader">
+              <RewardEventRegistrations />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leader/reward-events/schedule"
+          element={
+            <ProtectedRoute requiredRole="leader">
+              <RewardEventSchedule />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leader/reward-distributions"
+          element={
+            <ProtectedRoute requiredRole="leader">
+              <RewardDistributions />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leader/student-achievements"
+          element={
+            <ProtectedRoute requiredRole="leader">
+              <Suspense fallback={<div style={{ padding: "50px", textAlign: "center" }}>Đang tải...</div>}>
+                <StudentAchievements />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
 
         {/* Citizen Routes */}
         <Route
@@ -139,6 +210,30 @@ const AppRouter = () => {
           element={
             <ProtectedRoute requiredRole="citizen">
               <MyRewards />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/citizen/events"
+          element={
+            <ProtectedRoute requiredRole="citizen">
+              <EventList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/citizen/events/special"
+          element={
+            <ProtectedRoute requiredRole="citizen">
+              <SpecialEvents />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/citizen/my-registrations"
+          element={
+            <ProtectedRoute requiredRole="citizen">
+              <MyRegistrations />
             </ProtectedRoute>
           }
         />

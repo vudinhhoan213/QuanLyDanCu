@@ -6,7 +6,7 @@ const rewardEventSchema = new Schema(
     name: { type: String, required: true, trim: true },
     type: {
       type: String,
-      enum: ["SPECIAL_OCCASION", "SCHOOL_YEAR"],
+      enum: ["ANNUAL", "SPECIAL", "SPECIAL_OCCASION", "SCHOOL_YEAR"], // Giữ lại cũ để tương thích
       required: true,
       index: true,
     },
@@ -14,11 +14,12 @@ const rewardEventSchema = new Schema(
     date: { type: Date },
     startDate: { type: Date },
     endDate: { type: Date },
+    maxSlots: { type: Number, default: 0 }, // Số slot tối đa
     budget: { type: Number },
     status: {
       type: String,
-      enum: ["PLANNED", "ONGOING", "COMPLETED"],
-      default: "PLANNED",
+      enum: ["OPEN", "CLOSED", "EXPIRED", "ENDED", "PLANNED", "ONGOING", "COMPLETED"], // Giữ lại cũ để tương thích
+      default: "OPEN",
       index: true,
     },
   },

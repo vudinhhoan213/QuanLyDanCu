@@ -8,9 +8,9 @@ const notificationSchema = new Schema(
 
     title: { type: String, required: true, trim: true },
     message: { type: String, required: true },
-    type: { type: String, enum: ['GENERAL', 'EDIT_REQUEST', 'REWARD', 'SYSTEM'], default: 'GENERAL' },
+    type: { type: String, enum: ['GENERAL', 'EDIT_REQUEST', 'REWARD', 'REWARD_EVENT', 'SYSTEM'], default: 'GENERAL' },
 
-    entityType: { type: String, enum: ['EditRequest', 'RewardProposal', 'Citizen', 'Household', 'User'], default: undefined },
+    entityType: { type: String, enum: ['EditRequest', 'RewardProposal', 'RewardEvent', 'Citizen', 'Household', 'User'], default: undefined },
     entityId: { type: Schema.Types.ObjectId },
 
     priority: { type: String, enum: ['LOW', 'NORMAL', 'HIGH'], default: 'NORMAL' },
