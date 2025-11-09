@@ -8,7 +8,15 @@ function authenticate(req, res, next) {
     if (!token) return res.status(401).json({ message: "Unauthorized" });
 
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = payload; // {_id, username, role}
+
+    // Lưu thông tin user vào request
+    req.user = payload; // {_id, username, role, fullName}
+
+    // Shortcut để truy cập dễ dàng hơn
+    req.userId = payload._id;
+    req.userRole = payload.role;
+    req.username = payload.username;
+
     next();
   } catch (err) {
     return res.status(401).json({ message: "Invalid token" });

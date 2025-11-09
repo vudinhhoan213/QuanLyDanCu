@@ -334,7 +334,10 @@ const HomePage = () => {
           </div>
 
           {/* Features */}
-          <div ref={featureRef} style={{ maxWidth: "1400px", width: "100%", padding: "80px 40px" }}>
+          <div
+            ref={featureRef}
+            style={{ maxWidth: "1400px", width: "100%", padding: "80px 40px" }}
+          >
             <Row gutter={[24, 24]}>
               {features.map((feature, index) => (
                 <Col xs={24} sm={12} lg={6} key={index}>
@@ -362,10 +365,19 @@ const HomePage = () => {
                     }}
                   >
                     <div style={{ marginBottom: 16 }}>{feature.icon}</div>
-                    <Title level={4} style={{ marginBottom: 12, fontWeight: "bold" }}>
+                    <Title
+                      level={4}
+                      style={{ marginBottom: 12, fontWeight: "bold" }}
+                    >
                       {feature.title}
                     </Title>
-                    <Paragraph style={{ color: "#595959", fontSize: 15, lineHeight: 1.6 }}>
+                    <Paragraph
+                      style={{
+                        color: "#595959",
+                        fontSize: 15,
+                        lineHeight: 1.6,
+                      }}
+                    >
                       {feature.description}
                     </Paragraph>
                   </Card>
@@ -397,67 +409,77 @@ const HomePage = () => {
                   </Title>
                 </Space>
                 <Paragraph style={{ color: "#555" }}>
-                  Hệ thống quản lý dân cư hiện đại, giúp tổ chức và quản lý thông tin hộ khẩu, nhân khẩu hiệu quả.
+                  Hệ thống quản lý dân cư hiện đại, giúp tổ chức và quản lý
+                  thông tin hộ khẩu, nhân khẩu hiệu quả.
                 </Paragraph>
               </Space>
             </Col>
             <Col xs={24} md={9}>
-  <Title level={5} style={{ color: "#1f1f1f", marginBottom: 16 }}>
-    Liên Hệ
-  </Title>
-  <Space direction="vertical" size="middle">
-    <Space>
-      <EnvironmentOutlined style={{ color: "#1890ff", fontSize: 26 }} />
-      <Text style={{ color: "#333", fontSize: 15 }}>
-        Phường 1, Quận 1, TP.HCM
-      </Text>
-    </Space>
-    <Space>
-      <PhoneOutlined style={{ color: "#1890ff", fontSize: 26 }} />
-      <Text style={{ color: "#333", fontSize: 15 }}>0123 456 789</Text>
-    </Space>
-    <Space>
-      <MailOutlined style={{ color: "#1890ff", fontSize: 26 }} />
-      <Text style={{ color: "#333", fontSize: 15 }}>contact@qldc.vn</Text>
-    </Space>
-  </Space>
-</Col>
+              <Title level={5} style={{ color: "#1f1f1f", marginBottom: 16 }}>
+                Liên Hệ
+              </Title>
+              <Space direction="vertical" size="middle">
+                <Space>
+                  <EnvironmentOutlined
+                    style={{ color: "#1890ff", fontSize: 26 }}
+                  />
+                  <Text style={{ color: "#333", fontSize: 15 }}>
+                    Định Công, Hoàng Mai, Hà Nội
+                  </Text>
+                </Space>
+                <Space>
+                  <PhoneOutlined style={{ color: "#1890ff", fontSize: 26 }} />
+                  <Text style={{ color: "#333", fontSize: 15 }}>
+                    038 605 4482
+                  </Text>
+                </Space>
+                <Space>
+                  <MailOutlined style={{ color: "#1890ff", fontSize: 26 }} />
+                  <Text style={{ color: "#333", fontSize: 15 }}>
+                    contact@qldc.vn
+                  </Text>
+                </Space>
+              </Space>
+            </Col>
 
             <Col xs={24} md={6} style={{ textAlign: "left" }}>
-  <Title level={5} style={{ color: "#1f1f1f", marginBottom: 16 }}>
-    Theo Dõi Chúng Tôi
-  </Title>
-  <Space
-    direction="vertical"
-    size="middle"
-    style={{ alignItems: "flex-start", width: "100%" }}
-  >
-    <Space>
-      <FacebookOutlined style={{ fontSize: 26, color: "#1890ff" }} />
-      <Text style={{ color: "#333", fontSize: 15 }}>
-        Facebook: /QuanLyDanCu
-      </Text>
-    </Space>
-    <Space>
-      <TwitterOutlined style={{ fontSize: 26, color: "#1890ff" }} />
-      <Text style={{ color: "#333", fontSize: 15 }}>
-        Twitter: @QLDanCu
-      </Text>
-    </Space>
-    <Space>
-      <LinkedinOutlined style={{ fontSize: 26, color: "#1890ff" }} />
-      <Text style={{ color: "#333", fontSize: 15 }}>
-        LinkedIn: /company/quanlydancu
-      </Text>
-    </Space>
-  </Space>
-</Col>
-
+              <Title level={5} style={{ color: "#1f1f1f", marginBottom: 16 }}>
+                Theo Dõi Chúng Tôi
+              </Title>
+              <Space
+                direction="vertical"
+                size="middle"
+                style={{ alignItems: "flex-start", width: "100%" }}
+              >
+                <Space>
+                  <FacebookOutlined
+                    style={{ fontSize: 26, color: "#1890ff" }}
+                  />
+                  <Text style={{ color: "#333", fontSize: 15 }}>
+                    Facebook: /QuanLyDanCu
+                  </Text>
+                </Space>
+                <Space>
+                  <TwitterOutlined style={{ fontSize: 26, color: "#1890ff" }} />
+                  <Text style={{ color: "#333", fontSize: 15 }}>
+                    Twitter: @QLDanCu
+                  </Text>
+                </Space>
+                <Space>
+                  <LinkedinOutlined
+                    style={{ fontSize: 26, color: "#1890ff" }}
+                  />
+                  <Text style={{ color: "#333", fontSize: 15 }}>
+                    LinkedIn: /company/quanlydancu
+                  </Text>
+                </Space>
+              </Space>
+            </Col>
           </Row>
           <Divider />
           <div style={{ textAlign: "center" }}>
             <Text style={{ color: "#888" }}>
-              © 2024 Hệ Thống Quản Lý Dân Cư. All rights reserved.
+              © 2025 Hệ Thống Quản Lý Dân Cư.
             </Text>
           </div>
         </div>
