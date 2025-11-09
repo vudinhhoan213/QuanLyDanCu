@@ -20,6 +20,15 @@ const rewardDistributionSchema = new Schema(
     unitValue: { type: Number, required: true, default: 0 },
     totalValue: { type: Number, required: true, default: 0 },
     note: { type: String },
+    status: {
+      type: String,
+      enum: ["REGISTERED", "DISTRIBUTED", "CANCELLED"],
+      default: "REGISTERED",
+      index: true,
+    },
+    distributedAt: { type: Date },
+    distributedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    distributionNote: { type: String },
   },
   { timestamps: true }
 );

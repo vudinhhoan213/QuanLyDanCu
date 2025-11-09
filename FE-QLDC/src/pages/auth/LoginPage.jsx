@@ -1,21 +1,32 @@
-import { useState, useCallback } from "react";
-import { message } from "antd";
+// 🎯 Import hooks & thư viện
+import { useState, useCallback, useEffect, useRef } from "react";
+import { message, Tooltip } from "antd";
 import {
   SafetyOutlined,
+  EyeOutlined,
+  EyeInvisibleOutlined,
   EyeOutlined,
   EyeInvisibleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-// ✅ Constants được định nghĩa ngay trong file
+
+// ✅ Định nghĩa hằng số vai trò người dùng
 const ROLES = {
   LEADER: "TO_TRUONG",
   CITIZEN: "CONG_DAN",
+  LEADER: "TO_TRUONG",
+  CITIZEN: "CONG_DAN",
 };
+
+// ✅ Định nghĩa route điều hướng tương ứng từng vai trò
 const ROUTES = {
   LEADER_DASHBOARD: "/leader/dashboard",
   CITIZEN_DASHBOARD: "/citizen/dashboard",
+  LEADER_DASHBOARD: "/leader/dashboard",
+  CITIZEN_DASHBOARD: "/citizen/dashboard",
 };
+
 const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [identifier, setIdentifier] = useState("");
@@ -213,4 +224,5 @@ const LoginPage = () => {
     </div>
   );
 };
+
 export default LoginPage;
