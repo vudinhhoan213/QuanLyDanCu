@@ -71,6 +71,18 @@ export const rewardService = {
       const { data } = await api.delete(`/reward-events/${id}`);
       return data;
     },
+
+    close: async (id) => {
+      const { data } = await api.patch(`/reward-events/${id}`, { status: "CLOSED" });
+      return data;
+    },
+
+    getRegistrations: async (eventId, params = {}) => {
+      const { data } = await api.get(`/reward-distributions`, { 
+        params: { event: eventId, ...params } 
+      });
+      return data;
+    },
   },
 
   // Reward Distributions
@@ -103,13 +115,36 @@ export const rewardService = {
 
     getSummary: async (eventId) => {
       const { data } = await api.get(
-        `/reward-distributions/summary/${eventId}`
+        `/reward-distributions/summary/event/${eventId}`
       );
       return data;
     },
 
     getMyRewards: async () => {
       const { data } = await api.get("/reward-distributions/my");
+      return data;
+    },
+
+    // Citizen registration methods
+    register: async (eventId, registrationData = {}) => {
+      const { data } = await api.post("/reward-distributions/register", {
+        eventId,
+        ...registrationData,
+      });
+      return data;
+    },
+
+    getMyRegistrations: async (params = {}) => {
+      const { data } = await api.get("/reward-distributions/my", { params });
+      return data;
+    },
+
+    // Leader distribution methods
+    distribute: async (registrationIds, distributionNote) => {
+      const { data } = await api.post("/reward-distributions/distribute", {
+        registrationIds,
+        distributionNote,
+      });
       return data;
     },
   },
