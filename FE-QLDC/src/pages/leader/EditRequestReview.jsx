@@ -155,7 +155,8 @@ const EditRequestReview = () => {
       render: (_, record) => (
         <Space size="small">
           <Button
-            type="link"
+            type="primary"
+            size="small"
             icon={<EyeOutlined />}
             onClick={() => handleView(record)}
           >

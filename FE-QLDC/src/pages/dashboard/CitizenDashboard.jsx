@@ -636,11 +636,12 @@ const CitizenDashboard = () => {
               extra={
                 <Space>
                   <Button
-                    type="link"
+                    type="primary"
+                    size="small"
                     icon={<EyeOutlined />}
                     onClick={() => setIsHouseholdModalVisible(true)}
                   >
-                    Xem chi tiết
+                    Xem
                   </Button>
                 </Space>
               }

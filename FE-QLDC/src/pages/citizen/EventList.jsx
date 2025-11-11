@@ -20,6 +20,7 @@ import {
   CheckCircleOutlined,
   InfoCircleOutlined,
   ClockCircleOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import Layout from "../../components/Layout";
 import { rewardService } from "../../services";
@@ -429,10 +430,12 @@ const EventList = () => {
                     }}
                     actions={[
                       <Button
-                        type="link"
+                        type="primary"
+                        size="small"
+                        icon={<EyeOutlined />}
                         onClick={() => handleViewDetails(event)}
                       >
-                        Xem chi tiết
+                        Xem
                       </Button>,
                       event.isRegistered ? (
                         <Tag color="success" icon={<CheckCircleOutlined />}>

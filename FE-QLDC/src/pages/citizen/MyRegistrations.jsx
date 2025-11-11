@@ -42,30 +42,38 @@ const MyRegistrations = () => {
       setLoading(true);
       console.log(`📋 [MyRegistrations] ===== FETCHING REGISTRATIONS =====`);
       console.log(`📋 [MyRegistrations] Page: ${page}, PageSize: ${pageSize}`);
-      
+
       const response = await rewardService.distributions.getMyRegistrations({
         page: page,
         limit: pageSize,
       });
 
       console.log(`📋 [MyRegistrations] ===== API RESPONSE =====`);
-      console.log(`📋 [MyRegistrations] Full response:`, JSON.stringify(response, null, 2));
+      console.log(
+        `📋 [MyRegistrations] Full response:`,
+        JSON.stringify(response, null, 2)
+      );
       console.log(`📋 [MyRegistrations] Response type:`, typeof response);
       console.log(`📋 [MyRegistrations] Has docs:`, !!response.docs);
-      console.log(`📋 [MyRegistrations] Docs length:`, response.docs?.length || 0);
+      console.log(
+        `📋 [MyRegistrations] Docs length:`,
+        response.docs?.length || 0
+      );
       console.log(`📋 [MyRegistrations] Total:`, response.total || 0);
-      
+
       const regList = response.docs || [];
-      
+
       if (regList.length > 0) {
-        console.log(`✅ [MyRegistrations] ===== FOUND ${regList.length} REGISTRATIONS =====`);
+        console.log(
+          `✅ [MyRegistrations] ===== FOUND ${regList.length} REGISTRATIONS =====`
+        );
         regList.forEach((reg, index) => {
           console.log(`📋 [MyRegistrations] Registration ${index + 1}:`, {
             id: reg._id,
             eventId: reg.event?._id || reg.event,
             eventName: reg.event?.name,
             eventType: typeof reg.event,
-            eventIsObject: typeof reg.event === 'object',
+            eventIsObject: typeof reg.event === "object",
             citizenId: reg.citizen,
             householdId: reg.household,
             createdAt: reg.createdAt,
@@ -74,92 +82,112 @@ const MyRegistrations = () => {
       } else {
         console.log(`⚠️ [MyRegistrations] ===== NO REGISTRATIONS FOUND =====`);
         console.log(`⚠️ [MyRegistrations] This could mean:`);
-        console.log(`⚠️ [MyRegistrations] 1. User hasn't registered for any events`);
+        console.log(
+          `⚠️ [MyRegistrations] 1. User hasn't registered for any events`
+        );
         console.log(`⚠️ [MyRegistrations] 2. API returned empty array`);
         console.log(`⚠️ [MyRegistrations] 3. Filter might be too restrictive`);
       }
-      
+
       // Merge với registrations hiện tại để tránh mất optimistic updates
-      setRegistrations(prev => {
+      setRegistrations((prev) => {
         // Tạo map từ server data
         const serverRegMap = new Map();
-        regList.forEach(reg => {
+        regList.forEach((reg) => {
           serverRegMap.set(reg._id, { key: reg._id, ...reg });
         });
-        
+
         // Merge với existing registrations
         const existingRegMap = new Map();
-        prev.forEach(reg => {
+        prev.forEach((reg) => {
           existingRegMap.set(reg._id, reg);
         });
-        
+
         // Ưu tiên server data, nhưng giữ lại những registration chưa có trong server (optimistic)
         const merged = [];
-        
+
         // Thêm server data trước
         serverRegMap.forEach((reg, id) => {
           merged.push(reg);
         });
-        
+
         // Thêm optimistic updates chưa có trong server (nếu có)
         existingRegMap.forEach((reg, id) => {
           if (!serverRegMap.has(id)) {
             // Chỉ thêm nếu là registration mới (có timestamp gần đây)
-            const regAge = Date.now() - new Date(reg.createdAt || Date.now()).getTime();
-            if (regAge < 60000) { // Chỉ giữ lại nếu tạo trong vòng 1 phút
+            const regAge =
+              Date.now() - new Date(reg.createdAt || Date.now()).getTime();
+            if (regAge < 60000) {
+              // Chỉ giữ lại nếu tạo trong vòng 1 phút
               merged.push(reg);
             }
           }
         });
-        
+
         // Sắp xếp theo createdAt mới nhất
         merged.sort((a, b) => {
           const timeA = new Date(a.createdAt || 0).getTime();
           const timeB = new Date(b.createdAt || 0).getTime();
           return timeB - timeA;
         });
-        
-        console.log(`✅ [MyRegistrations] Merged ${merged.length} registrations (${regList.length} from server, ${prev.length} existing)`);
+
+        console.log(
+          `✅ [MyRegistrations] Merged ${merged.length} registrations (${regList.length} from server, ${prev.length} existing)`
+        );
         return merged;
       });
-      
-      setPagination(prev => ({
+
+      setPagination((prev) => ({
         ...prev,
         current: page,
         pageSize: pageSize,
         total: response.total || regList.length,
       }));
-      
+
       console.log(`✅ [MyRegistrations] ===== STATE UPDATED =====`);
-      console.log(`✅ [MyRegistrations] Registrations in state: ${regList.length}`);
-      console.log(`✅ [MyRegistrations] Total in pagination: ${response.total || 0}`);
+      console.log(
+        `✅ [MyRegistrations] Registrations in state: ${regList.length}`
+      );
+      console.log(
+        `✅ [MyRegistrations] Total in pagination: ${response.total || 0}`
+      );
     } catch (error) {
       console.error("❌ [MyRegistrations] ===== ERROR FETCHING ===== ");
       console.error("❌ [MyRegistrations] Error:", error);
       console.error("❌ [MyRegistrations] Error message:", error.message);
-      console.error("❌ [MyRegistrations] Error response:", error.response?.data);
-      console.error("❌ [MyRegistrations] Error status:", error.response?.status);
+      console.error(
+        "❌ [MyRegistrations] Error response:",
+        error.response?.data
+      );
+      console.error(
+        "❌ [MyRegistrations] Error status:",
+        error.response?.status
+      );
       console.error("❌ [MyRegistrations] Error config:", error.config);
-      
+
       if (error.response?.status === 403) {
         message.warning({
-          content: "Không có quyền truy cập lịch sử đăng ký. Vui lòng đăng nhập lại hoặc kiểm tra quyền truy cập.",
+          content:
+            "Không có quyền truy cập lịch sử đăng ký. Vui lòng đăng nhập lại hoặc kiểm tra quyền truy cập.",
           duration: 5,
         });
       } else if (error.response?.status === 404) {
         message.warning({
-          content: "Không tìm thấy thông tin công dân. Vui lòng kiểm tra lại tài khoản.",
+          content:
+            "Không tìm thấy thông tin công dân. Vui lòng kiểm tra lại tài khoản.",
           duration: 5,
         });
       } else {
         message.error({
-          content: `Không thể tải lịch sử đăng ký: ${error.response?.data?.message || error.message}`,
+          content: `Không thể tải lịch sử đăng ký: ${
+            error.response?.data?.message || error.message
+          }`,
           duration: 5,
         });
       }
-      
+
       setRegistrations([]);
-      setPagination(prev => ({ ...prev, total: 0 }));
+      setPagination((prev) => ({ ...prev, total: 0 }));
     } finally {
       setLoading(false);
       console.log(`✅ [MyRegistrations] ===== FETCH COMPLETED =====`);
@@ -167,7 +195,9 @@ const MyRegistrations = () => {
   }, []);
 
   useEffect(() => {
-    console.log("🔄 [MyRegistrations] useEffect triggered - fetching registrations");
+    console.log(
+      "🔄 [MyRegistrations] useEffect triggered - fetching registrations"
+    );
     fetchRegistrations(pagination.current, pagination.pageSize);
   }, [pagination.current, pagination.pageSize, fetchRegistrations, refreshKey]);
 
@@ -175,19 +205,25 @@ const MyRegistrations = () => {
   useEffect(() => {
     const handleFocus = () => {
       console.log("🔄 [MyRegistrations] Window focused - checking for updates");
-      const registrationUpdated = sessionStorage.getItem("registration_updated");
+      const registrationUpdated = sessionStorage.getItem(
+        "registration_updated"
+      );
       if (registrationUpdated) {
-        console.log("🔄 [MyRegistrations] Found registration update flag - refreshing after 1s");
+        console.log(
+          "🔄 [MyRegistrations] Found registration update flag - refreshing after 1s"
+        );
         // Delay 1s để đảm bảo server đã lưu xong
         setTimeout(() => {
-          setRefreshKey(k => k + 1);
-          setPagination(prev => ({ ...prev, current: 1 }));
+          setRefreshKey((k) => k + 1);
+          setPagination((prev) => ({ ...prev, current: 1 }));
         }, 1000);
       } else {
         // Nếu không có flag, vẫn refresh để đảm bảo dữ liệu mới nhất
-        console.log("🔄 [MyRegistrations] No update flag, but refreshing to ensure latest data");
+        console.log(
+          "🔄 [MyRegistrations] No update flag, but refreshing to ensure latest data"
+        );
         setTimeout(() => {
-          setRefreshKey(k => k + 1);
+          setRefreshKey((k) => k + 1);
         }, 500);
       }
     };
@@ -196,7 +232,7 @@ const MyRegistrations = () => {
     const mountTimer = setTimeout(() => {
       handleFocus();
     }, 300);
-    
+
     window.addEventListener("focus", handleFocus);
     return () => {
       clearTimeout(mountTimer);
@@ -209,7 +245,7 @@ const MyRegistrations = () => {
     const refreshList = () => {
       console.log("🔄 [MyRegistrations] Refreshing registrations list...");
       // Reset về trang 1 và fetch lại
-      setPagination(prev => {
+      setPagination((prev) => {
         if (prev.current !== 1) {
           console.log("🔄 [MyRegistrations] Resetting to page 1");
           return { ...prev, current: 1 };
@@ -217,7 +253,7 @@ const MyRegistrations = () => {
         return prev;
       });
       // Tăng refreshKey để force refresh
-      setRefreshKey(k => {
+      setRefreshKey((k) => {
         const newKey = k + 1;
         console.log(`🔄 [MyRegistrations] Refresh key updated to: ${newKey}`);
         return newKey;
@@ -226,30 +262,40 @@ const MyRegistrations = () => {
 
     const handleStorageChange = (e) => {
       if (e.key === "registration_updated") {
-        console.log("🔄 [MyRegistrations] Registration updated (storage), refreshing...");
-        
+        console.log(
+          "🔄 [MyRegistrations] Registration updated (storage), refreshing..."
+        );
+
         // Thử lấy registration data từ storage
         try {
-          const registrationDataStr = sessionStorage.getItem("registration_data");
+          const registrationDataStr =
+            sessionStorage.getItem("registration_data");
           if (registrationDataStr) {
             const registrationData = JSON.parse(registrationDataStr);
-            console.log("✅ [MyRegistrations] Adding registration from storage to state");
-            
-            setRegistrations(prev => {
-              const exists = prev.some(reg => reg._id === registrationData._id);
+            console.log(
+              "✅ [MyRegistrations] Adding registration from storage to state"
+            );
+
+            setRegistrations((prev) => {
+              const exists = prev.some(
+                (reg) => reg._id === registrationData._id
+              );
               if (!exists) {
                 return [
                   { key: registrationData._id, ...registrationData },
-                  ...prev
+                  ...prev,
                 ];
               }
               return prev;
             });
           }
         } catch (e) {
-          console.error("❌ [MyRegistrations] Error parsing registration data from storage:", e);
+          console.error(
+            "❌ [MyRegistrations] Error parsing registration data from storage:",
+            e
+          );
         }
-        
+
         // Refresh ngay lập tức từ server
         refreshList();
       }
@@ -257,40 +303,52 @@ const MyRegistrations = () => {
 
     // Lắng nghe custom event (cho cùng tab)
     const handleCustomEvent = (e) => {
-      console.log("🔄 [MyRegistrations] Custom registration event received:", e.detail);
-      
+      console.log(
+        "🔄 [MyRegistrations] Custom registration event received:",
+        e.detail
+      );
+
       // Nếu có registrationData, thêm vào state ngay lập tức (optimistic update)
       if (e.detail?.registrationData) {
         const newRegistration = e.detail.registrationData;
-        console.log("✅ [MyRegistrations] Adding new registration to state immediately:", newRegistration);
-        
-        setRegistrations(prev => {
+        console.log(
+          "✅ [MyRegistrations] Adding new registration to state immediately:",
+          newRegistration
+        );
+
+        setRegistrations((prev) => {
           // Kiểm tra xem đã có chưa để tránh duplicate
-          const exists = prev.some(reg => reg._id === newRegistration._id);
+          const exists = prev.some((reg) => reg._id === newRegistration._id);
           if (exists) {
-            console.log("⚠️ [MyRegistrations] Registration already exists in state");
+            console.log(
+              "⚠️ [MyRegistrations] Registration already exists in state"
+            );
             return prev;
           }
-          
+
           // Thêm vào đầu danh sách (mới nhất)
           const updated = [
             { key: newRegistration._id, ...newRegistration },
-            ...prev
+            ...prev,
           ];
-          console.log(`✅ [MyRegistrations] Added registration, total: ${updated.length}`);
+          console.log(
+            `✅ [MyRegistrations] Added registration, total: ${updated.length}`
+          );
           return updated;
         });
-        
+
         // Cập nhật pagination
-        setPagination(prev => ({
+        setPagination((prev) => ({
           ...prev,
           total: prev.total + 1,
         }));
       }
-      
+
       // Refresh ngay lập tức từ server (delay nhỏ để server kịp cập nhật)
       setTimeout(() => {
-        console.log("🔄 [MyRegistrations] Executing refresh after custom event");
+        console.log(
+          "🔄 [MyRegistrations] Executing refresh after custom event"
+        );
         refreshList();
         // Xóa flag sau khi refresh
         setTimeout(() => {
@@ -303,40 +361,50 @@ const MyRegistrations = () => {
 
     window.addEventListener("storage", handleStorageChange);
     window.addEventListener("registrationUpdated", handleCustomEvent);
-    
+
     // Kiểm tra khi component mount
     const registrationUpdated = sessionStorage.getItem("registration_updated");
     const registrationDataStr = sessionStorage.getItem("registration_data");
-    
+
     if (registrationUpdated && registrationDataStr) {
-      console.log("🔄 [MyRegistrations] Found registration update flag and data on mount");
-      
+      console.log(
+        "🔄 [MyRegistrations] Found registration update flag and data on mount"
+      );
+
       try {
         const registrationData = JSON.parse(registrationDataStr);
-        console.log("✅ [MyRegistrations] Parsed registration data:", registrationData);
-        
+        console.log(
+          "✅ [MyRegistrations] Parsed registration data:",
+          registrationData
+        );
+
         // Thêm vào state ngay lập tức (optimistic update)
-        setRegistrations(prev => {
-          const exists = prev.some(reg => reg._id === registrationData._id);
+        setRegistrations((prev) => {
+          const exists = prev.some((reg) => reg._id === registrationData._id);
           if (!exists) {
-            console.log("✅ [MyRegistrations] Adding registration from sessionStorage to state");
+            console.log(
+              "✅ [MyRegistrations] Adding registration from sessionStorage to state"
+            );
             return [
               { key: registrationData._id, ...registrationData },
-              ...prev
+              ...prev,
             ];
           }
           return prev;
         });
-        
+
         // Cập nhật pagination
-        setPagination(prev => ({
+        setPagination((prev) => ({
           ...prev,
           total: prev.total + 1,
         }));
       } catch (e) {
-        console.error("❌ [MyRegistrations] Error parsing registration data:", e);
+        console.error(
+          "❌ [MyRegistrations] Error parsing registration data:",
+          e
+        );
       }
-      
+
       // Refresh ngay lập tức từ server
       setTimeout(() => {
         console.log("🔄 [MyRegistrations] Executing refresh on mount");
@@ -372,8 +440,8 @@ const MyRegistrations = () => {
   const handleManualRefresh = () => {
     console.log("🔄 [MyRegistrations] Manual refresh triggered");
     message.info("Đang làm mới danh sách đăng ký...");
-    setRefreshKey(k => k + 1);
-    setPagination(prev => ({ ...prev, current: 1 }));
+    setRefreshKey((k) => k + 1);
+    setPagination((prev) => ({ ...prev, current: 1 }));
     // Xóa các flag để tránh refresh lại
     sessionStorage.removeItem("registration_updated");
     sessionStorage.removeItem("registration_event_id");
@@ -396,9 +464,7 @@ const MyRegistrations = () => {
       title: "Sự kiện",
       key: "event",
       width: 250,
-      render: (_, record) => (
-        <Text strong>{record.event?.name || "N/A"}</Text>
-      ),
+      render: (_, record) => <Text strong>{record.event?.name || "N/A"}</Text>,
     },
     {
       title: "Thời gian đăng ký",
@@ -443,7 +509,8 @@ const MyRegistrations = () => {
       render: (_, record) => (
         <Space size="small">
           <Button
-            type="link"
+            type="primary"
+            size="small"
             icon={<EyeOutlined />}
             onClick={() => handleViewDetails(record)}
           >
@@ -472,7 +539,13 @@ const MyRegistrations = () => {
     <Layout>
       <Card>
         <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <Title level={2} style={{ margin: 0 }}>
               <GiftOutlined /> Lịch sử Đăng ký của tôi
             </Title>
@@ -487,7 +560,14 @@ const MyRegistrations = () => {
 
           {registrations.length === 0 && !loading ? (
             <div style={{ textAlign: "center", padding: "60px 20px" }}>
-              <Text type="secondary" style={{ fontSize: "16px", display: "block", marginBottom: "16px" }}>
+              <Text
+                type="secondary"
+                style={{
+                  fontSize: "16px",
+                  display: "block",
+                  marginBottom: "16px",
+                }}
+              >
                 Bạn chưa có đăng ký nào.
               </Text>
               <Text type="secondary" style={{ fontSize: "14px" }}>
@@ -504,7 +584,11 @@ const MyRegistrations = () => {
                 showSizeChanger: true,
                 showTotal: (total) => `Tổng ${total} đăng ký`,
                 onChange: (page, pageSize) => {
-                  setPagination(prev => ({ ...prev, current: page, pageSize }));
+                  setPagination((prev) => ({
+                    ...prev,
+                    current: page,
+                    pageSize,
+                  }));
                 },
               }}
             />
@@ -592,11 +676,7 @@ const MyRegistrations = () => {
             size="large"
             style={{ width: "100%", textAlign: "center" }}
           >
-            <QRCode
-              value={viewingRegistration._id}
-              size={200}
-              errorLevel="H"
-            />
+            <QRCode value={viewingRegistration._id} size={200} errorLevel="H" />
             <div>
               <Text strong>{viewingRegistration.event?.name}</Text>
               <br />
@@ -615,4 +695,3 @@ const MyRegistrations = () => {
 };
 
 export default MyRegistrations;
-

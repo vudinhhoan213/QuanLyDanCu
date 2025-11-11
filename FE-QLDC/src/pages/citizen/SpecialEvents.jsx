@@ -19,6 +19,7 @@ import {
   CalendarOutlined,
   CheckCircleOutlined,
   TrophyOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import Layout from "../../components/Layout";
 import { rewardService } from "../../services";
@@ -85,14 +86,17 @@ const SpecialEvents = () => {
       // Lấy tất cả đăng ký của user một lần để tối ưu
       let allMyRegistrations = [];
       let registeredEventIds = new Set();
-      
+
       try {
-        const allRegResponse = await rewardService.distributions.getMyRegistrations({
-          limit: 100, // Lấy tất cả đăng ký
-        });
+        const allRegResponse =
+          await rewardService.distributions.getMyRegistrations({
+            limit: 100, // Lấy tất cả đăng ký
+          });
         allMyRegistrations = allRegResponse.docs || [];
-        console.log(`📋 Loaded ${allMyRegistrations.length} total registrations for special events from server`);
-        
+        console.log(
+          `📋 Loaded ${allMyRegistrations.length} total registrations for special events from server`
+        );
+
         // Map registration event IDs để check nhanh
         // Xử lý cả trường hợp event là object hoặc string ID
         registeredEventIds = new Set(
@@ -108,26 +112,34 @@ const SpecialEvents = () => {
             })
             .filter(Boolean)
         );
-        
+
         // Lưu vào localStorage để dùng khi reload
         const eventIdsArray = Array.from(registeredEventIds);
-        localStorage.setItem("registeredEventIds", JSON.stringify(eventIdsArray));
+        localStorage.setItem(
+          "registeredEventIds",
+          JSON.stringify(eventIdsArray)
+        );
         console.log(`📋 Registered event IDs from server:`, eventIdsArray);
       } catch (error) {
         // Nếu lỗi 403 hoặc các lỗi khác, thử lấy từ localStorage
         if (error.response?.status === 403) {
-          console.warn("⚠️ Cannot fetch registrations (403 Forbidden) - using localStorage cache");
+          console.warn(
+            "⚠️ Cannot fetch registrations (403 Forbidden) - using localStorage cache"
+          );
         } else {
           console.error("❌ Error fetching all registrations:", error);
         }
-        
+
         // Thử lấy từ localStorage nếu có
         try {
           const cachedIds = localStorage.getItem("registeredEventIds");
           if (cachedIds) {
             const parsedIds = JSON.parse(cachedIds);
             registeredEventIds = new Set(parsedIds);
-            console.log(`📋 Loaded ${parsedIds.length} registered event IDs from localStorage:`, parsedIds);
+            console.log(
+              `📋 Loaded ${parsedIds.length} registered event IDs from localStorage:`,
+              parsedIds
+            );
           }
         } catch (e) {
           console.warn("⚠️ Could not read from localStorage:", e);
@@ -139,9 +151,11 @@ const SpecialEvents = () => {
         // So sánh bằng string để tránh vấn đề ObjectId
         const eventId = String(event._id);
         const isRegistered = registeredEventIds.has(eventId);
-        
+
         if (isRegistered) {
-          console.log(`✅ Special Event ${eventId} (${event.name}) - Already registered`);
+          console.log(
+            `✅ Special Event ${eventId} (${event.name}) - Already registered`
+          );
         }
 
         return {
@@ -170,19 +184,27 @@ const SpecialEvents = () => {
     try {
       setRegistering(true);
       console.log("📤 Registering for special event:", viewingEvent._id);
-      
-      const result = await rewardService.distributions.register(viewingEvent._id, {
-        quantity: 1,
-      });
+
+      const result = await rewardService.distributions.register(
+        viewingEvent._id,
+        {
+          quantity: 1,
+        }
+      );
 
       console.log("✅ Registration successful:", result);
 
       // Lưu event ID vào localStorage để giữ trạng thái khi reload
       try {
         const cachedIds = localStorage.getItem("registeredEventIds");
-        const eventIdsSet = cachedIds ? new Set(JSON.parse(cachedIds)) : new Set();
+        const eventIdsSet = cachedIds
+          ? new Set(JSON.parse(cachedIds))
+          : new Set();
         eventIdsSet.add(String(viewingEvent._id));
-        localStorage.setItem("registeredEventIds", JSON.stringify(Array.from(eventIdsSet)));
+        localStorage.setItem(
+          "registeredEventIds",
+          JSON.stringify(Array.from(eventIdsSet))
+        );
         console.log(`💾 Saved event ${viewingEvent._id} to localStorage`);
       } catch (e) {
         console.warn("⚠️ Could not save to localStorage:", e);
@@ -196,7 +218,10 @@ const SpecialEvents = () => {
         availableSlots:
           viewingEvent.maxSlots === 0
             ? -1
-            : Math.max(0, (viewingEvent.availableSlots || viewingEvent.maxSlots) - 1),
+            : Math.max(
+                0,
+                (viewingEvent.availableSlots || viewingEvent.maxSlots) - 1
+              ),
       };
 
       setEvents((prevEvents) =>
@@ -210,16 +235,20 @@ const SpecialEvents = () => {
 
       // Hiển thị thông báo thành công
       message.success({
-        content: "✅ Đăng ký thành công! Đăng ký đã được thêm vào lịch sử đăng ký của bạn.",
+        content:
+          "✅ Đăng ký thành công! Đăng ký đã được thêm vào lịch sử đăng ký của bạn.",
         duration: 4,
       });
-      
+
       // Đánh dấu đã có đăng ký mới để refresh trang MyRegistrations
       const timestamp = Date.now().toString();
       // Đảm bảo result có đầy đủ thông tin cần thiết
       const registrationData = {
         _id: result._id || result.id,
-        event: result.event || { _id: viewingEvent._id, name: viewingEvent.name },
+        event: result.event || {
+          _id: viewingEvent._id,
+          name: viewingEvent.name,
+        },
         citizen: result.citizen,
         household: result.household,
         quantity: result.quantity || 1,
@@ -229,27 +258,35 @@ const SpecialEvents = () => {
         createdAt: result.createdAt || new Date().toISOString(),
         note: result.note,
       };
-      
+
       sessionStorage.setItem("registration_updated", timestamp);
       sessionStorage.setItem("registration_event_id", viewingEvent._id);
-      sessionStorage.setItem("registration_data", JSON.stringify(registrationData));
-      console.log("💾 Saved registration data to sessionStorage:", registrationData);
-      
+      sessionStorage.setItem(
+        "registration_data",
+        JSON.stringify(registrationData)
+      );
+      console.log(
+        "💾 Saved registration data to sessionStorage:",
+        registrationData
+      );
+
       // Dispatch custom event để refresh ngay trong cùng tab
-      window.dispatchEvent(new CustomEvent("registrationUpdated", { 
-        detail: { 
-          eventId: viewingEvent._id, 
-          timestamp,
-          registrationData: registrationData 
-        } 
-      }));
-      
+      window.dispatchEvent(
+        new CustomEvent("registrationUpdated", {
+          detail: {
+            eventId: viewingEvent._id,
+            timestamp,
+            registrationData: registrationData,
+          },
+        })
+      );
+
       // Refresh danh sách sự kiện sau khi đăng ký để đảm bảo đồng bộ với server
       // Delay đủ lâu để server đã cập nhật xong registration
       setTimeout(async () => {
         await fetchEvents();
       }, 1500);
-      
+
       // Đóng modal sau 1.5 giây để user thấy rõ trạng thái "Đã đăng ký"
       setTimeout(() => {
         setIsModalVisible(false);
@@ -259,62 +296,74 @@ const SpecialEvents = () => {
       console.error("❌ Error registering:", error);
       console.error("❌ Error response:", error.response?.data);
       console.error("❌ Error status:", error.response?.status);
-      
+
       const errorMsg =
         error.response?.data?.message || "Không thể đăng ký. Vui lòng thử lại!";
-      
+
       // Nếu lỗi 409 (đã đăng ký), cập nhật UI ngay lập tức
       if (error.response?.status === 409) {
         message.info({
-          content: "Bạn đã đăng ký sự kiện này rồi. Đang cập nhật trạng thái...",
+          content:
+            "Bạn đã đăng ký sự kiện này rồi. Đang cập nhật trạng thái...",
           duration: 3,
         });
-        
+
         // Lưu event ID vào localStorage để giữ trạng thái khi reload
         try {
           const cachedIds = localStorage.getItem("registeredEventIds");
-          const eventIdsSet = cachedIds ? new Set(JSON.parse(cachedIds)) : new Set();
+          const eventIdsSet = cachedIds
+            ? new Set(JSON.parse(cachedIds))
+            : new Set();
           eventIdsSet.add(String(viewingEvent._id));
-          localStorage.setItem("registeredEventIds", JSON.stringify(Array.from(eventIdsSet)));
-          console.log(`💾 Saved event ${viewingEvent._id} to localStorage (409 error)`);
+          localStorage.setItem(
+            "registeredEventIds",
+            JSON.stringify(Array.from(eventIdsSet))
+          );
+          console.log(
+            `💾 Saved event ${viewingEvent._id} to localStorage (409 error)`
+          );
         } catch (e) {
           console.warn("⚠️ Could not save to localStorage:", e);
         }
-        
+
         // Cập nhật viewingEvent để hiển thị trạng thái đã đăng ký
         const updatedEvent = {
           ...viewingEvent,
           isRegistered: true,
         };
         setViewingEvent(updatedEvent);
-        
+
         // Cập nhật events ngay lập tức
         setEvents((prevEvents) =>
           prevEvents.map((event) =>
             event._id === viewingEvent._id ? updatedEvent : event
           )
         );
-        
+
         // Đánh dấu đã có đăng ký để refresh trang MyRegistrations
         const timestamp = Date.now().toString();
         sessionStorage.setItem("registration_updated", timestamp);
         sessionStorage.setItem("registration_event_id", viewingEvent._id);
-        
+
         // Dispatch custom event để refresh ngay trong cùng tab
-        window.dispatchEvent(new CustomEvent("registrationUpdated", { 
-          detail: { 
-            eventId: viewingEvent._id, 
-            timestamp
-          } 
-        }));
-        
+        window.dispatchEvent(
+          new CustomEvent("registrationUpdated", {
+            detail: {
+              eventId: viewingEvent._id,
+              timestamp,
+            },
+          })
+        );
+
         // KHÔNG gọi fetchEvents() vì đã biết là đã đăng ký rồi
         // Chỉ refresh sau một chút để đảm bảo đồng bộ (nếu cần)
         setTimeout(async () => {
           try {
             await fetchEvents();
           } catch (err) {
-            console.warn("⚠️ Could not refresh events, but registration status is already updated");
+            console.warn(
+              "⚠️ Could not refresh events, but registration status is already updated"
+            );
           }
         }, 2000);
       } else {
@@ -393,10 +442,12 @@ const SpecialEvents = () => {
                     }}
                     actions={[
                       <Button
-                        type="link"
+                        type="primary"
+                        size="small"
+                        icon={<EyeOutlined />}
                         onClick={() => handleViewDetails(event)}
                       >
-                        Xem chi tiết
+                        Xem
                       </Button>,
                       event.isRegistered ? (
                         <Tag color="success" icon={<CheckCircleOutlined />}>
@@ -412,7 +463,11 @@ const SpecialEvents = () => {
                       ),
                     ]}
                   >
-                    <Space direction="vertical" size="small" style={{ width: "100%" }}>
+                    <Space
+                      direction="vertical"
+                      size="small"
+                      style={{ width: "100%" }}
+                    >
                       <Title level={4} style={{ margin: 0 }}>
                         {event.name}
                       </Title>
@@ -426,7 +481,9 @@ const SpecialEvents = () => {
                         <Text type="secondary">
                           <CalendarOutlined />{" "}
                           {event.startDate && event.endDate
-                            ? `${dayjs(event.startDate).format("DD/MM/YYYY")} - ${dayjs(event.endDate).format("DD/MM/YYYY")}`
+                            ? `${dayjs(event.startDate).format(
+                                "DD/MM/YYYY"
+                              )} - ${dayjs(event.endDate).format("DD/MM/YYYY")}`
                             : event.date
                             ? dayjs(event.date).format("DD/MM/YYYY")
                             : "N/A"}
@@ -471,8 +528,8 @@ const SpecialEvents = () => {
           setViewingEvent(null);
         }}
         footer={[
-          <Button 
-            key="cancel" 
+          <Button
+            key="cancel"
             onClick={() => {
               setIsModalVisible(false);
               setViewingEvent(null);
@@ -516,22 +573,27 @@ const SpecialEvents = () => {
                 {viewingEvent.startDate && viewingEvent.endDate ? (
                   <div>
                     <div>
-                      Từ: {dayjs(viewingEvent.startDate).format("DD/MM/YYYY HH:mm")}
+                      Từ:{" "}
+                      {dayjs(viewingEvent.startDate).format("DD/MM/YYYY HH:mm")}
                     </div>
                     <div>
-                      Đến: {dayjs(viewingEvent.endDate).format("DD/MM/YYYY HH:mm")}
+                      Đến:{" "}
+                      {dayjs(viewingEvent.endDate).format("DD/MM/YYYY HH:mm")}
                     </div>
                   </div>
+                ) : viewingEvent.date ? (
+                  dayjs(viewingEvent.date).format("DD/MM/YYYY")
                 ) : (
-                  viewingEvent.date
-                  ? dayjs(viewingEvent.date).format("DD/MM/YYYY")
-                  : "N/A"
+                  "N/A"
                 )}
               </Descriptions.Item>
               <Descriptions.Item label="Slot còn lại">
-                {viewingEvent.availableSlots === -1 || viewingEvent.maxSlots === 0
+                {viewingEvent.availableSlots === -1 ||
+                viewingEvent.maxSlots === 0
                   ? "Không giới hạn"
-                  : `${viewingEvent.availableSlots || 0}/${viewingEvent.maxSlots}`}
+                  : `${viewingEvent.availableSlots || 0}/${
+                      viewingEvent.maxSlots
+                    }`}
               </Descriptions.Item>
               {viewingEvent.budget && (
                 <Descriptions.Item label="Giá trị quà">
@@ -561,4 +623,3 @@ const SpecialEvents = () => {
 };
 
 export default SpecialEvents;
-

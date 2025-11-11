@@ -29,7 +29,10 @@ import {
 import { useNavigate } from "react-router-dom";
 import Layout from "../../components/Layout";
 import { rewardService } from "../../services";
-import { exportEventsToExcel, exportRegistrationsToExcel } from "../../utils/exportExcel";
+import {
+  exportEventsToExcel,
+  exportRegistrationsToExcel,
+} from "../../utils/exportExcel";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
@@ -154,16 +157,18 @@ const RewardEventList = () => {
   const handleViewDetails = async (eventId) => {
     try {
       const event = await rewardService.events.getById(eventId);
-      
+
       // Fetch registration count
       try {
-        const regResponse = await rewardService.events.getRegistrations(eventId);
+        const regResponse = await rewardService.events.getRegistrations(
+          eventId
+        );
         const registeredCount = regResponse.docs?.length || 0;
         setViewingEvent({ ...event, registeredCount });
       } catch (error) {
         setViewingEvent({ ...event, registeredCount: 0 });
       }
-      
+
       setIsViewModalVisible(true);
     } catch (error) {
       console.error("Error fetching event details:", error);
@@ -189,22 +194,34 @@ const RewardEventList = () => {
 
   const handleExportRegistrations = async (eventId, eventName) => {
     try {
-      message.loading({ content: "Đang tải danh sách đăng ký...", key: "export" });
-      
+      message.loading({
+        content: "Đang tải danh sách đăng ký...",
+        key: "export",
+      });
+
       // Fetch registrations for this event
       const response = await rewardService.events.getRegistrations(eventId);
       const registrations = response.docs || [];
 
       if (registrations.length === 0) {
-        message.warning({ content: "Sự kiện này chưa có đăng ký", key: "export" });
+        message.warning({
+          content: "Sự kiện này chưa có đăng ký",
+          key: "export",
+        });
         return;
       }
 
       exportRegistrationsToExcel(registrations, eventName);
-      message.success({ content: "Xuất danh sách đăng ký thành công!", key: "export" });
+      message.success({
+        content: "Xuất danh sách đăng ký thành công!",
+        key: "export",
+      });
     } catch (error) {
       console.error("Error exporting registrations:", error);
-      message.error({ content: "Không thể xuất danh sách. Vui lòng thử lại!", key: "export" });
+      message.error({
+        content: "Không thể xuất danh sách. Vui lòng thử lại!",
+        key: "export",
+      });
     }
   };
 
@@ -212,9 +229,7 @@ const RewardEventList = () => {
     const matchesSearch =
       !searchText ||
       event.name?.toLowerCase().includes(searchText.toLowerCase()) ||
-      getTypeText(event.type)
-        ?.toLowerCase()
-        .includes(searchText.toLowerCase());
+      getTypeText(event.type)?.toLowerCase().includes(searchText.toLowerCase());
     return matchesSearch;
   });
 
@@ -283,23 +298,29 @@ const RewardEventList = () => {
           !hasRegistrations &&
           (record.status === "OPEN" || record.status === "PLANNED");
         const canClose = record.status === "OPEN";
-        const canDelete = !hasRegistrations && 
-          (record.status === "OPEN" || record.status === "PLANNED" || record.status === "CLOSED");
+        const canDelete =
+          !hasRegistrations &&
+          (record.status === "OPEN" ||
+            record.status === "PLANNED" ||
+            record.status === "CLOSED");
 
         return (
           <Space size="small">
             <Button
-              type="link"
+              type="primary"
+              size="small"
               icon={<EyeOutlined />}
               onClick={() => handleViewDetails(record._id)}
             >
-              Xem chi tiết
+              Xem
             </Button>
             {canEdit && (
               <Button
                 type="link"
                 icon={<EditOutlined />}
-                onClick={() => navigate(`/leader/reward-events/${record._id}/edit`)}
+                onClick={() =>
+                  navigate(`/leader/reward-events/${record._id}/edit`)
+                }
               >
                 Chỉnh sửa
               </Button>
@@ -343,7 +364,9 @@ const RewardEventList = () => {
               <Button
                 type="link"
                 icon={<ExportOutlined />}
-                onClick={() => handleExportRegistrations(record._id, record.name)}
+                onClick={() =>
+                  handleExportRegistrations(record._id, record.name)
+                }
                 style={{ color: "#1890ff" }}
               >
                 Xuất Excel
@@ -358,7 +381,11 @@ const RewardEventList = () => {
   return (
     <Layout>
       <Card>
-        <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+        <Row
+          justify="space-between"
+          align="middle"
+          style={{ marginBottom: 16 }}
+        >
           <Col>
             <Title level={2} style={{ margin: 0 }}>
               <CalendarOutlined /> Quản lý Sự kiện Phát quà
@@ -464,7 +491,9 @@ const RewardEventList = () => {
                 handleExportRegistrations(viewingEvent._id, viewingEvent.name);
               }
             }}
-            disabled={!viewingEvent || (viewingEvent.registeredCount || 0) === 0}
+            disabled={
+              !viewingEvent || (viewingEvent.registeredCount || 0) === 0
+            }
           >
             Xuất danh sách đăng ký
           </Button>,
@@ -472,7 +501,9 @@ const RewardEventList = () => {
             key="view"
             onClick={() => {
               if (viewingEvent) {
-                navigate(`/leader/reward-events/${viewingEvent._id}/registrations`);
+                navigate(
+                  `/leader/reward-events/${viewingEvent._id}/registrations`
+                );
               }
             }}
           >
@@ -511,7 +542,15 @@ const RewardEventList = () => {
               {viewingEvent.maxSlots || "Không giới hạn"}
             </Descriptions.Item>
             <Descriptions.Item label="Số slot đã đăng ký">
-              <Text strong style={{ color: (viewingEvent.registeredCount || 0) > 0 ? "#52c41a" : "#999" }}>
+              <Text
+                strong
+                style={{
+                  color:
+                    (viewingEvent.registeredCount || 0) > 0
+                      ? "#52c41a"
+                      : "#999",
+                }}
+              >
                 {viewingEvent.registeredCount || 0}
               </Text>
             </Descriptions.Item>
@@ -537,4 +576,3 @@ const RewardEventList = () => {
 };
 
 export default RewardEventList;
-

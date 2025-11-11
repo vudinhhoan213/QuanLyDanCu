@@ -38,7 +38,8 @@ const RewardDistributions = () => {
   const [events, setEvents] = useState([]);
   const [registrations, setRegistrations] = useState([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [isDistributionModalVisible, setIsDistributionModalVisible] = useState(false);
+  const [isDistributionModalVisible, setIsDistributionModalVisible] =
+    useState(false);
   const [distributionNote, setDistributionNote] = useState("");
   const [viewingRegistration, setViewingRegistration] = useState(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
@@ -150,7 +151,8 @@ const RewardDistributions = () => {
     } catch (error) {
       console.error("Error distributing gifts:", error);
       message.error(
-        error.response?.data?.message || "Không thể phân phát quà. Vui lòng thử lại!"
+        error.response?.data?.message ||
+          "Không thể phân phát quà. Vui lòng thử lại!"
       );
     } finally {
       setDistributing(false);
@@ -175,8 +177,10 @@ const RewardDistributions = () => {
   // Statistics - chỉ tính trên filteredRegistrations để hiển thị đúng
   const stats = {
     total: filteredRegistrations.length,
-    registered: filteredRegistrations.filter((r) => r.status === "REGISTERED").length,
-    distributed: filteredRegistrations.filter((r) => r.status === "DISTRIBUTED").length,
+    registered: filteredRegistrations.filter((r) => r.status === "REGISTERED")
+      .length,
+    distributed: filteredRegistrations.filter((r) => r.status === "DISTRIBUTED")
+      .length,
   };
 
   const rowSelection = {
@@ -213,9 +217,7 @@ const RewardDistributions = () => {
       title: "Sự kiện",
       key: "event",
       width: 200,
-      render: (_, record) => (
-        <Text strong>{record.event?.name || "N/A"}</Text>
-      ),
+      render: (_, record) => <Text strong>{record.event?.name || "N/A"}</Text>,
     },
     {
       title: "Họ tên",
@@ -283,7 +285,8 @@ const RewardDistributions = () => {
       render: (_, record) => (
         <Space size="small">
           <Button
-            type="link"
+            type="primary"
+            size="small"
             icon={<EyeOutlined />}
             onClick={() => handleViewDetails(record)}
           >
@@ -527,4 +530,3 @@ const RewardDistributions = () => {
 };
 
 export default RewardDistributions;
-

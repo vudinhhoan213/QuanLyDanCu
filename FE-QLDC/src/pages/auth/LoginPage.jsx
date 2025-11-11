@@ -5,8 +5,6 @@ import {
   SafetyOutlined,
   EyeOutlined,
   EyeInvisibleOutlined,
-  EyeOutlined,
-  EyeInvisibleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";

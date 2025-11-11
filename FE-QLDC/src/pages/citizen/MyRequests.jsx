@@ -108,17 +108,14 @@ const MyRequests = () => {
     PENDING: {
       color: "gold",
       text: "Chờ duyệt",
-      icon: <ClockCircleOutlined />,
     },
     APPROVED: {
       color: "green",
       text: "Đã duyệt",
-      icon: <CheckCircleOutlined />,
     },
     REJECTED: {
       color: "red",
       text: "Từ chối",
-      icon: <CloseCircleOutlined />,
     },
   };
 
@@ -288,7 +285,6 @@ const MyRequests = () => {
               size="small"
               icon={<StopOutlined />}
               onClick={() => handleCancelRequest(record)}
-              title="Xóa yêu cầu này"
             >
               Xóa
             </Button>
@@ -578,8 +574,8 @@ const MyRequests = () => {
 
                 <Descriptions.Item label="Tiêu đề">
                   <Text strong>
-                    {currentRequest.proposedChanges?.title ||
-                      currentRequest.title ||
+                    {currentRequest.description ||
+                      currentRequest.proposedChanges?.description ||
                       "N/A"}
                   </Text>
                 </Descriptions.Item>
@@ -735,8 +731,8 @@ const MyRequests = () => {
                 </Descriptions.Item>
                 <Descriptions.Item label="Tiêu đề">
                   <Text strong>
-                    {requestToCancel.proposedChanges?.title ||
-                      requestToCancel.title ||
+                    {requestToCancel.description ||
+                      requestToCancel.proposedChanges?.description ||
                       "N/A"}
                   </Text>
                 </Descriptions.Item>

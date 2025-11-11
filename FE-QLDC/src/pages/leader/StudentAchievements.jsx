@@ -49,13 +49,20 @@ const StudentAchievements = () => {
 
   // Parse description để lấy thông tin trường, lớp, ngày
   const parseProposalDescription = (description) => {
-    if (!description) return { schoolName: "", className: "", achievementDate: "" };
-    
+    if (!description)
+      return { schoolName: "", className: "", achievementDate: "" };
+
     // Format: "- Trường: ..." hoặc "Trường: ..."
-    const schoolMatch = description.match(/[-•]\s*Trường:\s*(.+?)(?:\n|$)/i) || description.match(/Trường:\s*(.+?)(?:\n|$)/i);
-    const classMatch = description.match(/[-•]\s*Lớp:\s*(.+?)(?:\n|$)/i) || description.match(/Lớp:\s*(.+?)(?:\n|$)/i);
-    const dateMatch = description.match(/[-•]\s*Ngày đạt thành tích:\s*(.+?)(?:\n|$)/i) || description.match(/Ngày đạt thành tích:\s*(.+?)(?:\n|$)/i);
-    
+    const schoolMatch =
+      description.match(/[-•]\s*Trường:\s*(.+?)(?:\n|$)/i) ||
+      description.match(/Trường:\s*(.+?)(?:\n|$)/i);
+    const classMatch =
+      description.match(/[-•]\s*Lớp:\s*(.+?)(?:\n|$)/i) ||
+      description.match(/Lớp:\s*(.+?)(?:\n|$)/i);
+    const dateMatch =
+      description.match(/[-•]\s*Ngày đạt thành tích:\s*(.+?)(?:\n|$)/i) ||
+      description.match(/Ngày đạt thành tích:\s*(.+?)(?:\n|$)/i);
+
     return {
       schoolName: schoolMatch ? schoolMatch[1].trim() : "",
       className: classMatch ? classMatch[1].trim() : "",
@@ -66,8 +73,11 @@ const StudentAchievements = () => {
   // Parse criteria để lấy loại thành tích
   const parseAchievementType = (criteria) => {
     if (!criteria) return "KHAC";
-    
-    if (criteria.includes("Học sinh giỏi cấp quốc gia") || criteria.includes("Học sinh giỏi")) {
+
+    if (
+      criteria.includes("Học sinh giỏi cấp quốc gia") ||
+      criteria.includes("Học sinh giỏi")
+    ) {
       return "GIOI";
     } else if (criteria.includes("Học sinh tiên tiến")) {
       return "TIEN_TIEN";
@@ -78,19 +88,21 @@ const StudentAchievements = () => {
   // Extract năm học từ description hoặc createdAt
   const getSchoolYear = (description, createdAt) => {
     // Nếu có ngày trong description, lấy năm từ đó
-    const dateMatch = description?.match(/Ngày đạt thành tích:\s*(\d{2}\/\d{2}\/(\d{4}))/);
+    const dateMatch = description?.match(
+      /Ngày đạt thành tích:\s*(\d{2}\/\d{2}\/(\d{4}))/
+    );
     if (dateMatch && dateMatch[2]) {
       const year = parseInt(dateMatch[2]);
       return `${year - 1}-${year}`;
     }
-    
+
     // Nếu không, lấy từ createdAt
     if (createdAt) {
       const date = new Date(createdAt);
       const year = date.getFullYear();
       return `${year - 1}-${year}`;
     }
-    
+
     return "";
   };
 
@@ -102,7 +114,7 @@ const StudentAchievements = () => {
       // Lấy tất cả reward proposals (không filter status để hiển thị cả PENDING và APPROVED)
       const response = await rewardService.proposals.getAll();
       console.log("StudentAchievements: Reward proposals response:", response);
-      
+
       const proposalsList = response?.docs || response || [];
       console.log("StudentAchievements: Proposals list:", proposalsList);
 
@@ -110,8 +122,11 @@ const StudentAchievements = () => {
       const formattedAchievements = proposalsList.map((proposal) => {
         const descriptionInfo = parseProposalDescription(proposal.description);
         const achievementType = parseAchievementType(proposal.criteria);
-        const schoolYear = getSchoolYear(proposal.description, proposal.createdAt);
-        
+        const schoolYear = getSchoolYear(
+          proposal.description,
+          proposal.createdAt
+        );
+
         return {
           key: proposal._id,
           id: proposal._id,
@@ -137,15 +152,23 @@ const StudentAchievements = () => {
           approvedAt: proposal.approvedAt,
         };
       });
-      
-      console.log("StudentAchievements: Formatted achievements:", formattedAchievements);
+
+      console.log(
+        "StudentAchievements: Formatted achievements:",
+        formattedAchievements
+      );
       setAchievements(formattedAchievements);
-      
+
       // Lưu danh sách proposals đã APPROVED để check trạng thái
-      const approvedProposals = proposalsList.filter(p => p.status === "APPROVED");
+      const approvedProposals = proposalsList.filter(
+        (p) => p.status === "APPROVED"
+      );
       setRewardProposals(approvedProposals);
     } catch (error) {
-      console.error("StudentAchievements: Error fetching reward proposals:", error);
+      console.error(
+        "StudentAchievements: Error fetching reward proposals:",
+        error
+      );
       setError(error.message || "Không thể tải danh sách thành tích học sinh");
       message.error("Không thể tải danh sách thành tích học sinh");
       setAchievements([]);
@@ -222,19 +245,26 @@ const StudentAchievements = () => {
 
   const filteredAchievements = React.useMemo(() => {
     if (!Array.isArray(achievements)) return [];
-    
+
     return achievements.filter((ach) => {
       try {
         const matchSearch =
           !searchText ||
-          (ach.citizenName || "").toLowerCase().includes(searchText.toLowerCase()) ||
+          (ach.citizenName || "")
+            .toLowerCase()
+            .includes(searchText.toLowerCase()) ||
           (ach.nationalId || "").includes(searchText) ||
-          (ach.schoolName || "").toLowerCase().includes(searchText.toLowerCase()) ||
-          (ach.className || "").toLowerCase().includes(searchText.toLowerCase()) ||
+          (ach.schoolName || "")
+            .toLowerCase()
+            .includes(searchText.toLowerCase()) ||
+          (ach.className || "")
+            .toLowerCase()
+            .includes(searchText.toLowerCase()) ||
           (ach.schoolYear || "").includes(searchText);
 
         const matchAchievement =
-          achievementFilter === "all" || ach.achievement === achievementFilter.toUpperCase();
+          achievementFilter === "all" ||
+          ach.achievement === achievementFilter.toUpperCase();
 
         const matchRewardStatus =
           rewardStatusFilter === "all" ||
@@ -253,12 +283,13 @@ const StudentAchievements = () => {
     if (!Array.isArray(achievements)) {
       return { total: 0, withReward: 0, withoutReward: 0, gioi: 0 };
     }
-    
+
     try {
       return {
         total: achievements.length,
         withReward: achievements.filter((a) => a.status === "APPROVED").length,
-        withoutReward: achievements.filter((a) => a.status !== "APPROVED").length,
+        withoutReward: achievements.filter((a) => a.status !== "APPROVED")
+          .length,
         gioi: achievements.filter((a) => a.achievement === "GIOI").length,
       };
     } catch (error) {
@@ -267,101 +298,112 @@ const StudentAchievements = () => {
     }
   }, [achievements]);
 
-  const columns = React.useMemo(() => [
-    {
-      title: "STT",
-      key: "index",
-      width: 60,
-      render: (_, __, index) => index + 1,
-    },
-    {
-      title: "Họ tên học sinh",
-      key: "citizenName",
-      width: 180,
-      render: (_, record) => (
-        <Space>
-          <UserOutlined />
-          <Text strong>{record?.citizenName || "N/A"}</Text>
-        </Space>
-      ),
-    },
-    {
-      title: "CMND/CCCD",
-      key: "nationalId",
-      width: 150,
-      render: (_, record) => record?.nationalId || "N/A",
-    },
-    {
-      title: "Năm học",
-      key: "schoolYear",
-      width: 120,
-      render: (_, record) => record?.schoolYear || "N/A",
-    },
-    {
-      title: "Trường",
-      key: "schoolName",
-      width: 200,
-      render: (_, record) => (
-        <Space>
-          <BookOutlined />
-          <Text>{record?.schoolName || "N/A"}</Text>
-        </Space>
-      ),
-    },
-    {
-      title: "Lớp",
-      key: "className",
-      width: 100,
-      render: (_, record) => record?.className || "N/A",
-    },
-    {
-      title: "Thành tích",
-      key: "achievement",
-      width: 120,
-      render: (_, record) => getAchievementTag(record?.achievement),
-    },
-    {
-      title: "Số vở thưởng",
-      key: "notebooksRewarded",
-      width: 120,
-      render: (_, record) => record?.notebooksRewarded || 0,
-    },
-    {
-      title: "Trạng thái khen thưởng",
-      key: "rewardStatus",
-      width: 180,
-      render: (_, record) => getRewardStatusTag(record?.status),
-    },
-    {
-      title: "Thời gian khai báo",
-      key: "createdAt",
-      width: 180,
-      render: (_, record) =>
-        record?.createdAt
-          ? dayjs(record.createdAt).format("DD/MM/YYYY HH:mm")
-          : "N/A",
-    },
-    {
-      title: "Hành động",
-      key: "actions",
-      width: 100,
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="link"
-            icon={<EyeOutlined />}
-            onClick={() => handleView(record)}
-          >
-            Xem
-          </Button>
-        </Space>
-      ),
-    },
-  ], [getAchievementTag, getRewardStatusTag]);
+  const columns = React.useMemo(
+    () => [
+      {
+        title: "STT",
+        key: "index",
+        width: 60,
+        render: (_, __, index) => index + 1,
+      },
+      {
+        title: "Họ tên học sinh",
+        key: "citizenName",
+        width: 180,
+        render: (_, record) => (
+          <Space>
+            <UserOutlined />
+            <Text strong>{record?.citizenName || "N/A"}</Text>
+          </Space>
+        ),
+      },
+      {
+        title: "CMND/CCCD",
+        key: "nationalId",
+        width: 150,
+        render: (_, record) => record?.nationalId || "N/A",
+      },
+      {
+        title: "Năm học",
+        key: "schoolYear",
+        width: 120,
+        render: (_, record) => record?.schoolYear || "N/A",
+      },
+      {
+        title: "Trường",
+        key: "schoolName",
+        width: 200,
+        render: (_, record) => (
+          <Space>
+            <BookOutlined />
+            <Text>{record?.schoolName || "N/A"}</Text>
+          </Space>
+        ),
+      },
+      {
+        title: "Lớp",
+        key: "className",
+        width: 100,
+        render: (_, record) => record?.className || "N/A",
+      },
+      {
+        title: "Thành tích",
+        key: "achievement",
+        width: 120,
+        render: (_, record) => getAchievementTag(record?.achievement),
+      },
+      {
+        title: "Số vở thưởng",
+        key: "notebooksRewarded",
+        width: 120,
+        render: (_, record) => record?.notebooksRewarded || 0,
+      },
+      {
+        title: "Trạng thái khen thưởng",
+        key: "rewardStatus",
+        width: 180,
+        render: (_, record) => getRewardStatusTag(record?.status),
+      },
+      {
+        title: "Thời gian khai báo",
+        key: "createdAt",
+        width: 180,
+        render: (_, record) =>
+          record?.createdAt
+            ? dayjs(record.createdAt).format("DD/MM/YYYY HH:mm")
+            : "N/A",
+      },
+      {
+        title: "Hành động",
+        key: "actions",
+        width: 100,
+        render: (_, record) => (
+          <Space size="small">
+            <Button
+              type="primary"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handleView(record)}
+            >
+              Xem
+            </Button>
+          </Space>
+        ),
+      },
+    ],
+    [getAchievementTag, getRewardStatusTag]
+  );
 
   // Debug log
-  if (typeof console !== 'undefined') {
-    console.log("StudentAchievements: Render - achievements:", achievements.length, "loading:", loading, "error:", error);
+  if (typeof console !== "undefined") {
+    console.log(
+      "StudentAchievements: Render - achievements:",
+      achievements.length,
+      "loading:",
+      loading,
+      "error:",
+      error
+    );
   }
 
   // Ensure component always renders something
@@ -378,202 +420,221 @@ const StudentAchievements = () => {
 
           {/* Error Message */}
           {error && (
-            <Card bordered={false} style={{ marginBottom: 16, backgroundColor: "#fff2f0", borderColor: "#ffccc7" }}>
+            <Card
+              bordered={false}
+              style={{
+                marginBottom: 16,
+                backgroundColor: "#fff2f0",
+                borderColor: "#ffccc7",
+              }}
+            >
               <Text type="danger">Lỗi: {error}</Text>
             </Card>
           )}
 
-        {/* Statistics */}
-        <Card bordered={false} style={{ marginBottom: 16 }}>
-          <Space size="large">
-            <div>
-              <Text type="secondary">Tổng thành tích</Text>
-              <Title level={3} style={{ margin: 0 }}>
-                {stats.total}
-              </Title>
-            </div>
-            <div>
-              <Text type="secondary">Đã duyệt khen thưởng</Text>
-              <Title level={3} style={{ margin: 0, color: "#52c41a" }}>
-                {stats.withReward}
-              </Title>
-            </div>
-            <div>
-              <Text type="secondary">Chưa duyệt khen thưởng</Text>
-              <Title level={3} style={{ margin: 0, color: "#faad14" }}>
-                {stats.withoutReward}
-              </Title>
-            </div>
-            <div>
-              <Text type="secondary">Học sinh giỏi</Text>
-              <Title level={3} style={{ margin: 0, color: "#faad14" }}>
-                {stats.gioi}
-              </Title>
-            </div>
-          </Space>
-        </Card>
-
-        {/* Filter Bar */}
-        <Card bordered={false} style={{ marginBottom: 16 }}>
-          <Space style={{ width: "100%", justifyContent: "space-between" }}>
-            <Space>
-              <Input
-                placeholder="Tìm kiếm thành tích..."
-                prefix={<SearchOutlined />}
-                style={{ width: 300 }}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                allowClear
-              />
-              <Select
-                style={{ width: 150 }}
-                value={achievementFilter}
-                onChange={setAchievementFilter}
-              >
-                <Option value="all">Tất cả thành tích</Option>
-                <Option value="GIOI">Giỏi</Option>
-                <Option value="TIEN_TIEN">Tiên tiến</Option>
-                <Option value="KHAC">Khác</Option>
-              </Select>
-              <Select
-                style={{ width: 180 }}
-                value={rewardStatusFilter}
-                onChange={setRewardStatusFilter}
-              >
-                <Option value="all">Tất cả</Option>
-                <Option value="approved">Đã duyệt khen thưởng</Option>
-                <Option value="none">Chưa duyệt khen thưởng</Option>
-              </Select>
+          {/* Statistics */}
+          <Card bordered={false} style={{ marginBottom: 16 }}>
+            <Space size="large">
+              <div>
+                <Text type="secondary">Tổng thành tích</Text>
+                <Title level={3} style={{ margin: 0 }}>
+                  {stats.total}
+                </Title>
+              </div>
+              <div>
+                <Text type="secondary">Đã duyệt khen thưởng</Text>
+                <Title level={3} style={{ margin: 0, color: "#52c41a" }}>
+                  {stats.withReward}
+                </Title>
+              </div>
+              <div>
+                <Text type="secondary">Chưa duyệt khen thưởng</Text>
+                <Title level={3} style={{ margin: 0, color: "#faad14" }}>
+                  {stats.withoutReward}
+                </Title>
+              </div>
+              <div>
+                <Text type="secondary">Học sinh giỏi</Text>
+                <Title level={3} style={{ margin: 0, color: "#faad14" }}>
+                  {stats.gioi}
+                </Title>
+              </div>
             </Space>
-          </Space>
-        </Card>
+          </Card>
 
-        {/* Table */}
-        <Card bordered={false}>
-          {!loading && filteredAchievements.length === 0 && achievements.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px" }}>
-              <Text type="secondary">Chưa có thành tích học sinh nào</Text>
-            </div>
-          ) : !loading && filteredAchievements.length === 0 && achievements.length > 0 ? (
-            <div style={{ textAlign: "center", padding: "40px" }}>
-              <Text type="secondary">Không tìm thấy thành tích nào phù hợp với bộ lọc</Text>
-            </div>
-          ) : (
-            <Table
-              columns={columns}
-              dataSource={filteredAchievements}
-              loading={loading}
-              rowKey="id"
-              pagination={{
-                total: filteredAchievements.length,
-                pageSize: 10,
-                showSizeChanger: true,
-                showTotal: (total) => `Tổng ${total} thành tích`,
-              }}
-            />
-          )}
-        </Card>
+          {/* Filter Bar */}
+          <Card bordered={false} style={{ marginBottom: 16 }}>
+            <Space style={{ width: "100%", justifyContent: "space-between" }}>
+              <Space>
+                <Input
+                  placeholder="Tìm kiếm thành tích..."
+                  prefix={<SearchOutlined />}
+                  style={{ width: 300 }}
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  allowClear
+                />
+                <Select
+                  style={{ width: 150 }}
+                  value={achievementFilter}
+                  onChange={setAchievementFilter}
+                >
+                  <Option value="all">Tất cả thành tích</Option>
+                  <Option value="GIOI">Giỏi</Option>
+                  <Option value="TIEN_TIEN">Tiên tiến</Option>
+                  <Option value="KHAC">Khác</Option>
+                </Select>
+                <Select
+                  style={{ width: 180 }}
+                  value={rewardStatusFilter}
+                  onChange={setRewardStatusFilter}
+                >
+                  <Option value="all">Tất cả</Option>
+                  <Option value="approved">Đã duyệt khen thưởng</Option>
+                  <Option value="none">Chưa duyệt khen thưởng</Option>
+                </Select>
+              </Space>
+            </Space>
+          </Card>
 
-        {/* View Modal */}
-        <Modal
-          title="Chi tiết thành tích học sinh"
-          open={viewModalVisible}
-          onCancel={() => setViewModalVisible(false)}
-          footer={[
-            <Button key="close" onClick={() => setViewModalVisible(false)}>
-              Đóng
-            </Button>,
-          ]}
-          width={800}
-        >
-          {currentAchievement && (
-            <div>
-              <Descriptions bordered column={1}>
-                <Descriptions.Item label="Họ tên học sinh">
-                  <Text strong>{currentAchievement.citizenName}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="CMND/CCCD">
-                  {currentAchievement.nationalId}
-                </Descriptions.Item>
-                <Descriptions.Item label="Năm học">
-                  {currentAchievement.schoolYear || "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Trường">
-                  {currentAchievement.schoolName || "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Lớp">
-                  {currentAchievement.className || "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Thành tích">
-                  {getAchievementTag(currentAchievement.achievement)}
-                </Descriptions.Item>
-                <Descriptions.Item label="Số vở thưởng">
-                  {currentAchievement.notebooksRewarded || 0}
-                </Descriptions.Item>
-                <Descriptions.Item label="Tiêu đề đề xuất">
-                  <Text strong>{currentAchievement.title || "N/A"}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Mô tả">
-                  {currentAchievement.description || "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Tiêu chí">
-                  {currentAchievement.criteria || "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Trạng thái khen thưởng">
-                  {getRewardStatusTag(currentAchievement.status)}
-                </Descriptions.Item>
-                {currentAchievement.status === "APPROVED" && (
-                  <>
-                    <Descriptions.Item label="Người duyệt">
-                      {currentAchievement.reviewedBy?.fullName || "N/A"}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Ngày duyệt">
-                      {currentAchievement.approvedAt
-                        ? dayjs(currentAchievement.approvedAt).format(
-                            "DD/MM/YYYY HH:mm:ss"
-                          )
-                        : "N/A"}
-                    </Descriptions.Item>
-                  </>
-                )}
-                {currentAchievement.achievementDate && (
-                  <Descriptions.Item label="Ngày đạt thành tích">
-                    {currentAchievement.achievementDate}
+          {/* Table */}
+          <Card bordered={false}>
+            {!loading &&
+            filteredAchievements.length === 0 &&
+            achievements.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px" }}>
+                <Text type="secondary">Chưa có thành tích học sinh nào</Text>
+              </div>
+            ) : !loading &&
+              filteredAchievements.length === 0 &&
+              achievements.length > 0 ? (
+              <div style={{ textAlign: "center", padding: "40px" }}>
+                <Text type="secondary">
+                  Không tìm thấy thành tích nào phù hợp với bộ lọc
+                </Text>
+              </div>
+            ) : (
+              <Table
+                columns={columns}
+                dataSource={filteredAchievements}
+                loading={loading}
+                rowKey="id"
+                pagination={{
+                  total: filteredAchievements.length,
+                  pageSize: 10,
+                  showSizeChanger: true,
+                  showTotal: (total) => `Tổng ${total} thành tích`,
+                }}
+              />
+            )}
+          </Card>
+
+          {/* View Modal */}
+          <Modal
+            title="Chi tiết thành tích học sinh"
+            open={viewModalVisible}
+            onCancel={() => setViewModalVisible(false)}
+            footer={[
+              <Button key="close" onClick={() => setViewModalVisible(false)}>
+                Đóng
+              </Button>,
+            ]}
+            width={800}
+          >
+            {currentAchievement && (
+              <div>
+                <Descriptions bordered column={1}>
+                  <Descriptions.Item label="Họ tên học sinh">
+                    <Text strong>{currentAchievement.citizenName}</Text>
                   </Descriptions.Item>
-                )}
-                <Descriptions.Item label="Thời gian khai báo">
-                  {currentAchievement.createdAt
-                    ? dayjs(currentAchievement.createdAt).format("DD/MM/YYYY HH:mm:ss")
-                    : "N/A"}
-                </Descriptions.Item>
-              </Descriptions>
+                  <Descriptions.Item label="CMND/CCCD">
+                    {currentAchievement.nationalId}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Năm học">
+                    {currentAchievement.schoolYear || "N/A"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Trường">
+                    {currentAchievement.schoolName || "N/A"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Lớp">
+                    {currentAchievement.className || "N/A"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Thành tích">
+                    {getAchievementTag(currentAchievement.achievement)}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Số vở thưởng">
+                    {currentAchievement.notebooksRewarded || 0}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Tiêu đề đề xuất">
+                    <Text strong>
+                      {currentAchievement.description || "N/A"}
+                    </Text>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Mô tả">
+                    {currentAchievement.description || "N/A"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Tiêu chí">
+                    {currentAchievement.criteria || "N/A"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Trạng thái khen thưởng">
+                    {getRewardStatusTag(currentAchievement.status)}
+                  </Descriptions.Item>
+                  {currentAchievement.status === "APPROVED" && (
+                    <>
+                      <Descriptions.Item label="Người duyệt">
+                        {currentAchievement.reviewedBy?.fullName || "N/A"}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Ngày duyệt">
+                        {currentAchievement.approvedAt
+                          ? dayjs(currentAchievement.approvedAt).format(
+                              "DD/MM/YYYY HH:mm:ss"
+                            )
+                          : "N/A"}
+                      </Descriptions.Item>
+                    </>
+                  )}
+                  {currentAchievement.achievementDate && (
+                    <Descriptions.Item label="Ngày đạt thành tích">
+                      {currentAchievement.achievementDate}
+                    </Descriptions.Item>
+                  )}
+                  <Descriptions.Item label="Thời gian khai báo">
+                    {currentAchievement.createdAt
+                      ? dayjs(currentAchievement.createdAt).format(
+                          "DD/MM/YYYY HH:mm:ss"
+                        )
+                      : "N/A"}
+                  </Descriptions.Item>
+                </Descriptions>
 
-              {currentAchievement.evidenceImages &&
-                currentAchievement.evidenceImages.length > 0 && (
-                  <div style={{ marginTop: 16 }}>
-                    <Text strong>Ảnh minh chứng:</Text>
-                    <Image.PreviewGroup>
-                      <Row gutter={16} style={{ marginTop: 8 }}>
-                        {currentAchievement.evidenceImages.map((image, index) => (
-                          <Col span={6} key={index}>
-                            <Image
-                              src={image}
-                              alt={`Evidence ${index + 1}`}
-                              style={{
-                                width: "100%",
-                                height: "150px",
-                                objectFit: "cover",
-                              }}
-                            />
-                          </Col>
-                        ))}
-                      </Row>
-                    </Image.PreviewGroup>
-                  </div>
-                )}
-            </div>
-          )}
-        </Modal>
+                {currentAchievement.evidenceImages &&
+                  currentAchievement.evidenceImages.length > 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <Text strong>Ảnh minh chứng:</Text>
+                      <Image.PreviewGroup>
+                        <Row gutter={16} style={{ marginTop: 8 }}>
+                          {currentAchievement.evidenceImages.map(
+                            (image, index) => (
+                              <Col span={6} key={index}>
+                                <Image
+                                  src={image}
+                                  alt={`Evidence ${index + 1}`}
+                                  style={{
+                                    width: "100%",
+                                    height: "150px",
+                                    objectFit: "cover",
+                                  }}
+                                />
+                              </Col>
+                            )
+                          )}
+                        </Row>
+                      </Image.PreviewGroup>
+                    </div>
+                  )}
+              </div>
+            )}
+          </Modal>
         </div>
       </Layout>
     );
@@ -584,7 +645,8 @@ const StudentAchievements = () => {
         <div style={{ padding: "24px" }}>
           <Card bordered={false}>
             <Text type="danger">
-              Đã xảy ra lỗi khi hiển thị trang: {renderError?.message || "Unknown error"}
+              Đã xảy ra lỗi khi hiển thị trang:{" "}
+              {renderError?.message || "Unknown error"}
             </Text>
           </Card>
         </div>
