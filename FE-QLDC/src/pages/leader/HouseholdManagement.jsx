@@ -9,7 +9,7 @@ import {
   Typography,
   Modal,
   Form,
-  Select,
+  Select, 
   message,
   Popconfirm,
   Descriptions,
@@ -85,6 +85,7 @@ const HouseholdManagement = () => {
           addressObject: h.address,
           members: h.members?.length || 0,
           phone: h.phone,
+          email: h.head?.email || "Chưa có",
           status: h.status || "ACTIVE",
         }))
       );
@@ -125,6 +126,13 @@ const HouseholdManagement = () => {
                     <span>{record.phone}</span>
                   </>
                 )}
+                {record.email && (
+  <>
+    <span>•</span>
+    <span style={{ color: "#52c41a" }}>📧 {record.email}</span>
+  </>
+)}
+
               </Space>
             </div>
           </Space>
@@ -257,6 +265,7 @@ const HouseholdManagement = () => {
       district: record.addressObject?.district || "",
       city: record.addressObject?.city || "",
       phone: record.phone,
+      email: record.email,
       status: record.status,
     });
     setIsModalVisible(true);
@@ -564,6 +573,12 @@ const HouseholdManagement = () => {
                     <Text strong>{viewingHousehold.headOfHousehold}</Text>
                   </Space>
                 </Descriptions.Item>
+                <Descriptions.Item label="Địa chỉ" span={2}>
+                  <Space>
+                    <EnvironmentOutlined />
+                    {viewingHousehold.address}
+                  </Space>
+                </Descriptions.Item>
                 <Descriptions.Item label="Số điện thoại">
                   <Space>
                     <PhoneOutlined />
@@ -572,10 +587,14 @@ const HouseholdManagement = () => {
                     )}
                   </Space>
                 </Descriptions.Item>
-                <Descriptions.Item label="Địa chỉ" span={2}>
+                <Descriptions.Item label="Email">
                   <Space>
-                    <EnvironmentOutlined />
-                    {viewingHousehold.address}
+                    📧
+                    {viewingHousehold.email && viewingHousehold.email !== "Chưa có" ? (
+                      <Text>{viewingHousehold.email}</Text>
+                    ) : (
+                      <Tag color="default">Chưa có</Tag>
+                    )}
                   </Space>
                 </Descriptions.Item>
               </Descriptions>
@@ -714,14 +733,14 @@ const HouseholdManagement = () => {
                   option.children.toLowerCase().includes(input.toLowerCase())
                 }
                 onChange={(headId) => {
-                  // Tự động fill số điện thoại từ chủ hộ
-                  const selectedCitizen = citizens.find(
-                    (c) => c._id === headId
-                  );
-                  if (selectedCitizen?.phone) {
-                    form.setFieldsValue({ phone: selectedCitizen.phone });
+                  const selectedCitizen = citizens.find((c) => c._id === headId);
+                  if (selectedCitizen) {
+                    form.setFieldsValue({
+                      phone: selectedCitizen.phone || "",
+                      email: selectedCitizen.email || "",
+                    });
                   }
-                }}
+                }}        
               >
                 {Array.isArray(citizens) &&
                   citizens.map((c) => (
@@ -776,7 +795,16 @@ const HouseholdManagement = () => {
                 style={{ color: "#000" }}
               />
             </Form.Item>
-
+            <Form.Item
+              name="email"
+              label="Email chủ hộ"
+              tooltip="Email được lấy tự động từ thông tin chủ hộ"
+>              <Input
+                placeholder="Email được lấy tự động từ chủ hộ"
+                disabled
+                style={{ color: "#000" }}
+              />  
+            </Form.Item>
             <Form.Item
               name="status"
               label="Trạng thái"

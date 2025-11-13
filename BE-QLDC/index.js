@@ -33,6 +33,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const app = express();
 const authRoutes = require("./routes/auth");
+const forgotPasswordRoutes = require("./routes/forgotPassword"); 
 const userRoutes = require("./routes/users");
 const householdRoutes = require("./routes/households");
 const citizenRoutes = require("./routes/citizens");
@@ -67,6 +68,7 @@ const startServer = async () => {
 
   // Routes
   app.use("/auth", authRoutes);
+  app.use("/auth", forgotPasswordRoutes); 
   app.use("/users", userRoutes);
   app.use("/households", householdRoutes);
   app.use("/citizens", citizenRoutes);

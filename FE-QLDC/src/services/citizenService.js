@@ -54,4 +54,10 @@ export const citizenService = {
     const { data } = await api.patch("/citizens/me", citizenData);
     return data;
   },
+
+  // 🧩 NEW: Set password for a citizen
+  setPassword: async (id, password) => {
+    const { data } = await api.post(`/citizens/${id}/set-password`, { password });
+    return data;
+  },
 };

@@ -6,118 +6,118 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { message, Tooltip } from "antd";
 import {
-  SafetyOutlined,
-  EyeOutlined,
-  EyeInvisibleOutlined,
+  SafetyOutlined,
+  EyeOutlined,
+  EyeInvisibleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useLoginSecurity } from "../../hooks/useLoginSecurity"; // ✅ Hook bảo mật
 // ✅ Định nghĩa hằng số vai trò người dùng
 const ROLES = {
-  LEADER: "TO_TRUONG",
-  CITIZEN: "CONG_DAN",
+  LEADER: "TO_TRUONG",
+  CITIZEN: "CONG_DAN",
 };
 // ✅ Định nghĩa route điều hướng tương ứng từng vai trò
 const ROUTES = {
-  LEADER_DASHBOARD: "/leader/dashboard",
-  CITIZEN_DASHBOARD: "/citizen/dashboard",
+  LEADER_DASHBOARD: "/leader/dashboard",
+  CITIZEN_DASHBOARD: "/citizen/dashboard",
 };
 const LoginPage = () => {
-  // 🎯 STATE QUẢN LÝ FORM
-  const [loading, setLoading] = useState(false);
-  const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false); // ✅ Ghi nhớ đăng nhập
-  // 🎯 HOOKS
-  const navigate = useNavigate();
-  const { login } = useAuth();
-  const usernameRef = useRef(null);
+  // 🎯 STATE QUẢN LÝ FORM
+  const [loading, setLoading] = useState(false);
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false); // ✅ Ghi nhớ đăng nhập
+  // 🎯 HOOKS
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const usernameRef = useRef(null);
   const passwordRef = useRef(null);
 
-  // ✅ Hook bảo mật đăng nhập
-  const {
-    isLocked,
-    loginAttempts,
-    remainingAttempts,
-    lockRemaining,
-    recordFailedAttempt,
-    recordSuccess,
-  } = useLoginSecurity();
-  // 🧠 Tự động focus khi người dùng mở trang đăng nhập
-  useEffect(() => {
-    usernameRef.current?.focus();
-  }, []);
-  // 🧠 Nếu người dùng đã chọn "Ghi nhớ đăng nhập" thì tải lại username
-  useEffect(() => {
-    const savedUser = localStorage.getItem("rememberedUser");
-    if (savedUser) {
-      setIdentifier(savedUser);
-      setRememberMe(true);
-    }
-  }, []);
-  // 🧠 Lưu hoặc xóa username khi người dùng bật/tắt "Ghi nhớ đăng nhập"
-  useEffect(() => {
-    if (rememberMe && identifier.trim()) {
-      localStorage.setItem("rememberedUser", identifier);
-    } else {
-      localStorage.removeItem("rememberedUser");
-    }
-  }, [rememberMe, identifier]);
-  // 🔐 Xử lý logic đăng nhập
-  const handleLogin = useCallback(async () => {
-    if (isLocked) {
-      message.warning(
-        `Tài khoản tạm bị khóa, vui lòng thử lại sau ${Math.ceil(
-          lockRemaining / 1000
-        )} giây`
-      );
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      // Thêm delay nhỏ để UX mượt hơn
-      await new Promise((r) => setTimeout(r, 400));
-      // Gọi hàm login từ AuthContext
-      const user = await login({ identifier, password });
-      // Nếu đăng nhập đúng
-      recordSuccess();
-      message.success("Đăng nhập thành công 🎉");
-      // Điều hướng theo vai trò
-      const isLeader = user.role === ROLES.LEADER;
-      setTimeout(() => {
-        navigate(isLeader ? ROUTES.LEADER_DASHBOARD : ROUTES.CITIZEN_DASHBOARD);
-      }, 500);
-    } catch (err) {
-      recordFailedAttempt(); // ✅ Ghi nhận thất bại
-      const errorMsg = err.message || "Tài khoản hoặc mật khẩu không đúng";
-      setError(errorMsg);
-      if (remainingAttempts > 0) {
-        message.error(
-          `${errorMsg}. Bạn còn ${remainingAttempts} lần thử trước khi bị khóa.`
-        );
-      } else {
-        message.error("Tài khoản tạm bị khóa trong 15 giây 🚫");
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    identifier,
-    password,
-    login,
-    navigate,
-    isLocked,
-    lockRemaining,
-    remainingAttempts,
-    recordFailedAttempt,
-    recordSuccess,
-  ]);
-  // 📥 Submit form
-  const handleSubmit = (e) => {
+  // ✅ Hook bảo mật đăng nhập
+  const {
+    isLocked,
+    loginAttempts,
+    remainingAttempts,
+    lockRemaining,
+    recordFailedAttempt,
+    recordSuccess,
+  } = useLoginSecurity();
+  // 🧠 Tự động focus khi người dùng mở trang đăng nhập
+  useEffect(() => {
+    usernameRef.current?.focus();
+  }, []);
+  // 🧠 Nếu người dùng đã chọn "Ghi nhớ đăng nhập" thì tải lại username
+  useEffect(() => {
+    const savedUser = localStorage.getItem("rememberedUser");
+    if (savedUser) {
+      setIdentifier(savedUser);
+      setRememberMe(true);
+    }
+  }, []);
+  // 🧠 Lưu hoặc xóa username khi người dùng bật/tắt "Ghi nhớ đăng nhập"
+  useEffect(() => {
+    if (rememberMe && identifier.trim()) {
+      localStorage.setItem("rememberedUser", identifier);
+    } else {
+      localStorage.removeItem("rememberedUser");
+    }
+  }, [rememberMe, identifier]);
+  // 🔐 Xử lý logic đăng nhập
+  const handleLogin = useCallback(async () => {
+    if (isLocked) {
+      message.warning(
+        `Tài khoản tạm bị khóa, vui lòng thử lại sau ${Math.ceil(
+          lockRemaining / 1000
+        )} giây`
+      );
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      // Thêm delay nhỏ để UX mượt hơn
+      await new Promise((r) => setTimeout(r, 400));
+      // Gọi hàm login từ AuthContext
+      const user = await login({ identifier, password });
+      // Nếu đăng nhập đúng
+      recordSuccess();
+      message.success("Đăng nhập thành công 🎉");
+      // Điều hướng theo vai trò
+      const isLeader = user.role === ROLES.LEADER;
+      setTimeout(() => {
+        navigate(isLeader ? ROUTES.LEADER_DASHBOARD : ROUTES.CITIZEN_DASHBOARD);
+      }, 500);
+    } catch (err) {
+      recordFailedAttempt(); // ✅ Ghi nhận thất bại
+      const errorMsg = err.message || "Tài khoản hoặc mật khẩu không đúng";
+      setError(errorMsg);
+      if (remainingAttempts > 0) {
+        message.error(
+          `${errorMsg}. Bạn còn ${remainingAttempts} lần thử trước khi bị khóa.`
+        );
+      } else {
+        message.error("Tài khoản tạm bị khóa trong 15 giây 🚫");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    identifier,
+    password,
+    login,
+    navigate,
+    isLocked,
+    lockRemaining,
+    remainingAttempts,
+    recordFailedAttempt,
+    recordSuccess,
+  ]);
+  // 📥 Submit form
+  const handleSubmit = (e) => {
   e.preventDefault();
 
     if (!identifier.trim()) {
@@ -135,36 +135,36 @@ const LoginPage = () => {
   setError(""); // xóa lỗi trước khi login
   handleLogin();
 };
-  // 👁️ Toggle hiển thị mật khẩu
-  const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
-  // 🎨 GIAO DIỆN
-  return (
-    <div className="min-h-screen flex bg-gradient-to-br from-blue-100 via-indigo-100 to-indigo-200">
-      {/* 🖼️ BÊN TRÁI */}
-      <div className="hidden md:flex flex-1 items-center justify-center p-8">
-        <img
-          src="/images/Screenshot 2025-10-29 222421.jpg"
-          alt="Hệ thống quản lý dân cư"
-          className="w-full h-full object-cover rounded-2xl shadow-lg"
-        />
-      </div>
-      {/* 🧾 BÊN PHẢI */}
-      <div className="flex-1 flex items-center justify-center bg-white rounded-l-3xl shadow-2xl">
-        <div className="w-full max-w-md p-10 space-y-10">
-          {/* 🔷 HEADER */}
-          <div className="text-center animate-fadeIn">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-200 to-blue-400 rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-lg">
-              <SafetyOutlined className="text-5xl text-white drop-shadow-md" />
-            </div>
-            <h2 className="text-4xl font-extrabold text-gray-900">
-              Đăng nhập hệ thống
-            </h2>
-            <p className="text-gray-600 mt-3 text-sm">
-              Hệ thống quản lý dân cư & khen thưởng
-            </p>
-          </div>
-          {/* 🔑 FORM */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+  // 👁️ Toggle hiển thị mật khẩu
+  const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
+  // 🎨 GIAO DIỆN
+  return (
+    <div className="min-h-screen flex bg-gradient-to-br from-blue-100 via-indigo-100 to-indigo-200">
+      {/* 🖼️ BÊN TRÁI */}
+      <div className="hidden md:flex flex-1 items-center justify-center p-8">
+        <img
+          src="/images/Screenshot 2025-10-29 222421.jpg"
+          alt="Hệ thống quản lý dân cư"
+          className="w-full h-full object-cover rounded-2xl shadow-lg"
+        />
+      </div>
+      {/* 🧾 BÊN PHẢI */}
+      <div className="flex-1 flex items-center justify-center bg-white rounded-l-3xl shadow-2xl">
+        <div className="w-full max-w-md p-10 space-y-10">
+          {/* 🔷 HEADER */}
+          <div className="text-center animate-fadeIn">
+            <div className="w-24 h-24 bg-gradient-to-br from-blue-200 to-blue-400 rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-lg">
+              <SafetyOutlined className="text-5xl text-white drop-shadow-md" />
+            </div>
+            <h2 className="text-4xl font-extrabold text-gray-900">
+              Đăng nhập hệ thống
+            </h2>
+            <p className="text-gray-600 mt-3 text-sm">
+              Hệ thống quản lý dân cư & khen thưởng
+            </p>
+          </div>
+          {/* 🔑 FORM */}
+          <form onSubmit={handleSubmit} className="space-y-6">
   {/* 🧍‍♂️ TÊN ĐĂNG NHẬP */}
   <div className="animate-fadeIn">
     <label className="block text-base font-medium text-gray-700 mb-2">
@@ -292,16 +292,16 @@ const LoginPage = () => {
   </button>
 </form>
 
-          {/* 📞 FOOTER */}
-          <div className="mt-8 text-center text-sm text-gray-500">
-            Hỗ trợ kỹ thuật:{" "}
-            <span className="font-medium text-blue-600">
-              Ban quản lý - 0900.xxx.xxx
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+          {/* 📞 FOOTER */}
+          <div className="mt-8 text-center text-sm text-gray-500">
+            Hỗ trợ kỹ thuật:{" "}
+            <span className="font-medium text-blue-600">
+              Ban quản lý - 0900.xxx.xxx
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 export default LoginPage;

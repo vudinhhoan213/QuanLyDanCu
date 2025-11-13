@@ -17,4 +17,7 @@ router.post("/", authenticate, isLeader, citizenController.create);
 router.patch("/:id", authenticate, isLeader, citizenController.update);
 router.delete("/:id", authenticate, isLeader, citizenController.delete);
 
+// ✅ Mới: Tạo account cho citizen
+router.post("/:id/account", authenticate, isLeader, citizenController.createAccount);
+
 module.exports = router;

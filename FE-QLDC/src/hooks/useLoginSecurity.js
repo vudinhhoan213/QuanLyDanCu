@@ -1,7 +1,6 @@
-// 🛡️ hooks/useLoginSecurity.js
 import { useState, useEffect } from "react";
 
-// ✅ Hook lưu state trong localStorage (an toàn)
+// 🧩 Hook lưu trong localStorage an toàn
 function useLocalStorage(key, initialValue) {
   const [value, setValue] = useState(() => {
     try {
@@ -21,51 +20,47 @@ function useLocalStorage(key, initialValue) {
   return [value, setValue];
 }
 
-// ✅ Hook chính
+// 🛡️ Hook chính quản lý bảo mật đăng nhập
 export const useLoginSecurity = () => {
+  const MAX_ATTEMPTS = 5;
+  const LOCK_TIME_MS = 15 * 1000; // 🔒 15 giây
+
   const [loginAttempts, setLoginAttempts] = useLocalStorage("loginAttempts", 0);
   const [lockUntil, setLockUntil] = useLocalStorage("lockUntil", null);
   const [lockRemaining, setLockRemaining] = useState(0);
 
-  // 🧩 TỰ RESET nếu dữ liệu cũ lỗi thời (ví dụ khi đổi lockTime)
-  useEffect(() => {
-    // Nếu lockUntil > 5 phút so với hiện tại => dữ liệu cũ => reset
-    if (lockUntil && lockUntil - Date.now() > 5 * 60 * 1000) {
-      setLoginAttempts(0);
-      setLockUntil(null);
-    }
-  }, []); // chạy 1 lần khi khởi tạo
-
   // 🧠 Cập nhật thời gian còn lại mỗi giây
   useEffect(() => {
-    if (!lockUntil) return;
+    if (!lockUntil) {
+      setLockRemaining(0);
+      return;
+    }
 
-    const updateRemaining = () => {
+    const update = () => {
       const remaining = Math.max(0, lockUntil - Date.now());
       setLockRemaining(remaining);
 
-      // Hết thời gian khóa → tự reset
+      // Hết thời gian khóa → reset
       if (remaining <= 0) {
         setLoginAttempts(0);
         setLockUntil(null);
       }
     };
 
-    updateRemaining(); // chạy ngay 1 lần
-    const interval = setInterval(updateRemaining, 1000); // cập nhật mỗi giây
+    update(); // chạy ngay lập tức
+    const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
   }, [lockUntil]);
 
-  const isLocked = lockUntil && Date.now() < lockUntil;
-  const remainingAttempts = Math.max(0, 5 - loginAttempts);
+  const isLocked = !!lockUntil && Date.now() < lockUntil;
+  const remainingAttempts = Math.max(0, MAX_ATTEMPTS - loginAttempts);
 
   const recordFailedAttempt = () => {
     const newAttempts = loginAttempts + 1;
     setLoginAttempts(newAttempts);
 
-    if (newAttempts >= 5) {
-      const lockTime = 15 * 1000; // 🔒 Khóa 15 giây
-      setLockUntil(Date.now() + lockTime);
+    if (newAttempts >= MAX_ATTEMPTS) {
+      setLockUntil(Date.now() + LOCK_TIME_MS);
     }
   };
 
