@@ -138,13 +138,6 @@ const RewardProposalReview = () => {
       key: "proposedBy",
     },
     {
-      title: "Tiêu đề",
-      dataIndex: "title",
-      key: "title",
-      width: 250,
-      render: (text) => <Text>{text}</Text>,
-    },
-    {
       title: "Ngày gửi",
       dataIndex: "submitDate",
       key: "submitDate",
@@ -171,7 +164,8 @@ const RewardProposalReview = () => {
       render: (_, record) => (
         <Space size="small">
           <Button
-            type="link"
+            type="primary"
+            size="small"
             icon={<EyeOutlined />}
             onClick={() => handleView(record)}
           >

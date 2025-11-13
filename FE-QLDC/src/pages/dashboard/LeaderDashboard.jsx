@@ -401,9 +401,8 @@ const LeaderDashboard = () => {
         {/* Page Header */}
         <div style={{ marginBottom: 24 }}>
           <Title level={2} style={{ marginBottom: 8 }}>
-            Dashboard Tổ Trưởng
+            Tổ Trưởng
           </Title>
-          <Text type="secondary">Tổng quan hệ thống quản lý dân cư</Text>
         </div>
 
         {/* Welcome Card with Leader Info */}

@@ -190,7 +190,7 @@ const AuditLogs = () => {
           icon={<EyeOutlined />}
           onClick={() => handleViewDetail(record)}
         >
-          Chi tiết
+          Xem
         </Button>
       ),
     },

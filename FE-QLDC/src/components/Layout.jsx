@@ -260,6 +260,28 @@ const Layout = ({ children }) => {
       label: "Khen thưởng của tôi",
       onClick: () => navigate("/citizen/my-rewards"),
     },
+    {
+      key: "reward-events",
+      icon: <GiftOutlined />,
+      label: "Đăng ký nhận quà",
+      children: [
+        {
+          key: "/citizen/events",
+          label: "Sự kiện đang mở",
+          onClick: () => navigate("/citizen/events"),
+        },
+        {
+          key: "/citizen/events/special",
+          label: "Sự kiện đặc biệt",
+          onClick: () => navigate("/citizen/events/special"),
+        },
+        {
+          key: "/citizen/my-registrations",
+          label: "Lịch sử đăng ký của tôi",
+          onClick: () => navigate("/citizen/my-registrations"),
+        },
+      ],
+    },
   ];
 
   const menuItems = isLeader ? leaderMenuItems : citizenMenuItems;

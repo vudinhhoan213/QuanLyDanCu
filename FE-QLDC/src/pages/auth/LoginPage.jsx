@@ -236,6 +236,7 @@ const LoginPage = () => {
           </button>
         </Tooltip>
       </div>
+         {" "}
     </div>
   </div>
 

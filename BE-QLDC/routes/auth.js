@@ -46,6 +46,7 @@ router.post("/login", async (req, res, next) => {
     if (!ok) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
+    req.user = user;
 
     user.lastLoginAt = new Date();
     await user.save();

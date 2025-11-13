@@ -9,20 +9,28 @@ import {
   Space,
   message,
   Upload,
-  DatePicker,
   Spin,
+  Row,
+  Col,
+  Divider,
+  Alert,
 } from "antd";
 import {
   TrophyOutlined,
   SendOutlined,
   UploadOutlined,
+  UserOutlined,
+  FileTextOutlined,
+  FileImageOutlined,
+  ArrowLeftOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Layout from "../../components/Layout";
 import { citizenService } from "../../services/citizenService";
 import { rewardService } from "../../services/rewardService";
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
 
@@ -38,39 +46,20 @@ const SubmitRewardProposal = () => {
     {
       value: "national",
       label: "Học sinh giỏi cấp quốc gia",
-      reward: "1,000,000 VNĐ",
     },
     {
       value: "provincial",
       label: "Học sinh giỏi cấp tỉnh",
-      reward: "500,000 VNĐ",
     },
     {
       value: "district",
       label: "Học sinh giỏi cấp trường",
-      reward: "300,000 VNĐ",
     },
     {
       value: "excellent",
       label: "Học sinh tiên tiến",
-      reward: "200,000 VNĐ",
     },
-    { value: "good", label: "Học sinh giỏi", reward: "200,000 VNĐ" },
-  ];
-
-  const grades = [
-    "Lớp 1",
-    "Lớp 2",
-    "Lớp 3",
-    "Lớp 4",
-    "Lớp 5",
-    "Lớp 6",
-    "Lớp 7",
-    "Lớp 8",
-    "Lớp 9",
-    "Lớp 10",
-    "Lớp 11",
-    "Lớp 12",
+    { value: "good", label: "Học sinh giỏi" },
   ];
 
   // Fetch household members on mount
@@ -101,34 +90,69 @@ const SubmitRewardProposal = () => {
     }
   };
 
+  // Convert file to base64
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
   const handleSubmit = async (values) => {
+    // Validate file upload
+    if (!fileList || fileList.length === 0) {
+      message.error("Vui lòng tải lên ít nhất 1 minh chứng");
+      return;
+    }
+
     setLoading(true);
     try {
-      // Get selected achievement type label
+      // Get selected achievement type to create title
       const selectedAchievement = achievementTypes.find(
         (a) => a.value === values.achievementType
       );
 
-      // Create proposal payload
+      // Convert uploaded files to base64
+      const evidenceImages = [];
+      for (const file of fileList) {
+        if (file.originFileObj) {
+          try {
+            const base64 = await fileToBase64(file.originFileObj);
+            evidenceImages.push(base64);
+          } catch (error) {
+            console.error("Error converting file to base64:", error);
+            message.warning(`Không thể xử lý file: ${file.name}`);
+          }
+        }
+      }
+
+      if (evidenceImages.length === 0) {
+        message.error("Không thể xử lý các file đã tải lên. Vui lòng thử lại.");
+        setLoading(false);
+        return;
+      }
+
+      // Create clean proposal payload - only required fields
       const proposalData = {
         citizen: values.citizenId,
-        title: values.achievementTitle,
-        description: `${values.description}\n\nThông tin chi tiết:\n- Trường: ${
-          values.school
-        }\n- Lớp: ${
-          values.grade
-        }\n- Ngày đạt thành tích: ${values.achievementDate.format(
-          "DD/MM/YYYY"
-        )}`,
-        criteria: `${selectedAchievement?.label} - ${selectedAchievement?.reward}`,
-        evidenceImages: [], // TODO: Handle file upload to get URLs
+        title: selectedAchievement
+          ? selectedAchievement.label
+          : "Đề xuất khen thưởng",
+        description: values.description.trim(),
+        evidenceImages: evidenceImages,
       };
 
       await rewardService.proposals.create(proposalData);
       message.success("Gửi đề xuất khen thưởng thành công!");
+
+      // Reset form
       form.resetFields();
       setFileList([]);
-      navigate("/citizen/my-requests", { state: { refresh: true } });
+
+      // Navigate to my rewards
+      navigate("/citizen/my-rewards");
     } catch (error) {
       console.error("Error submitting proposal:", error);
       message.error(
@@ -140,247 +164,389 @@ const SubmitRewardProposal = () => {
     }
   };
 
+  const handleFileChange = ({ fileList: newFileList }) => {
+    setFileList(newFileList);
+  };
+
   return (
     <Layout>
-      <div>
-        <div style={{ marginBottom: 24 }}>
-          <Title level={2} style={{ marginBottom: 8 }}>
-            <TrophyOutlined /> Đề Xuất Khen Thưởng
-          </Title>
-          <Text type="secondary">
-            Điền thông tin dưới đây để đề xuất khen thưởng cho học sinh
-          </Text>
-        </div>
-
-        <Card bordered={false}>
-          <Spin spinning={loadingHousehold}>
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={handleSubmit}
-              requiredMark="optional"
-            >
-              <Title level={4} style={{ marginBottom: 16 }}>
-                Thông tin học sinh
-              </Title>
-
-              <Form.Item
-                name="citizenId"
-                label="Chọn học sinh"
-                rules={[{ required: true, message: "Vui lòng chọn học sinh" }]}
-                extra="Chọn thành viên trong hộ khẩu để đề xuất khen thưởng"
-              >
-                <Select
-                  size="large"
-                  placeholder="Chọn học sinh từ hộ khẩu"
-                  loading={loadingHousehold}
-                  onChange={(value) => {
-                    const selected = householdMembers.find(
-                      (m) => m._id === value
-                    );
-                    if (selected) {
-                      // Auto-fill student name if needed
-                      form.setFieldsValue({
-                        studentName: selected.fullName,
-                      });
-                    }
+      <div
+        style={{
+          padding: "24px",
+          background: "#f5f5f5",
+          minHeight: "100vh",
+        }}
+      >
+        {/* Header with Gradient */}
+        <Card
+          bordered={false}
+          style={{
+            marginBottom: 24,
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            border: "none",
+            borderRadius: "12px",
+            boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
+          }}
+          bodyStyle={{ padding: "32px" }}
+        >
+          <Row align="middle" justify="space-between">
+            <Col xs={24} md={18}>
+              <Space size="large" align="center" wrap>
+                <div
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: "50%",
+                    background: "rgba(255, 255, 255, 0.2)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backdropFilter: "blur(10px)",
                   }}
                 >
-                  {householdMembers.map((member) => (
-                    <Option key={member._id} value={member._id}>
-                      {member.fullName} - {member.citizenID || "Chưa có CCCD"}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-
-              <Form.Item
-                name="studentName"
-                label="Họ và tên học sinh"
-                rules={[
-                  { required: true, message: "Vui lòng nhập tên học sinh" },
-                ]}
-              >
-                <Input
-                  size="large"
-                  placeholder="Nhập họ và tên đầy đủ"
-                  disabled
-                />
-              </Form.Item>
-
-              <Space style={{ width: "100%", marginBottom: 24 }} size="large">
-                <Form.Item
-                  name="school"
-                  label="Trường"
-                  rules={[
-                    { required: true, message: "Vui lòng nhập tên trường" },
-                  ]}
-                  style={{ flex: 1, minWidth: 250 }}
-                >
-                  <Input size="large" placeholder="Tên trường" />
-                </Form.Item>
-
-                <Form.Item
-                  name="grade"
-                  label="Lớp"
-                  rules={[{ required: true, message: "Vui lòng chọn lớp" }]}
-                  style={{ flex: 1, minWidth: 150 }}
-                >
-                  <Select size="large" placeholder="Chọn lớp">
-                    {grades.map((grade) => (
-                      <Option key={grade} value={grade}>
-                        {grade}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
+                  <TrophyOutlined style={{ fontSize: 32, color: "#fff" }} />
+                </div>
+                <div>
+                  <Title
+                    level={2}
+                    style={{
+                      color: "#fff",
+                      margin: 0,
+                      marginBottom: 8,
+                      fontWeight: 700,
+                    }}
+                  >
+                    Đề Xuất Khen Thưởng
+                  </Title>
+                  <Text
+                    style={{
+                      color: "rgba(255, 255, 255, 0.9)",
+                      fontSize: 16,
+                    }}
+                  >
+                    Điền thông tin để đề xuất khen thưởng cho học sinh
+                  </Text>
+                </div>
               </Space>
-
-              <Title level={4} style={{ marginBottom: 16, marginTop: 24 }}>
-                Thông tin thành tích
-              </Title>
-
-              <Form.Item
-                name="achievementType"
-                label="Loại thành tích"
-                rules={[
-                  { required: true, message: "Vui lòng chọn loại thành tích" },
-                ]}
+            </Col>
+            <Col xs={24} md={6} style={{ textAlign: "right", marginTop: 16 }}>
+              <Button
+                icon={<ArrowLeftOutlined />}
+                onClick={() => navigate("/citizen/my-rewards")}
+                style={{
+                  height: 40,
+                  borderRadius: "8px",
+                  color: "#fff",
+                  borderColor: "rgba(255, 255, 255, 0.5)",
+                  background: "rgba(255, 255, 255, 0.1)",
+                }}
               >
-                <Select
-                  size="large"
-                  placeholder="Chọn loại thành tích"
-                  onChange={(value) => {
-                    const selected = achievementTypes.find(
-                      (a) => a.value === value
-                    );
-                    message.info(
-                      `Giá trị khen thưởng dự kiến: ${selected?.reward}`
-                    );
-                  }}
-                >
-                  {achievementTypes.map((type) => (
-                    <Option key={type.value} value={type.value}>
-                      {type.label} - {type.reward}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-
-              <Form.Item
-                name="achievementTitle"
-                label="Tiêu đề thành tích"
-                rules={[
-                  {
-                    required: true,
-                    message: "Vui lòng nhập tiêu đề thành tích",
-                  },
-                ]}
-              >
-                <Input
-                  size="large"
-                  placeholder="VD: Giải Nhất Olympic Toán học"
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="description"
-                label="Mô tả chi tiết"
-                rules={[
-                  { required: true, message: "Vui lòng nhập mô tả chi tiết" },
-                  { min: 20, message: "Mô tả phải có ít nhất 20 ký tự" },
-                ]}
-              >
-                <TextArea
-                  rows={5}
-                  placeholder="Mô tả chi tiết về thành tích, giải thưởng đạt được..."
-                  showCount
-                  maxLength={500}
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="achievementDate"
-                label="Ngày đạt thành tích"
-                rules={[
-                  {
-                    required: true,
-                    message: "Vui lòng chọn ngày đạt thành tích",
-                  },
-                ]}
-              >
-                <DatePicker
-                  size="large"
-                  style={{ width: "100%" }}
-                  format="DD/MM/YYYY"
-                  placeholder="Chọn ngày"
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="documents"
-                label="Tài liệu đính kèm"
-                extra="Tải lên giấy khen, bằng khen hoặc các minh chứng liên quan (bắt buộc)"
-                rules={[
-                  {
-                    required: true,
-                    message: "Vui lòng tải lên ít nhất 1 minh chứng",
-                  },
-                ]}
-              >
-                <Upload
-                  listType="picture-card"
-                  maxCount={5}
-                  beforeUpload={() => false}
-                  accept="image/*,.pdf"
-                >
-                  <div>
-                    <UploadOutlined />
-                    <div style={{ marginTop: 8 }}>Tải lên</div>
-                  </div>
-                </Upload>
-              </Form.Item>
-
-              <Form.Item
-                name="phone"
-                label="Số điện thoại liên hệ"
-                rules={[
-                  { required: true, message: "Vui lòng nhập số điện thoại" },
-                  {
-                    pattern: /^[0-9]{10}$/,
-                    message: "Số điện thoại không hợp lệ",
-                  },
-                ]}
-              >
-                <Input
-                  size="large"
-                  placeholder="Nhập số điện thoại"
-                  addonBefore="+84"
-                />
-              </Form.Item>
-
-              <Form.Item>
-                <Space>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    size="large"
-                    icon={<SendOutlined />}
-                    loading={loading}
-                  >
-                    Gửi đề xuất
-                  </Button>
-                  <Button
-                    size="large"
-                    onClick={() => navigate("/citizen/my-requests")}
-                  >
-                    Hủy
-                  </Button>
-                </Space>
-              </Form.Item>
-            </Form>
-          </Spin>
+                Quay lại
+              </Button>
+            </Col>
+          </Row>
         </Card>
+
+        {/* Main Form Card */}
+        <Row gutter={[24, 24]}>
+          <Col xs={24} lg={16}>
+            <Card
+              bordered={false}
+              style={{
+                borderRadius: "12px",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+              }}
+              bodyStyle={{ padding: "32px" }}
+            >
+              <Spin spinning={loadingHousehold || loading}>
+                <Form
+                  form={form}
+                  layout="vertical"
+                  onFinish={handleSubmit}
+                  requiredMark={false}
+                  size="large"
+                >
+                  {/* Student Selection */}
+                  <Form.Item
+                    name="citizenId"
+                    label={
+                      <Space>
+                        <UserOutlined style={{ color: "#1890ff" }} />
+                        <Text strong style={{ fontSize: 15 }}>
+                          Học sinh
+                        </Text>
+                      </Space>
+                    }
+                    rules={[
+                      { required: true, message: "Vui lòng chọn học sinh" },
+                    ]}
+                  >
+                    <Select
+                      placeholder="Chọn học sinh từ hộ khẩu"
+                      loading={loadingHousehold}
+                      showSearch
+                      filterOption={(input, option) =>
+                        option.children
+                          .toLowerCase()
+                          .indexOf(input.toLowerCase()) >= 0
+                      }
+                      style={{
+                        borderRadius: "8px",
+                      }}
+                    >
+                      {householdMembers.map((member) => (
+                        <Option key={member._id} value={member._id}>
+                          {member.fullName}
+                          {member.citizenID ? ` - ${member.citizenID}` : ""}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+
+                  {/* Achievement Type */}
+                  <Form.Item
+                    name="achievementType"
+                    label={
+                      <Space>
+                        <TrophyOutlined style={{ color: "#faad14" }} />
+                        <Text strong style={{ fontSize: 15 }}>
+                          Loại thành tích
+                        </Text>
+                      </Space>
+                    }
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng chọn loại thành tích",
+                      },
+                    ]}
+                  >
+                    <Select
+                      placeholder="Chọn loại thành tích"
+                      style={{
+                        borderRadius: "8px",
+                      }}
+                    >
+                      {achievementTypes.map((type) => (
+                        <Option key={type.value} value={type.value}>
+                          {type.label}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+
+                  {/* Description */}
+                  <Form.Item
+                    name="description"
+                    label={
+                      <Space>
+                        <FileTextOutlined style={{ color: "#52c41a" }} />
+                        <Text strong style={{ fontSize: 15 }}>
+                          Mô tả
+                        </Text>
+                      </Space>
+                    }
+                    rules={[
+                      { required: true, message: "Vui lòng nhập mô tả" },
+                      {
+                        min: 20,
+                        message: "Mô tả phải có ít nhất 20 ký tự",
+                      },
+                      {
+                        max: 1000,
+                        message: "Mô tả không được quá 1000 ký tự",
+                      },
+                    ]}
+                  >
+                    <TextArea
+                      rows={6}
+                      placeholder="Mô tả chi tiết về thành tích, giải thưởng đạt được, thời gian, địa điểm..."
+                      showCount
+                      maxLength={1000}
+                      style={{
+                        borderRadius: "8px",
+                      }}
+                    />
+                  </Form.Item>
+
+                  {/* Evidence Upload */}
+                  <Form.Item
+                    label={
+                      <Space>
+                        <FileImageOutlined style={{ color: "#722ed1" }} />
+                        <Text strong style={{ fontSize: 15 }}>
+                          Minh chứng
+                        </Text>
+                        <Text type="danger">*</Text>
+                      </Space>
+                    }
+                    required
+                    help={
+                      <Text type="secondary" style={{ fontSize: 13 }}>
+                        Tải lên giấy khen, bằng khen hoặc các minh chứng liên
+                        quan (tối đa 5 file, bắt buộc)
+                      </Text>
+                    }
+                  >
+                    <Upload
+                      listType="picture-card"
+                      fileList={fileList}
+                      onChange={handleFileChange}
+                      beforeUpload={() => false}
+                      accept="image/*"
+                      maxCount={5}
+                    >
+                      {fileList.length < 5 && (
+                        <div>
+                          <UploadOutlined
+                            style={{ fontSize: 24, color: "#8c8c8c" }}
+                          />
+                          <div style={{ marginTop: 8, color: "#8c8c8c" }}>
+                            Tải lên
+                          </div>
+                        </div>
+                      )}
+                    </Upload>
+                    {fileList.length === 0 && (
+                      <Alert
+                        message="Vui lòng tải lên ít nhất 1 minh chứng"
+                        type="warning"
+                        showIcon
+                        style={{
+                          marginTop: 12,
+                          borderRadius: "6px",
+                        }}
+                      />
+                    )}
+                  </Form.Item>
+
+                  <Divider />
+
+                  {/* Action Buttons */}
+                  <Form.Item style={{ marginBottom: 0, marginTop: 8 }}>
+                    <Space size="middle">
+                      <Button
+                        type="primary"
+                        htmlType="submit"
+                        icon={<SendOutlined />}
+                        loading={loading}
+                        size="large"
+                        style={{
+                          height: 48,
+                          borderRadius: "8px",
+                          fontSize: 16,
+                          fontWeight: 600,
+                          minWidth: 150,
+                          boxShadow: "0 4px 12px rgba(24, 144, 255, 0.3)",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "translateY(-2px)";
+                          e.currentTarget.style.boxShadow =
+                            "0 6px 16px rgba(24, 144, 255, 0.4)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "translateY(0)";
+                          e.currentTarget.style.boxShadow =
+                            "0 4px 12px rgba(24, 144, 255, 0.3)";
+                        }}
+                      >
+                        Gửi đề xuất
+                      </Button>
+                      <Button
+                        size="large"
+                        onClick={() => navigate("/citizen/my-rewards")}
+                        style={{
+                          height: 48,
+                          borderRadius: "8px",
+                          fontSize: 16,
+                          minWidth: 120,
+                        }}
+                      >
+                        Hủy
+                      </Button>
+                    </Space>
+                  </Form.Item>
+                </Form>
+              </Spin>
+            </Card>
+          </Col>
+
+          {/* Info Sidebar */}
+          <Col xs={24} lg={8}>
+            <Card
+              bordered={false}
+              style={{
+                borderRadius: "12px",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                position: "sticky",
+                top: 24,
+              }}
+              bodyStyle={{ padding: "24px" }}
+            >
+              <Space
+                direction="vertical"
+                size="large"
+                style={{ width: "100%" }}
+              >
+                <div>
+                  <Title level={5} style={{ marginBottom: 16 }}>
+                    <InfoCircleOutlined style={{ color: "#1890ff" }} /> Hướng
+                    dẫn
+                  </Title>
+                  <Paragraph
+                    style={{ color: "#8c8c8c", fontSize: 14, margin: 0 }}
+                  >
+                    Điền đầy đủ thông tin để gửi đề xuất khen thưởng cho học
+                    sinh trong hộ khẩu của bạn.
+                  </Paragraph>
+                </div>
+
+                <Divider style={{ margin: "16px 0" }} />
+
+                <div>
+                  <Title level={5} style={{ marginBottom: 12, fontSize: 14 }}>
+                    Yêu cầu:
+                  </Title>
+                  <Space
+                    direction="vertical"
+                    size="small"
+                    style={{ width: "100%" }}
+                  >
+                    <Text style={{ fontSize: 13, color: "#595959" }}>
+                      ✓ Chọn học sinh từ hộ khẩu
+                    </Text>
+                    <Text style={{ fontSize: 13, color: "#595959" }}>
+                      ✓ Chọn loại thành tích
+                    </Text>
+                    <Text style={{ fontSize: 13, color: "#595959" }}>
+                      ✓ Mô tả chi tiết (tối thiểu 20 ký tự)
+                    </Text>
+                    <Text style={{ fontSize: 13, color: "#595959" }}>
+                      ✓ Tải lên ít nhất 1 minh chứng
+                    </Text>
+                  </Space>
+                </div>
+
+                <Divider style={{ margin: "16px 0" }} />
+
+                <div>
+                  <Title level={5} style={{ marginBottom: 12, fontSize: 14 }}>
+                    Lưu ý:
+                  </Title>
+                  <Alert
+                    message="Đề xuất sẽ được gửi đến tổ trưởng để xem xét và duyệt. Vui lòng đảm bảo thông tin chính xác."
+                    type="info"
+                    showIcon
+                    style={{
+                      fontSize: 13,
+                      borderRadius: "6px",
+                    }}
+                  />
+                </div>
+              </Space>
+            </Card>
+          </Col>
+        </Row>
       </div>
     </Layout>
   );
