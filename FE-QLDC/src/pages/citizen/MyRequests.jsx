@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import {
   Card,
   Table,
@@ -21,11 +21,10 @@ import {
   ClockCircleOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  PlusOutlined,
   TrophyOutlined,
   EditOutlined,
   StopOutlined,
-  ExclamationCircleOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import Layout from "../../components/Layout";
@@ -33,7 +32,7 @@ import { editRequestService } from "../../services";
 import { rewardService } from "../../services/rewardService";
 import dayjs from "dayjs";
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
 const MyRequests = () => {
   const navigate = useNavigate();
@@ -53,12 +52,9 @@ const MyRequests = () => {
     fetchAllRequests();
   }, []);
 
-  // Reload khi có navigation state từ SubmitEditRequest hoặc SubmitRewardProposal
   useEffect(() => {
     if (location.state?.refresh) {
-      console.log("🔄 Refreshing requests list...");
       fetchAllRequests();
-      // Clear state để tránh reload liên tục
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -66,8 +62,6 @@ const MyRequests = () => {
   const fetchAllRequests = async () => {
     try {
       setLoading(true);
-
-      // Fetch cả 2 loại requests song song
       const [editResponse, rewardResponse] = await Promise.all([
         editRequestService.getMyRequests().catch(() => ({ docs: [] })),
         rewardService.proposals.getMyProposals().catch(() => ({ docs: [] })),
@@ -76,7 +70,6 @@ const MyRequests = () => {
       const editData = editResponse.docs || editResponse || [];
       const rewardData = rewardResponse.docs || rewardResponse || [];
 
-      // Thêm type để phân biệt
       const formattedEditRequests = editData.map((item) => ({
         ...item,
         requestCategory: "EDIT",
@@ -87,14 +80,12 @@ const MyRequests = () => {
         requestCategory: "REWARD",
       }));
 
+      const merged = [...formattedEditRequests, ...formattedRewardProposals].sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+
       setEditRequests(formattedEditRequests);
       setRewardProposals(formattedRewardProposals);
-
-      // Merge và sort theo ngày tạo
-      const merged = [
-        ...formattedEditRequests,
-        ...formattedRewardProposals,
-      ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setAllRequests(merged);
     } catch (error) {
       console.error("Error fetching requests:", error);
@@ -105,18 +96,14 @@ const MyRequests = () => {
   };
 
   const statusConfig = {
-    PENDING: {
-      color: "gold",
-      text: "Chờ duyệt",
-    },
-    APPROVED: {
-      color: "green",
-      text: "Đã duyệt",
-    },
-    REJECTED: {
-      color: "red",
-      text: "Từ chối",
-    },
+    PENDING: { color: "gold", text: "Chờ duyệt" },
+    APPROVED: { color: "green", text: "Đã duyệt" },
+    REJECTED: { color: "red", text: "Từ chối" },
+  };
+
+  const requestCategoryConfig = {
+    EDIT: { color: "blue", text: "Chỉnh sửa", icon: <EditOutlined /> },
+    REWARD: { color: "gold", text: "Khen thưởng", icon: <TrophyOutlined /> },
   };
 
   const handleView = (record) => {
@@ -131,47 +118,23 @@ const MyRequests = () => {
 
   const confirmCancelRequest = async () => {
     if (!requestToCancel) return;
-
     try {
       setCancelling(true);
-
-      // Gọi API để hủy yêu cầu
       if (requestToCancel.requestCategory === "EDIT") {
         await editRequestService.cancelRequest(requestToCancel._id);
       } else if (requestToCancel.requestCategory === "REWARD") {
         await rewardService.proposals.cancel(requestToCancel._id);
       }
-
       message.success("Đã xóa yêu cầu thành công");
-
-      // Refresh danh sách
       await fetchAllRequests();
-
-      // Đóng modal
       setCancelModalVisible(false);
       setRequestToCancel(null);
     } catch (error) {
       console.error("Error cancelling request:", error);
-      message.error(
-        error.response?.data?.message ||
-          "Không thể xóa yêu cầu. Vui lòng thử lại."
-      );
+      message.error("Không thể xóa yêu cầu. Vui lòng thử lại.");
     } finally {
       setCancelling(false);
     }
-  };
-
-  const requestCategoryConfig = {
-    EDIT: {
-      color: "blue",
-      text: "Chỉnh sửa",
-      icon: <EditOutlined />,
-    },
-    REWARD: {
-      color: "gold",
-      text: "Khen thưởng",
-      icon: <TrophyOutlined />,
-    },
   };
 
   const columns = [
@@ -199,19 +162,13 @@ const MyRequests = () => {
           </Tag>
         );
       },
-      filters: [
-        { text: "Chỉnh sửa", value: "EDIT" },
-        { text: "Khen thưởng", value: "REWARD" },
-      ],
-      onFilter: (value, record) => record.requestCategory === value,
     },
     {
       title: "Tiêu đề",
       dataIndex: "title",
       key: "title",
       render: (text, record) => {
-        const displayTitle =
-          record.proposedChanges?.title || record.title || "N/A";
+        const displayTitle = record.proposedChanges?.title || record.title || "N/A";
         return (
           <div
             style={{
@@ -233,16 +190,12 @@ const MyRequests = () => {
       width: 115,
       render: (date) => (
         <div>
-          <div style={{ fontWeight: 500 }}>
-            {dayjs(date).format("DD/MM/YYYY")}
-          </div>
+          <div style={{ fontWeight: 500 }}>{dayjs(date).format("DD/MM/YYYY")}</div>
           <Text type="secondary" style={{ fontSize: "12px" }}>
             {dayjs(date).format("HH:mm")}
           </Text>
         </div>
       ),
-      sorter: (a, b) => dayjs(a.createdAt).unix() - dayjs(b.createdAt).unix(),
-      defaultSortOrder: "descend",
     },
     {
       title: "Trạng thái",
@@ -251,18 +204,8 @@ const MyRequests = () => {
       width: 115,
       render: (status) => {
         const config = statusConfig[status] || statusConfig.PENDING;
-        return (
-          <Tag icon={config.icon} color={config.color}>
-            {config.text}
-          </Tag>
-        );
+        return <Tag color={config.color}>{config.text}</Tag>;
       },
-      filters: [
-        { text: "Chờ duyệt", value: "PENDING" },
-        { text: "Đã duyệt", value: "APPROVED" },
-        { text: "Từ chối", value: "REJECTED" },
-      ],
-      onFilter: (value, record) => record.status === value,
     },
     {
       title: "Hành động",
@@ -304,7 +247,6 @@ const MyRequests = () => {
     );
   }
 
-  // Get filtered data based on active tab
   const getFilteredRequests = () => {
     switch (activeTab) {
       case "edit":
@@ -321,39 +263,115 @@ const MyRequests = () => {
   return (
     <Layout>
       <div>
-        {/* Page Header */}
-        <div
+        {/* Header gradient + 2 nút hành động */}
+<Card
+  bordered={false}
+  style={{
+    marginBottom: 24,
+    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    border: "none",
+    borderRadius: "12px",
+    boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
+    transition: "transform 0.3s ease, box-shadow 0.3s ease",
+  }}
+  bodyStyle={{ padding: "32px" }}
+  className="hover-card"
+>
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 16,
+    }}
+  >
+    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <div
+        style={{
+          width: 64,
+          height: 64,
+          borderRadius: "50%",
+          background: "rgba(255, 255, 255, 0.2)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backdropFilter: "blur(10px)",
+        }}
+      >
+        <FileTextOutlined style={{ fontSize: 32, color: "#fff" }} />
+      </div>
+
+      <div>
+        <Title
+          level={2}
           style={{
-            marginBottom: 24,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            color: "#fff",
+            margin: 0,
+            marginBottom: 8,
+            fontWeight: 700,
           }}
         >
-          <div>
-            <Title level={2} style={{ marginBottom: 8 }}>
-              <FileTextOutlined /> Yêu Cầu Của Tôi
-            </Title>
-            <Text type="secondary">
-              Quản lý tất cả yêu cầu chỉnh sửa và đề xuất khen thưởng
-            </Text>
-          </div>
-          <Space>
-            <Button
-              icon={<EditOutlined />}
-              onClick={() => navigate("/citizen/submit-edit-request")}
-            >
-              Yêu cầu chỉnh sửa
-            </Button>
-            <Button
-              type="primary"
-              icon={<TrophyOutlined />}
-              onClick={() => navigate("/citizen/submit-reward-proposal")}
-            >
-              Đề xuất khen thưởng
-            </Button>
-          </Space>
-        </div>
+          Yêu Cầu Của Tôi
+        </Title>
+        <Text
+          style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}
+        >
+          Quản lý tất cả yêu cầu chỉnh sửa và đề xuất khen thưởng
+        </Text>
+      </div>
+    </div>
+
+    <div>
+      <Space>
+        <Button
+          icon={<EditOutlined />}
+          onClick={() => navigate("/citizen/submit-edit-request")}
+          style={{
+            background: "rgba(255,255,255,0.2)",
+            borderColor: "rgba(255,255,255,0.5)",
+            color: "#fff",
+            fontWeight: 500,
+            height: 40,
+            borderRadius: 8,
+            transition: "all 0.3s ease",
+          }}
+          className="hover-back"
+        >
+          Yêu cầu chỉnh sửa
+        </Button>
+        <Button
+          icon={<TrophyOutlined />}
+          onClick={() => navigate("/citizen/submit-reward-proposal")}
+          style={{
+            background: "#fff",
+            color: "#667eea",
+            fontWeight: 500,
+            height: 40,
+            borderRadius: 8,
+            transition: "all 0.3s ease",
+          }}
+          className="hover-back"
+        >
+          Đề xuất khen thưởng
+        </Button>
+      </Space>
+    </div>
+  </div>
+
+  {/* Hover effect */}
+  <style>{`
+    .hover-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.35);
+    }
+    .hover-back:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    }
+  `}</style>
+</Card>
+
+
 
         {/* Summary Cards */}
         <div
@@ -364,117 +382,129 @@ const MyRequests = () => {
             marginBottom: 24,
           }}
         >
-          <Card hoverable style={{ background: "#f0f5ff" }}>
-            <Space direction="vertical" size={4}>
-              <Text type="secondary" style={{ fontSize: "14px" }}>
-                <FileTextOutlined /> Tổng số yêu cầu
-              </Text>
-              <Title level={2} style={{ margin: 0, color: "#1890ff" }}>
-                {allRequests.length}
-              </Title>
-            </Space>
-          </Card>
-          <Card hoverable style={{ background: "#fffbe6" }}>
-            <Space direction="vertical" size={4}>
-              <Text type="secondary" style={{ fontSize: "14px" }}>
-                <ClockCircleOutlined /> Chờ duyệt
-              </Text>
-              <Title level={2} style={{ margin: 0, color: "#faad14" }}>
-                {allRequests.filter((r) => r.status === "PENDING").length}
-              </Title>
-            </Space>
-          </Card>
-          <Card hoverable style={{ background: "#f6ffed" }}>
-            <Space direction="vertical" size={4}>
-              <Text type="secondary" style={{ fontSize: "14px" }}>
-                <CheckCircleOutlined /> Đã duyệt
-              </Text>
-              <Title level={2} style={{ margin: 0, color: "#52c41a" }}>
-                {allRequests.filter((r) => r.status === "APPROVED").length}
-              </Title>
-            </Space>
-          </Card>
-          <Card hoverable style={{ background: "#fff1f0" }}>
-            <Space direction="vertical" size={4}>
-              <Text type="secondary" style={{ fontSize: "14px" }}>
-                <CloseCircleOutlined /> Từ chối
-              </Text>
-              <Title level={2} style={{ margin: 0, color: "#ff4d4f" }}>
-                {allRequests.filter((r) => r.status === "REJECTED").length}
-              </Title>
-            </Space>
-          </Card>
+          {[ 
+            { bg: "#f0f5ff", icon: <FileTextOutlined />, text: "Tổng số yêu cầu", color: "#1890ff", count: allRequests.length },
+            { bg: "#fffbe6", icon: <ClockCircleOutlined />, text: "Chờ duyệt", color: "#faad14", count: allRequests.filter((r) => r.status === "PENDING").length },
+            { bg: "#f6ffed", icon: <CheckCircleOutlined />, text: "Đã duyệt", color: "#52c41a", count: allRequests.filter((r) => r.status === "APPROVED").length },
+            { bg: "#fff1f0", icon: <CloseCircleOutlined />, text: "Từ chối", color: "#ff4d4f", count: allRequests.filter((r) => r.status === "REJECTED").length },
+          ].map((item, i) => (
+            <Card
+              key={i}
+              hoverable
+              style={{
+                background: item.bg,
+                transition: "all 0.3s ease",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+                borderRadius: 12,
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,0,0,0.12)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.05)";
+              }}
+            >
+              <Space direction="vertical" size={4}>
+                <Text type="secondary">
+                  {item.icon} {item.text}
+                </Text>
+                <Title level={2} style={{ margin: 0, color: item.color }}>
+                  {item.count}
+                </Title>
+              </Space>
+            </Card>
+          ))}
         </div>
 
-        {/* Tabs and Table */}
-        <Card bordered={false}>
-          <Tabs
-            activeKey={activeTab}
-            onChange={setActiveTab}
-            items={[
-              {
-                key: "all",
-                label: (
-                  <span>
-                    <FileTextOutlined /> Tất cả ({allRequests.length})
-                  </span>
-                ),
-              },
-              {
-                key: "edit",
-                label: (
-                  <span>
-                    <EditOutlined /> Chỉnh sửa ({editRequests.length})
-                  </span>
-                ),
-              },
-              {
-                key: "reward",
-                label: (
-                  <span>
-                    <TrophyOutlined /> Khen thưởng ({rewardProposals.length})
-                  </span>
-                ),
-              },
-            ]}
-          />
-          {filteredRequests.length === 0 ? (
-            <Empty
-              description="Chưa có yêu cầu nào"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              style={{ padding: "60px 0" }}
-            >
-              <Space>
-                <Button
-                  icon={<EditOutlined />}
-                  onClick={() => navigate("/citizen/submit-edit-request")}
-                >
-                  Gửi yêu cầu chỉnh sửa
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<TrophyOutlined />}
-                  onClick={() => navigate("/citizen/submit-reward-proposal")}
-                >
-                  Đề xuất khen thưởng
-                </Button>
-              </Space>
-            </Empty>
-          ) : (
-            <Table
-              columns={columns}
-              dataSource={filteredRequests}
-              rowKey="_id"
-              pagination={{
-                pageSize: 10,
-                showSizeChanger: true,
-                showTotal: (total) => `Tổng ${total} yêu cầu`,
-              }}
-            />
-          )}
-        </Card>
+       {/* Wrap Tabs + Table */}
+<div style={{ marginBottom: 24 }}>
+  {/* Tabs + Table */}
+  <div>
+    <Card
+      bordered={false}
+      style={{
+        borderRadius: 12,
+        transition: "all 0.3s ease",
+        cursor: "pointer",
+        marginBottom: 16,
+      }}
+      className="hover-table-card"
+    >
+      <div className="hover-tabs-wrapper">
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            { key: "all", label: `Tất cả (${allRequests.length})` },
+            { key: "edit", label: `Chỉnh sửa (${editRequests.length})` },
+            { key: "reward", label: `Khen thưởng (${rewardProposals.length})` },
+          ]}
+        />
+      </div>
 
-        {/* View Detail Modal */}
+      {filteredRequests.length === 0 ? (
+        <Empty
+          description="Chưa có yêu cầu nào"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          style={{ padding: "60px 0" }}
+        />
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={filteredRequests}
+          rowKey="_id"
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `Tổng ${total} yêu cầu`,
+          }}
+          rowClassName={() => "hoverable-row"}
+        />
+      )}
+    </Card>
+  </div>
+</div>
+
+
+{/* CSS hover / hiệu ứng nổi */}
+<style>
+  {`
+    /* Card bảng nổi */
+    .hover-table-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+    /* Tabs nổi khi hover */
+    .hover-tabs-wrapper:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+      transition: all 0.25s ease;
+    }
+
+    /* Hiệu ứng nổi cho hàng bảng */
+    .hoverable-row:hover {
+      background-color: #fafafa !important;
+      transition: background 0.2s ease;
+    }
+
+    /* Hiệu ứng nổi cho các nút hành động */
+    .ant-btn {
+      transition: all 0.2s ease;
+    }
+    .ant-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    }
+
+  `}
+</style>
+
+
+        {/* Modal xem chi tiết */}
         <Modal
           title={
             <Space>
@@ -515,124 +545,78 @@ const MyRequests = () => {
                   {requestCategoryConfig[currentRequest.requestCategory] && (
                     <Tag
                       color={
-                        requestCategoryConfig[currentRequest.requestCategory]
-                          .color
+                        requestCategoryConfig[currentRequest.requestCategory].color
                       }
                       icon={
-                        requestCategoryConfig[currentRequest.requestCategory]
-                          .icon
+                        requestCategoryConfig[currentRequest.requestCategory].icon
                       }
                     >
                       {
-                        requestCategoryConfig[currentRequest.requestCategory]
-                          .text
+                        requestCategoryConfig[currentRequest.requestCategory].text
                       }
                     </Tag>
                   )}
                 </Descriptions.Item>
 
-                {/* Edit request type */}
                 {currentRequest.requestCategory === "EDIT" &&
                   currentRequest.requestType && (
                     <Descriptions.Item label="Phân loại">
-                      <Tag color="blue">
-                        {currentRequest.requestType === "UPDATE_INFO" ||
-                        currentRequest.requestType === "EDIT_INFO"
-                          ? "Chỉnh sửa thông tin"
-                          : currentRequest.requestType === "ADD_MEMBER"
-                          ? "Thêm nhân khẩu"
-                          : currentRequest.requestType === "REMOVE_MEMBER"
-                          ? "Xóa nhân khẩu"
-                          : currentRequest.requestType === "TEMP_ABSENCE"
-                          ? "Tạm vắng"
-                          : currentRequest.requestType === "TEMP_RESIDENCE"
-                          ? "Tạm trú"
-                          : currentRequest.requestType === "MOVE_OUT"
-                          ? "Chuyển đi"
-                          : currentRequest.requestType === "MOVE_IN"
-                          ? "Chuyển đến"
-                          : currentRequest.requestType}
-                      </Tag>
+                      <Tag color="blue">{currentRequest.requestType}</Tag>
                     </Descriptions.Item>
                   )}
 
-                {/* Reward specific */}
                 {currentRequest.requestCategory === "REWARD" && (
                   <>
                     <Descriptions.Item label="Người được đề xuất">
-                      <Text strong>
-                        {currentRequest.citizen?.fullName || "N/A"}
-                      </Text>
+                      {currentRequest.citizen?.fullName || "N/A"}
                     </Descriptions.Item>
-                    {currentRequest.criteria && (
-                      <Descriptions.Item label="Tiêu chí">
-                        {currentRequest.criteria}
-                      </Descriptions.Item>
-                    )}
+                    <Descriptions.Item label="Tiêu chí">
+                      {currentRequest.criteria || "Không có"}
+                    </Descriptions.Item>
                   </>
                 )}
 
                 <Descriptions.Item label="Tiêu đề">
-                  <Text strong>
-                    {currentRequest.description ||
-                      currentRequest.proposedChanges?.description ||
-                      "N/A"}
-                  </Text>
+                  {currentRequest.title ||
+                    currentRequest.proposedChanges?.title ||
+                    "N/A"}
                 </Descriptions.Item>
 
                 <Descriptions.Item label="Mô tả chi tiết">
-                  <div style={{ whiteSpace: "pre-wrap" }}>
-                    {currentRequest.proposedChanges?.description ||
-                      currentRequest.description ||
-                      "Không có mô tả"}
-                  </div>
+                  {currentRequest.description ||
+                    currentRequest.proposedChanges?.description ||
+                    "Không có mô tả"}
                 </Descriptions.Item>
 
-                {/* Chi tiết cụ thể từ proposedChanges */}
-                {currentRequest.requestCategory === "EDIT" &&
-                  currentRequest.proposedChanges?.details && (
-                    <Descriptions.Item label="Thông tin bổ sung">
-                      <div
-                        style={{
-                          whiteSpace: "pre-wrap",
-                          backgroundColor: "#f0f2f5",
-                          padding: "8px 12px",
-                          borderRadius: "4px",
-                          fontSize: "13px",
-                        }}
-                      >
-                        {currentRequest.proposedChanges.details}
-                      </div>
-                    </Descriptions.Item>
-                  )}
+                {currentRequest.proposedChanges?.details && (
+                  <Descriptions.Item label="Thông tin bổ sung">
+                    <div
+                      style={{
+                        backgroundColor: "#f0f2f5",
+                        padding: "8px 12px",
+                        borderRadius: 4,
+                        fontSize: 13,
+                      }}
+                    >
+                      {currentRequest.proposedChanges.details}
+                    </div>
+                  </Descriptions.Item>
+                )}
 
                 <Descriptions.Item label="Ngày gửi">
                   {dayjs(currentRequest.createdAt).format("DD/MM/YYYY HH:mm")}
                 </Descriptions.Item>
 
                 <Descriptions.Item label="Trạng thái">
-                  {(() => {
-                    const config =
-                      statusConfig[currentRequest.status] ||
-                      statusConfig.PENDING;
-                    return (
-                      <Tag
-                        icon={config.icon}
-                        color={config.color}
-                        style={{ fontSize: "13px" }}
-                      >
-                        {config.text}
-                      </Tag>
-                    );
-                  })()}
+                  <Tag color={statusConfig[currentRequest.status]?.color}>
+                    {statusConfig[currentRequest.status]?.text}
+                  </Tag>
                 </Descriptions.Item>
 
                 {currentRequest.reviewedAt && (
                   <>
                     <Descriptions.Item label="Ngày duyệt">
-                      {dayjs(currentRequest.reviewedAt).format(
-                        "DD/MM/YYYY HH:mm"
-                      )}
+                      {dayjs(currentRequest.reviewedAt).format("DD/MM/YYYY HH:mm")}
                     </Descriptions.Item>
                     <Descriptions.Item label="Người duyệt">
                       {currentRequest.reviewedBy?.fullName || "N/A"}
@@ -641,7 +625,6 @@ const MyRequests = () => {
                 )}
               </Descriptions>
 
-              {/* Lý do từ chối */}
               {currentRequest.rejectionReason && (
                 <Alert
                   message="Lý do từ chối"
@@ -652,7 +635,6 @@ const MyRequests = () => {
                 />
               )}
 
-              {/* Hình ảnh minh chứng */}
               {currentRequest.requestCategory === "REWARD" &&
                 currentRequest.evidenceImages &&
                 currentRequest.evidenceImages.length > 0 && (
@@ -665,10 +647,14 @@ const MyRequests = () => {
                         {currentRequest.evidenceImages.map((img, idx) => (
                           <Image
                             key={idx}
+                            width={120}
+                            height={120}
                             src={img}
-                            width={100}
-                            height={100}
-                            style={{ objectFit: "cover", borderRadius: 4 }}
+                            style={{
+                              objectFit: "cover",
+                              borderRadius: 8,
+                              boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+                            }}
                           />
                         ))}
                       </Space>
@@ -679,71 +665,72 @@ const MyRequests = () => {
           )}
         </Modal>
 
-        {/* Cancel Confirmation Modal */}
+        {/* Modal xác nhận xóa */}
         <Modal
-          title={
-            <Space>
-              <ExclamationCircleOutlined style={{ color: "#ff4d4f" }} />
-              <span>Xác nhận xóa yêu cầu</span>
-            </Space>
-          }
           open={cancelModalVisible}
-          onCancel={() => {
-            setCancelModalVisible(false);
-            setRequestToCancel(null);
-          }}
+          title={
+            <span style={{ color: "#ff4d4f" }}>
+              <StopOutlined /> Xác nhận xóa yêu cầu
+            </span>
+          }
+          onCancel={() => setCancelModalVisible(false)}
           footer={[
-            <Button
-              key="back"
-              onClick={() => {
-                setCancelModalVisible(false);
-                setRequestToCancel(null);
-              }}
-              disabled={cancelling}
-            >
-              Không
+            <Button key="back" onClick={() => setCancelModalVisible(false)}>
+              Hủy
             </Button>,
             <Button
-              key="submit"
-              type="primary"
+              key="confirm"
               danger
+              type="primary"
               loading={cancelling}
               onClick={confirmCancelRequest}
-              icon={<StopOutlined />}
             >
               Xác nhận xóa
             </Button>,
           ]}
-          width={500}
         >
-          {requestToCancel && (
-            <div>
-              <Alert
-                message="Cảnh báo"
-                description="Bạn có chắc chắn muốn xóa yêu cầu này? Yêu cầu sẽ bị xóa vĩnh viễn và không thể khôi phục."
-                type="warning"
-                showIcon
-                style={{ marginBottom: 16 }}
-              />
-              <Descriptions bordered column={1} size="small">
-                <Descriptions.Item label="Loại">
-                  {requestCategoryConfig[requestToCancel.requestCategory]?.text}
-                </Descriptions.Item>
-                <Descriptions.Item label="Tiêu đề">
-                  <Text strong>
-                    {requestToCancel.description ||
-                      requestToCancel.proposedChanges?.description ||
-                      "N/A"}
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Ngày gửi">
-                  {dayjs(requestToCancel.createdAt).format("DD/MM/YYYY HH:mm")}
-                </Descriptions.Item>
-              </Descriptions>
-            </div>
-          )}
+          <p>
+            Bạn có chắc chắn muốn xóa yêu cầu này không? <br />
+            Hành động này <strong>không thể hoàn tác</strong>.
+          </p>
         </Modal>
       </div>
+
+      {/* Hiệu ứng nổi cho hàng trong bảng */}
+      <style>
+        {`
+          .hoverable-row:hover {
+            background-color: #fafafa !important;
+            transition: background 0.2s ease;
+          }
+        `}
+      </style>
+      <style>
+  {`
+    .hoverable-row:hover {
+      background-color: #fafafa !important;
+      transition: background 0.2s ease;
+    }
+
+    /* Hiệu ứng nổi cho các nút hành động */
+    .ant-btn {
+      transition: all 0.2s ease;
+    }
+    .ant-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Hiệu ứng nổi cho hai nút đầu trang */
+    .ant-space .ant-btn {
+      transition: all 0.25s ease;
+    }
+    .ant-space .ant-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+  `}
+</style>
     </Layout>
   );
 };

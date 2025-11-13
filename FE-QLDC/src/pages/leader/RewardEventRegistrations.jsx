@@ -307,4 +307,3 @@ const RewardEventRegistrations = () => {
 };
 
 export default RewardEventRegistrations;
-

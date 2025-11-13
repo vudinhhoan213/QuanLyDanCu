@@ -277,4 +277,3 @@ const RewardEventSchedule = () => {
 };
 
 export default RewardEventSchedule;
-
