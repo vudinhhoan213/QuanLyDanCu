@@ -158,7 +158,7 @@ const SubmitEditRequest = () => {
 
         <Row gutter={[24, 24]}>
           {/* Main Form */}
-          <Col xs={24} lg={16}>
+          <Col xs={24}>
             <Card
               bordered={false}
               style={{
@@ -214,7 +214,7 @@ const SubmitEditRequest = () => {
                     name="title"
                     label={
                       <Space>
-                        <FileTextOutlined style={{ color: "#f5c518" }} /> {/* vàng */}
+                        <FileTextOutlined style={{ color: "#f5c518" }} />
                         <Text strong style={{ fontSize: 15 }}>
                           Tiêu đề
                         </Text>
@@ -233,7 +233,7 @@ const SubmitEditRequest = () => {
                     name="description"
                     label={
                       <Space>
-                        <FileDoneOutlined style={{ color: "#722ed1" }} /> {/* tím */}
+                        <FileDoneOutlined style={{ color: "#722ed1" }} />
                         <Text strong style={{ fontSize: 15 }}>
                           Mô tả
                         </Text>
@@ -259,7 +259,7 @@ const SubmitEditRequest = () => {
                     name="details"
                     label={
                       <Space>
-                        <FileProtectOutlined style={{ color: "#52c41a" }} /> {/* xanh lá */}
+                        <FileProtectOutlined style={{ color: "#52c41a" }} />
                         <Text strong style={{ fontSize: 15 }}>
                           Nội dung cụ thể (không bắt buộc)
                         </Text>
@@ -333,74 +333,6 @@ const SubmitEditRequest = () => {
                   </Form.Item>
                 </Form>
               </Spin>
-            </Card>
-          </Col>
-
-          {/* Sidebar */}
-          <Col xs={24} lg={8}>
-            <Card
-              bordered={false}
-              style={{
-                borderRadius: "12px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                position: "sticky",
-                top: 24,
-                transition: "transform 0.3s ease, box-shadow 0.3s ease",
-              }}
-              hoverable
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.15)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
-              }}
-              bodyStyle={{ padding: 24 }}
-            >
-              <Space direction="vertical" size="large" style={{ width: "100%" }}>
-                <div>
-                  <Title level={5} style={{ marginBottom: 16 }}>
-                    <InfoCircleOutlined style={{ color: "#1890ff" }} /> Hướng dẫn
-                  </Title>
-                  <Paragraph style={{ color: "#8c8c8c", fontSize: 14, margin: 0 }}>
-                    Điền đầy đủ thông tin để gửi yêu cầu chỉnh sửa.
-                  </Paragraph>
-                </div>
-
-                <Divider />
-
-                <div>
-                  <Title level={5} style={{ marginBottom: 12, fontSize: 14 }}>
-                    Yêu cầu:
-                  </Title>
-                  <Space direction="vertical" size="small" style={{ width: "100%" }}>
-                    <Text style={{ fontSize: 13, color: "#595959" }}>
-                      ✓ Chọn loại yêu cầu
-                    </Text>
-                    <Text style={{ fontSize: 13, color: "#595959" }}>
-                      ✓ Nhập tiêu đề
-                    </Text>
-                    <Text style={{ fontSize: 13, color: "#595959" }}>
-                      ✓ Mô tả chi tiết (tối thiểu 20 ký tự)
-                    </Text>
-                  </Space>
-                </div>
-
-                <Divider />
-
-                <div>
-                  <Title level={5} style={{ marginBottom: 12, fontSize: 14 }}>
-                    Lưu ý:
-                  </Title>
-                  <Alert
-                    message="Yêu cầu sẽ được gửi đến Tổ trưởng để xem xét và duyệt. Vui lòng đảm bảo thông tin chính xác."
-                    type="info"
-                    showIcon
-                    style={{ fontSize: 13, borderRadius: "6px" }}
-                  />
-                </div>
-              </Space>
             </Card>
           </Col>
         </Row>

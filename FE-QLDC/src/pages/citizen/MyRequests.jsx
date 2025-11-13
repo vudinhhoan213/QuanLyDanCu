@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import {
   Card,
   Table,
@@ -419,17 +419,10 @@ const MyRequests = () => {
           ))}
         </div>
 
-       {/* Wrap Tabs + Table và Hướng dẫn thành 2 cột */}
-<div
-  style={{
-    display: "flex",
-    gap: 24,
-    alignItems: "flex-start",
-    marginBottom: 24,
-  }}
->
-  {/* Cột trái: Tabs + Table */}
-  <div style={{ flex: 2 }}>
+       {/* Wrap Tabs + Table */}
+<div style={{ marginBottom: 24 }}>
+  {/* Tabs + Table */}
+  <div>
     <Card
       bordered={false}
       style={{
@@ -473,34 +466,6 @@ const MyRequests = () => {
       )}
     </Card>
   </div>
-
-  {/* Hướng dẫn */}
-  <div style={{ flex: 1 }}>
-    <Card
-      style={{
-        background: "white",
-        borderRadius: 12,
-        boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-        transition: "all 0.3s ease",
-        cursor: "default",
-      }}
-      className="hover-guide-card"
-    >
-      <Space align="start">
-        <InfoCircleOutlined style={{ fontSize: 22, color: "#1890ff" }} />
-        <div>
-          <Title level={4} style={{ marginBottom: 4 }}>
-            Hướng dẫn
-          </Title>
-          <Paragraph type="secondary" style={{ color: "gray", fontSize: 14 }}>
-            ✓ Trang này giúp bạn theo dõi tất cả yêu cầu đã gửi: chỉnh sửa hoặc khen thưởng. <br />
-            ✓ Bạn có thể nhấn “Xem” để xem chi tiết từng yêu cầu hoặc “Xóa” nếu muốn hủy yêu cầu chờ duyệt. <br />
-            ✓ Một số thông tin có thể bị ẩn nếu chưa được xác minh hoặc cập nhật trong hệ thống.
-          </Paragraph>
-        </div>
-      </Space>
-    </Card>
-  </div>
 </div>
 
 
@@ -534,15 +499,6 @@ const MyRequests = () => {
       transform: translateY(-2px);
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
     }
-      /* Hiệu ứng nổi cho thẻ hướng dẫn */
-      .hover-guide-card {
-  transition: all 0.2s ease;
-}
-
-.hover-guide-card:hover {
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  transform: translateY(-3px);
-}
 
   `}
 </style>
