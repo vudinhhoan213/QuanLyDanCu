@@ -20,9 +20,11 @@ import {
   WomanOutlined,
   InfoCircleOutlined,
   ArrowLeftOutlined,
+  PhoneOutlined,
+  EnvironmentOutlined,
 } from "@ant-design/icons";
 import Layout from "../../components/Layout";
-import { citizenService } from "../../services";
+import { citizenService, householdService } from "../../services";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 
@@ -43,14 +45,15 @@ const MyHousehold = () => {
       setLoading(true);
       setError(null);
 
-      const [householdData, citizenData] = await Promise.all([
-        citizenService.getMyHousehold(),
-        citizenService.getMe().catch(() => null),
-      ]);
-
+      const response = await citizenService.getMyHousehold();
+      
+      // Handle both response formats
+      const householdData = response.household || response;
+      const membersData = response.members || response.members || [];
+      
       setHousehold({
         ...householdData,
-        currentCitizen: citizenData,
+        members: membersData,
       });
     } catch (err) {
       const errorMsg =
@@ -232,154 +235,71 @@ const MyHousehold = () => {
       </Card>
 
       {/* Main Layout */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "2fr 1fr",
-          gap: "24px",
-        }}
-      >
-        {/* Left content */}
-        <div>
-          {currentCitizen && (
-            <Card
-              title={
-                <Space>
-                  <UserOutlined />
-                  <span>Thông tin cá nhân</span>
-                </Space>
-              }
-              bordered={false}
-              style={{
-                marginBottom: 24,
-                borderRadius: "12px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                transition: "transform 0.3s ease, box-shadow 0.3s ease",
-              }}
-              className="hover-card"
-            >
-              <Descriptions bordered column={2}>
-                <Descriptions.Item label="Họ và tên">
-                  <Text strong>{currentCitizen.fullName}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Mã nhân khẩu">
-                  <Tag color="blue">
-                    {currentCitizen.code || currentCitizen._id}
-                  </Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Ngày sinh">
-                  {dayjs(currentCitizen.dateOfBirth).format("DD/MM/YYYY")}
-                </Descriptions.Item>
-                <Descriptions.Item label="Giới tính">
-                  <Tag
-                    color={
-                      currentCitizen.gender === "MALE" ? "blue" : "pink"
-                    }
-                  >
-                    {currentCitizen.gender === "MALE"
-                      ? "Nam"
-                      : currentCitizen.gender === "FEMALE"
-                      ? "Nữ"
-                      : "Khác"}
-                  </Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="CCCD/CMND">
-                  {currentCitizen.nationalId || (
-                    <Tag color="default">Chưa có</Tag>
-                  )}
-                </Descriptions.Item>
-                <Descriptions.Item label="Số điện thoại">
-                  {currentCitizen.phone || <Tag color="default">Chưa có</Tag>}
-                </Descriptions.Item>
-                <Descriptions.Item label="Vai trò" span={2}>
-                  <Tag color="gold">Chủ hộ</Tag>
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-          )}
-
+      <div>
+        {household && (
           <Card
             title={
               <Space>
                 <TeamOutlined />
-                <span>Danh sách thành viên ({members.length})</span>
+                <span>Thông tin hộ khẩu</span>
               </Space>
             }
             bordered={false}
             style={{
+              marginBottom: 24,
               borderRadius: "12px",
               boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
               transition: "transform 0.3s ease, box-shadow 0.3s ease",
             }}
             className="hover-card"
           >
-            <Table
-              columns={columns}
-              dataSource={members}
-              pagination={false}
-              scroll={{ x: 900 }}
-              rowClassName={() => "household-row"}
-            />
+            <Descriptions bordered column={2}>
+              <Descriptions.Item label="Mã hộ khẩu">
+                <Tag color="blue">{household.code}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Chủ hộ">
+                <Text strong>{household.headName || "N/A"}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Số điện thoại">
+                <Text>{household.phone || "N/A"}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Số nhân khẩu">
+                <Tag color="cyan">{household.members?.length || 0} người</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Địa chỉ" span={2}>
+                <Text>
+                  {household.address
+                    ? `${household.address.street || ""}, ${household.address.ward || ""}, ${household.address.district || ""}, ${household.address.city || ""}`
+                    : "N/A"}
+                </Text>
+              </Descriptions.Item>
+            </Descriptions>
           </Card>
-        </div>
+        )}
 
-        {/* Sidebar */}
-        <div>
-          <Card
-            bordered={false}
-            style={{
-              borderRadius: "12px",
-              backgroundColor: "#fff",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              position: "sticky",
-              top: 24,
-              transition: "transform 0.3s ease, box-shadow 0.3s ease",
-            }}
-            className="hover-card"
-          >
-            <Title level={5} style={{ marginBottom: 16 }}>
-              <InfoCircleOutlined style={{ color: "#1890ff", marginRight: 8 }} />
-              Hướng dẫn
-            </Title>
-
-            <p style={{ color: "#8c8c8c", fontSize: 14, margin: 0 }}>
-              Kiểm tra kỹ thông tin cá nhân và thành viên hộ khẩu để đảm bảo dữ liệu chính xác.
-            </p>
-
-            <Divider style={{ margin: "16px 0" }} />
-
-            <ul
-              style={{
-                paddingLeft: 18,
-                color: "#8c8c8c",
-                fontSize: 14,
-                lineHeight: "1.7em",
-                margin: 0,
-              }}
-            >
-              <li>✓ Kiểm tra kỹ thông tin cá nhân và các thành viên trong hộ khẩu.</li>
-              <li>✓ Nếu có sai sót, vui lòng liên hệ cán bộ quản lý để được hỗ trợ chỉnh sửa.</li>
-              <li>✓ Dữ liệu được đồng bộ tự động từ hệ thống dân cư.</li>
-            </ul>
-
-            <Divider style={{ margin: "16px 0" }} />
-
-            <div>
-              <Title level={5} style={{ marginBottom: 12, fontSize: 14 }}>
-                Lưu ý:
-              </Title>
-              <Alert
-                message="Một số thông tin có thể bị ẩn nếu chưa được xác minh hoặc cập nhật trong hệ thống."
-                type="info"
-                showIcon
-                style={{
-                  fontSize: 13,
-                  borderRadius: "6px",
-                }}
-              />
-            </div>
-          </Card>
-        </div>
+        <Card
+          title={
+            <Space>
+              <TeamOutlined />
+              <span>Danh sách thành viên ({members.length})</span>
+            </Space>
+          }
+          bordered={false}
+          style={{
+            borderRadius: "12px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+            transition: "transform 0.3s ease, box-shadow 0.3s ease",
+          }}
+          className="hover-card"
+        >
+          <Table
+            columns={columns}
+            dataSource={members}
+            pagination={false}
+            scroll={{ x: 900 }}
+            rowClassName={() => "household-row"}
+          />
+        </Card>
       </div>
 
       {/* Hover effects */}
