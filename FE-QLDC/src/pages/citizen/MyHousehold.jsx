@@ -256,7 +256,7 @@ const MyHousehold = () => {
             columns={columns}
             dataSource={members}
             pagination={false}
-            scroll={{ x: 1000 }}
+            scroll={{ x: 800 }}
           />
         </Card>
       </div>

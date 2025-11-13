@@ -38,7 +38,6 @@ const RewardEventAdd = () => {
         description: values.description,
         startDate: values.dateRange?.[0]?.toISOString(),
         endDate: values.dateRange?.[1]?.toISOString(),
-        maxSlots: values.maxSlots || 0,
         budget: values.budget || undefined,
         status: "OPEN",
       };
@@ -82,7 +81,6 @@ const RewardEventAdd = () => {
             onFinish={handleSubmit}
             initialValues={{
               type: "ANNUAL",
-              maxSlots: 0,
             }}
           >
             <Row gutter={16}>
@@ -115,27 +113,6 @@ const RewardEventAdd = () => {
                     <Option value="ANNUAL">Thường niên</Option>
                     <Option value="SPECIAL">Đặc biệt</Option>
                   </Select>
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="maxSlots"
-                  label="Số slot tối đa"
-                  rules={[
-                    {
-                      type: "number",
-                      min: 0,
-                      message: "Số slot phải lớn hơn hoặc bằng 0",
-                    },
-                  ]}
-                  tooltip="Nhập 0 để không giới hạn số lượng đăng ký"
-                >
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    size="large"
-                    min={0}
-                    placeholder="0 = không giới hạn"
-                  />
                 </Form.Item>
               </Col>
             </Row>

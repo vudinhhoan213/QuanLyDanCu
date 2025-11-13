@@ -141,16 +141,6 @@ module.exports = {
         return res.status(400).json({ message: "Sự kiện đã hết hạn đăng ký" });
       }
 
-      // Kiểm tra slot
-      if (event.maxSlots > 0) {
-        const registeredCount = await RewardDistribution.countDocuments({
-          event: eventId,
-        });
-        if (registeredCount >= event.maxSlots) {
-          return res.status(400).json({ message: "Sự kiện đã hết slot" });
-        }
-      }
-
       // Kiểm tra đã đăng ký chưa
       const existingRegistration = await RewardDistribution.findOne({
         event: eventId,
@@ -251,47 +241,6 @@ module.exports = {
           console.log(
             `📬 Created ${leaderNotifications.length} notifications for leaders (citizen registered for event: ${populatedDoc.event?.name || event.name})`
           );
-        }
-
-        // Kiểm tra slot còn lại, nếu gần hết hoặc hết thì thông báo thêm cho leader
-        if (event.maxSlots > 0) {
-          const remainingSlots = event.maxSlots - registeredCount;
-          
-          if (remainingSlots <= 5 && remainingSlots > 0) {
-            // Thông báo cho leader khi slot sắp hết (nếu chưa thông báo ở trên)
-            const urgentLeaders = await User.find({ role: "TO_TRUONG", isActive: true });
-            const urgentNotifications = urgentLeaders.map((leader) => ({
-              toUser: leader._id,
-              fromUser: userId,
-              title: "⚠️ Sự kiện sắp hết slot",
-              message: `Sự kiện "${event.name}" chỉ còn ${remainingSlots} slot. Hiện có ${registeredCount}/${event.maxSlots} đăng ký.`,
-              type: "REWARD_EVENT",
-              entityType: "RewardEvent",
-              entityId: eventId,
-              priority: "HIGH",
-            }));
-            await Notification.insertMany(urgentNotifications);
-            console.log(
-              `⚠️ Created ${urgentNotifications.length} urgent notifications for leaders (event almost full: ${event.name})`
-            );
-          } else if (remainingSlots === 0) {
-            // Thông báo cho leader khi hết slot
-            const fullLeaders = await User.find({ role: "TO_TRUONG", isActive: true });
-            const fullNotifications = fullLeaders.map((leader) => ({
-              toUser: leader._id,
-              fromUser: userId,
-              title: "🔴 Sự kiện đã hết slot",
-              message: `Sự kiện "${event.name}" đã đầy ${event.maxSlots} đăng ký. Vui lòng xem xét đóng sự kiện.`,
-              type: "REWARD_EVENT",
-              entityType: "RewardEvent",
-              entityId: eventId,
-              priority: "HIGH",
-            }));
-            await Notification.insertMany(fullNotifications);
-            console.log(
-              `🔴 Created ${fullNotifications.length} full notifications for leaders (event full: ${event.name})`
-            );
-          }
         }
       } catch (notifError) {
         console.error("❌ Error creating notifications:", notifError);
@@ -479,6 +428,92 @@ module.exports = {
       });
     } catch (err) {
       console.error("❌ [distribute] Error:", err);
+      next(err);
+    }
+  },
+  
+  /**
+   * Tạo reward distributions từ thành tích học tập (khen thưởng cuối năm)
+   * POST /reward-distributions/generate-from-achievements
+   */
+  async generateFromAchievements(req, res, next) {
+    try {
+      const { eventId, schoolYear, rewardRules, overwriteExisting } = req.body;
+
+      if (!eventId || !schoolYear) {
+        return res.status(400).json({ 
+          message: "Thiếu thông tin: eventId và schoolYear là bắt buộc" 
+        });
+      }
+
+      const result = await rewardDistributionService.generateFromAchievements(
+        eventId,
+        schoolYear,
+        rewardRules || {},
+        overwriteExisting || false
+      );
+
+      await auditLogService.create({
+        action: "REWARD_DISTRIBUTION_GENERATE_FROM_ACHIEVEMENTS",
+        entityType: "RewardDistribution",
+        performedBy: req.user?._id,
+        metadata: {
+          eventId,
+          schoolYear,
+          created: result.created,
+          skipped: result.skipped,
+        },
+      });
+
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Tạo reward distributions từ công dân trong độ tuổi 0-18 (khen thưởng dịp đặc biệt)
+   * POST /reward-distributions/generate-from-age-range
+   */
+  async generateFromAgeRange(req, res, next) {
+    try {
+      const { eventId, minAge = 0, maxAge = 18, rewardConfig, overwriteExisting } = req.body;
+
+      if (!eventId) {
+        return res.status(400).json({ 
+          message: "Thiếu thông tin: eventId là bắt buộc" 
+        });
+      }
+
+      if (minAge < 0 || maxAge < 0 || minAge > maxAge) {
+        return res.status(400).json({ 
+          message: "Độ tuổi không hợp lệ: minAge và maxAge phải >= 0 và minAge <= maxAge" 
+        });
+      }
+
+      const result = await rewardDistributionService.generateFromAgeRange(
+        eventId,
+        minAge,
+        maxAge,
+        rewardConfig || {},
+        overwriteExisting || false
+      );
+
+      await auditLogService.create({
+        action: "REWARD_DISTRIBUTION_GENERATE_FROM_AGE_RANGE",
+        entityType: "RewardDistribution",
+        performedBy: req.user?._id,
+        metadata: {
+          eventId,
+          minAge,
+          maxAge,
+          created: result.created,
+          skipped: result.skipped,
+        },
+      });
+
+      res.json(result);
+    } catch (err) {
       next(err);
     }
   },

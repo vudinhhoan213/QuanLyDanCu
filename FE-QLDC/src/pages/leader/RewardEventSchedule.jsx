@@ -43,7 +43,6 @@ const RewardEventSchedule = () => {
       name: "Trung Thu",
       description: "Phát quà Trung Thu cho trẻ em",
       defaultDate: "15/08 ÂL", // 15 tháng 8 Âm lịch
-      defaultSlots: 100,
       type: "ANNUAL",
     },
     {
@@ -51,7 +50,6 @@ const RewardEventSchedule = () => {
       name: "Tết Nguyên Đán",
       description: "Phát quà Tết cho các hộ gia đình",
       defaultDate: "28/12 ÂL", // 28 tháng Chạp
-      defaultSlots: 200,
       type: "ANNUAL",
     },
     {
@@ -59,7 +57,6 @@ const RewardEventSchedule = () => {
       name: "Quốc tế Thiếu nhi",
       description: "Phát quà ngày Quốc tế Thiếu nhi 1/6",
       defaultDate: "01/06",
-      defaultSlots: 150,
       type: "ANNUAL",
     },
   ];
@@ -117,7 +114,6 @@ const RewardEventSchedule = () => {
         description: template.description,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-        maxSlots: template.defaultSlots,
         status: "OPEN",
       };
 
@@ -139,7 +135,6 @@ const RewardEventSchedule = () => {
     form.setFieldsValue({
       name: template.name,
       description: template.description,
-      defaultSlots: template.defaultSlots,
     });
     setIsEditModalVisible(true);
   };
@@ -218,9 +213,6 @@ const RewardEventSchedule = () => {
                             <Descriptions.Item label="Ngày dự kiến">
                               {eventDate.format("DD/MM/YYYY")}
                             </Descriptions.Item>
-                            <Descriptions.Item label="Slot mặc định">
-                              {template.defaultSlots}
-                            </Descriptions.Item>
                           </Descriptions>
                         </Space>
                       </Col>
@@ -276,16 +268,6 @@ const RewardEventSchedule = () => {
             </Form.Item>
             <Form.Item name="description" label="Mô tả">
               <Input.TextArea rows={3} />
-            </Form.Item>
-            <Form.Item
-              name="defaultSlots"
-              label="Số slot mặc định"
-              rules={[
-                { required: true, message: "Vui lòng nhập số slot" },
-                { type: "number", min: 0 },
-              ]}
-            >
-              <InputNumber style={{ width: "100%" }} min={0} />
             </Form.Item>
           </Form>
         )}

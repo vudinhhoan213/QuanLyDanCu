@@ -158,6 +158,7 @@ const RewardEventRegistrations = () => {
       title: "STT",
       key: "index",
       width: 60,
+      fixed: "left",
       render: (_, __, index) => {
         return (pagination.current - 1) * pagination.pageSize + index + 1;
       },
@@ -165,7 +166,8 @@ const RewardEventRegistrations = () => {
     {
       title: "Họ tên",
       key: "fullName",
-      width: 200,
+      width: 150,
+      ellipsis: true,
       render: (_, record) => (
         <Text strong>{record.citizen?.fullName || "N/A"}</Text>
       ),
@@ -173,34 +175,39 @@ const RewardEventRegistrations = () => {
     {
       title: "CMND/CCCD",
       key: "nationalId",
-      width: 150,
+      width: 120,
+      ellipsis: true,
       render: (_, record) => record.citizen?.nationalId || "N/A",
     },
     {
       title: "Hộ khẩu",
       key: "household",
-      width: 150,
+      width: 120,
+      ellipsis: true,
       render: (_, record) => record.household?.code || "N/A",
     },
     {
-      title: "Thời gian đăng ký",
-      key: "createdAt",
-      width: 180,
+      title: "Thời gian nhận",
+      key: "distributedAt",
+      width: 150,
       render: (_, record) =>
-        record.createdAt
+        record.distributedAt
+          ? dayjs(record.distributedAt).format("DD/MM/YYYY HH:mm")
+          : record.createdAt
           ? dayjs(record.createdAt).format("DD/MM/YYYY HH:mm")
-          : "N/A",
+          : "-",
     },
     {
       title: "Số lượng",
       key: "quantity",
-      width: 100,
+      width: 80,
       render: (_, record) => record.quantity || 1,
     },
     {
       title: "Giá trị",
       key: "totalValue",
-      width: 150,
+      width: 130,
+      ellipsis: true,
       render: (_, record) =>
         record.totalValue
           ? `${record.totalValue.toLocaleString("vi-VN")} VNĐ`
@@ -209,7 +216,7 @@ const RewardEventRegistrations = () => {
     {
       title: "Trạng thái",
       key: "status",
-      width: 150,
+      width: 120,
       render: (_, record) => {
         // TODO: Add status field to RewardDistribution model
         // For now, we'll use a placeholder
@@ -291,7 +298,7 @@ const RewardEventRegistrations = () => {
                 setPagination({ ...pagination, current: page, pageSize });
               },
             }}
-            scroll={{ x: 1200 }}
+            scroll={{ x: 930 }}
           />
         </Space>
       </Card>

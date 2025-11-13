@@ -68,22 +68,14 @@ const EventList = () => {
 
           if (!isInTimeRange) return null;
 
-          // Kiểm tra slot (đã có từ backend)
+          // Backend đã trả về registeredCount và distributedCount
           const registeredCount = event.registeredCount || 0;
-          const hasSlot =
-            event.maxSlots === 0 || registeredCount < event.maxSlots;
-
-          // Vẫn hiển thị sự kiện đã hết slot nếu user đã đăng ký
-          // (sẽ được kiểm tra sau khi check registration status)
+          const distributedCount = event.distributedCount || 0;
 
           return {
             ...event,
             registeredCount,
-            availableSlots:
-              event.maxSlots === 0
-                ? -1
-                : Math.max(0, event.maxSlots - registeredCount),
-            hasSlot, // Lưu lại để dùng sau
+            distributedCount,
           };
         })
         .filter((e) => e !== null);
@@ -162,16 +154,11 @@ const EventList = () => {
           console.log(`❌ Event ${eventId} (${event.name}) - Not registered`);
         }
 
-        // Nếu đã đăng ký, vẫn hiển thị (không filter)
-        // Nếu chưa đăng ký nhưng hết slot, thì filter ra
-        const shouldShow = isRegistered || event.hasSlot;
-
-        return shouldShow
-          ? {
-              ...event,
-              isRegistered,
-            }
-          : null;
+        // Hiển thị tất cả sự kiện đang mở
+        return {
+          ...event,
+          isRegistered,
+        };
       });
 
       // Filter ra các event null
@@ -232,10 +219,6 @@ const EventList = () => {
         ...viewingEvent,
         isRegistered: true,
         registeredCount: (viewingEvent.registeredCount || 0) + 1,
-        availableSlots:
-          viewingEvent.maxSlots === 0
-            ? -1
-            : Math.max(0, (viewingEvent.availableSlots || viewingEvent.maxSlots) - 1),
       };
 
       // Cập nhật events ngay lập tức để UI phản hồi ngay - chuyển từ "Đăng ký ngay" sang "Đã đăng ký"
@@ -473,10 +456,8 @@ const EventList = () => {
                       </div>
                       <div>
                         <Text type="secondary">
-                          <InfoCircleOutlined /> Slot còn lại:{" "}
-                          {event.availableSlots === -1 || event.maxSlots === 0
-                            ? "Không giới hạn"
-                            : `${event.availableSlots}/${event.maxSlots}`}
+                          <InfoCircleOutlined /> Tỷ lệ nhận quà:{" "}
+                          {event.distributedCount || 0} / {event.registeredCount || 0}
                         </Text>
                       </div>
                       {event.description && (
@@ -567,10 +548,8 @@ const EventList = () => {
                   : "N/A"
                 )}
               </Descriptions.Item>
-              <Descriptions.Item label="Slot còn lại">
-                {viewingEvent.availableSlots === -1 || viewingEvent.maxSlots === 0
-                  ? "Không giới hạn"
-                  : `${viewingEvent.availableSlots || 0}/${viewingEvent.maxSlots}`}
+              <Descriptions.Item label="Tỷ lệ nhận quà">
+                {viewingEvent.distributedCount || 0} / {viewingEvent.registeredCount || 0}
               </Descriptions.Item>
               {viewingEvent.budget && (
                 <Descriptions.Item label="Giá trị quà">

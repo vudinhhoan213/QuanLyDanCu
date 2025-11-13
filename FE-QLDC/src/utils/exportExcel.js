@@ -63,9 +63,11 @@ export const exportRegistrationsToExcel = (registrations, eventName) => {
       "CMND/CCCD": reg.citizen?.nationalId || "N/A",
       "Hộ khẩu": reg.household?.code || "N/A",
       "Số điện thoại": reg.citizen?.phone || reg.household?.phone || "N/A",
-      "Thời gian đăng ký": reg.createdAt
+      "Thời gian nhận": reg.distributedAt
+        ? new Date(reg.distributedAt).toLocaleString("vi-VN")
+        : reg.createdAt
         ? new Date(reg.createdAt).toLocaleString("vi-VN")
-        : "N/A",
+        : "-",
       "Số lượng": reg.quantity || 1,
       "Giá trị đơn vị": reg.unitValue
         ? `${reg.unitValue.toLocaleString("vi-VN")} VNĐ`
@@ -86,7 +88,7 @@ export const exportRegistrationsToExcel = (registrations, eventName) => {
       { wch: 15 }, // CMND/CCCD
       { wch: 15 }, // Hộ khẩu
       { wch: 15 }, // Số điện thoại
-      { wch: 20 }, // Thời gian đăng ký
+      { wch: 20 }, // Thời gian nhận
       { wch: 10 }, // Số lượng
       { wch: 18 }, // Giá trị đơn vị
       { wch: 18 }, // Tổng giá trị
@@ -132,8 +134,9 @@ export const exportEventsToExcel = (events) => {
       "Ngày kết thúc": event.endDate
         ? new Date(event.endDate).toLocaleDateString("vi-VN")
         : "N/A",
-      "Slot đã đăng ký": event.registeredCount || 0,
-      "Slot tối đa": event.maxSlots || "Không giới hạn",
+      "Số người đăng ký": event.registeredCount || 0,
+      "Số người nhận quà": event.distributedCount || 0,
+      "Tỷ lệ nhận quà": `${event.distributedCount || 0} / ${event.registeredCount || 0}`,
       "Trạng thái":
         event.status === "OPEN"
           ? "Mở"
@@ -160,8 +163,9 @@ export const exportEventsToExcel = (events) => {
       { wch: 15 }, // Loại
       { wch: 15 }, // Ngày bắt đầu
       { wch: 15 }, // Ngày kết thúc
-      { wch: 15 }, // Slot đã đăng ký
-      { wch: 15 }, // Slot tối đa
+      { wch: 15 }, // Số người đăng ký
+      { wch: 15 }, // Số người nhận quà
+      { wch: 15 }, // Tỷ lệ nhận quà
       { wch: 15 }, // Trạng thái
       { wch: 20 }, // Ngân sách
       { wch: 40 }, // Mô tả
