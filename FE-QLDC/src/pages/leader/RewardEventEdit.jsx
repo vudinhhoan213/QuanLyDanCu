@@ -305,4 +305,3 @@ const RewardEventEdit = () => {
 };
 
 export default RewardEventEdit;
-

@@ -10,6 +10,7 @@ import HomePage from "../pages/HomePage";
 
 // Auth Pages
 import LoginPage from "../pages/auth/LoginPage";
+import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 
 // Dashboard Pages
 import LeaderDashboard from "../pages/dashboard/LeaderDashboard";
@@ -54,6 +55,7 @@ const AppRouter = () => {
         {/* Public Routes */}
         <Route path="/home" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
         {/* Leader Routes */}

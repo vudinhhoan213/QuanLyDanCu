@@ -9,4 +9,5 @@ module.exports = {
   StudentAchievement: require("./StudentAchievement"),
   Notification: require("./Notification"),
   AuditLog: require("./AuditLog"),
+   OTP: require("./otpModel"),
 };

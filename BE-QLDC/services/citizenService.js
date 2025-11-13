@@ -19,6 +19,34 @@ module.exports = {
   },
 
   async create(data) {
+
+    const { User } = require("../models");
+
+  // ✅ Nếu có email, tự tạo user tương ứng
+  if (data.email) {
+    // Kiểm tra user đã tồn tại chưa
+    let existingUser = await User.findOne({ username: data.email });
+
+    if (!existingUser) {
+      // Tạo mật khẩu là 6 ký tự đầu trước dấu "@"
+      const emailName = data.email.split("@")[0];
+      const password = emailName.slice(0, 6) || "123456";
+
+      // Tạo tài khoản mới
+      const newUser = await User.create({
+        username: data.email,
+        password, // userService sẽ tự hash
+        role: "CONG_DAN",
+      });
+
+      // Gán userId cho citizen
+      data.user = newUser._id;
+    } else {
+      // Nếu user đã tồn tại, gán luôn
+      data.user = existingUser._id;
+    }
+  }
+  
     // Tự động generate code nếu chưa có
     if (!data.code) {
       data.code = await this.generateCitizenCode();

@@ -72,6 +72,7 @@ const CitizenManagement = () => {
           householdId: c.household?._id || c.household,
           relationship: c.relationshipToHead,
           phone: c.phone,
+          email: c.email, 
           status: c.status === "ALIVE" ? "active" : "inactive",
           statusValue: c.status, // Keep original
         }))
@@ -222,6 +223,7 @@ const CitizenManagement = () => {
       household: record.householdId,
       relationship: record.relationship,
       phone: record.phone,
+      email: record.email,
       status: record.status, // "active" or "inactive" - đúng cho Select
     });
     setIsModalVisible(true);
@@ -264,6 +266,7 @@ const CitizenManagement = () => {
             : "OTHER",
         nationalId: values.idCard, // Backend uses 'nationalId', not 'idCard'
         phone: values.phone,
+        email: values.email,
         status: values.status === "active" ? "ALIVE" : "MOVED_OUT",
       };
 
@@ -485,6 +488,9 @@ const CitizenManagement = () => {
               <Descriptions.Item label="Số điện thoại" span={2}>
                 {viewingCitizen.phone || <Tag color="default">Chưa có</Tag>}
               </Descriptions.Item>
+              <Descriptions.Item label="Email" span={2}>
+                {viewingCitizen.email || <Tag color="default">Chưa có</Tag>}
+              </Descriptions.Item>
               <Descriptions.Item label="Hộ khẩu">
                 {viewingCitizen.household === "Chưa có hộ khẩu" ? (
                   <Tag color="default">Chưa có hộ khẩu</Tag>
@@ -607,7 +613,6 @@ const CitizenManagement = () => {
             <Form.Item name="phone" label="Số điện thoại">
               <Input placeholder="Nhập số điện thoại" />
             </Form.Item>
-
             <Form.Item
               name="status"
               label="Trạng thái"
