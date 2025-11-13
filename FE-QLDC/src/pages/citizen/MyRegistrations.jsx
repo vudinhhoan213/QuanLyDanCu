@@ -463,37 +463,32 @@ const MyRegistrations = () => {
     {
       title: "Sự kiện",
       key: "event",
-      width: 250,
+      width: 200,
+      ellipsis: true,
       render: (_, record) => <Text strong>{record.event?.name || "N/A"}</Text>,
     },
     {
-      title: "Thời gian đăng ký",
-      key: "createdAt",
-      width: 180,
+      title: "Thời gian nhận",
+      key: "distributedAt",
+      width: 150,
       render: (_, record) =>
-        record.createdAt
+        record.distributedAt
+          ? dayjs(record.distributedAt).format("DD/MM/YYYY HH:mm")
+          : record.createdAt
           ? dayjs(record.createdAt).format("DD/MM/YYYY HH:mm")
-          : "N/A",
+          : "-",
     },
     {
       title: "Trạng thái",
       key: "status",
-      width: 150,
+      width: 120,
       render: (_, record) => getStatusTag(record),
-    },
-    {
-      title: "Thời gian phát quà",
-      key: "distributedAt",
-      width: 180,
-      render: (_, record) =>
-        record.distributedAt
-          ? dayjs(record.distributedAt).format("DD/MM/YYYY HH:mm")
-          : "-",
     },
     {
       title: "Giá trị",
       key: "totalValue",
-      width: 150,
+      width: 130,
+      ellipsis: true,
       render: (_, record) => (
         <Text type="secondary">
           {record.totalValue
@@ -505,7 +500,8 @@ const MyRegistrations = () => {
     {
       title: "Hành động",
       key: "actions",
-      width: 200,
+      width: 180,
+      fixed: "right",
       render: (_, record) => (
         <Space size="small">
           <Button
@@ -591,6 +587,7 @@ const MyRegistrations = () => {
                   }));
                 },
               }}
+              scroll={{ x: 780 }}
             />
           )}
         </Space>
@@ -616,12 +613,16 @@ const MyRegistrations = () => {
             <Descriptions.Item label="Sự kiện">
               {viewingRegistration.event?.name || "N/A"}
             </Descriptions.Item>
-            <Descriptions.Item label="Thời gian đăng ký">
-              {viewingRegistration.createdAt
+            <Descriptions.Item label="Thời gian nhận">
+              {viewingRegistration.distributedAt
+                ? dayjs(viewingRegistration.distributedAt).format(
+                    "DD/MM/YYYY HH:mm:ss"
+                  )
+                : viewingRegistration.createdAt
                 ? dayjs(viewingRegistration.createdAt).format(
                     "DD/MM/YYYY HH:mm:ss"
                   )
-                : "N/A"}
+                : "-"}
             </Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
               {getStatusTag(viewingRegistration)}

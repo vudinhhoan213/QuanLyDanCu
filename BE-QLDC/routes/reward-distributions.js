@@ -23,6 +23,18 @@ router.post(
   isLeader,
   rewardDistributionController.distribute
 );
+router.post(
+  "/generate-from-achievements",
+  authenticate,
+  isLeader,
+  rewardDistributionController.generateFromAchievements
+);
+router.post(
+  "/generate-from-age-range",
+  authenticate,
+  isLeader,
+  rewardDistributionController.generateFromAgeRange
+);
 router.get(
   "/summary/event/:eventId",
   authenticate,

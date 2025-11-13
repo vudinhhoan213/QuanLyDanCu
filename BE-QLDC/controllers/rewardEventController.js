@@ -74,39 +74,34 @@ module.exports = {
         sort,
       });
 
-      // Nếu là citizen, thêm thông tin số lượng đăng ký và slot còn lại
-      if (req.user && req.user.role === "CONG_DAN") {
-        const { RewardDistribution } = require("../models");
-        console.log(`📋 Citizen ${req.user._id} requesting events, found ${data.docs.length} events`);
-        const eventsWithCounts = await Promise.all(
-          data.docs.map(async (event) => {
-            try {
-              const count = await RewardDistribution.countDocuments({
-                event: event._id,
-              });
-              const registeredCount = count || 0;
-              const availableSlots =
-                event.maxSlots === 0
-                  ? -1 // Không giới hạn
-                  : Math.max(0, event.maxSlots - registeredCount);
+      // Thêm thông tin số lượng đăng ký và số người nhận quà cho tất cả events
+      const { RewardDistribution } = require("../models");
+      const eventsWithCounts = await Promise.all(
+        data.docs.map(async (event) => {
+          try {
+            const registeredCount = await RewardDistribution.countDocuments({
+              event: event._id,
+            });
+            const distributedCount = await RewardDistribution.countDocuments({
+              event: event._id,
+              status: "DISTRIBUTED",
+            });
 
-              return {
-                ...event.toObject(),
-                registeredCount,
-                availableSlots,
-              };
-            } catch (error) {
-              return {
-                ...event.toObject(),
-                registeredCount: 0,
-                availableSlots: event.maxSlots || -1,
-              };
-            }
-          })
-        );
-        data.docs = eventsWithCounts;
-        console.log(`✅ Returning ${eventsWithCounts.length} events to citizen`);
-      }
+            return {
+              ...event.toObject(),
+              registeredCount: registeredCount || 0,
+              distributedCount: distributedCount || 0,
+            };
+          } catch (error) {
+            return {
+              ...event.toObject(),
+              registeredCount: 0,
+              distributedCount: 0,
+            };
+          }
+        })
+      );
+      data.docs = eventsWithCounts;
 
       res.json(data);
     } catch (err) {

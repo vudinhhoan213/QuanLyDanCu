@@ -64,20 +64,14 @@ const SpecialEvents = () => {
 
           if (!isInTimeRange) return null;
 
-          // Kiểm tra slot (đã có từ backend)
+          // Backend đã trả về registeredCount và distributedCount
           const registeredCount = event.registeredCount || 0;
-          const hasSlot =
-            event.maxSlots === 0 || registeredCount < event.maxSlots;
-
-          if (!hasSlot) return null;
+          const distributedCount = event.distributedCount || 0;
 
           return {
             ...event,
             registeredCount,
-            availableSlots:
-              event.maxSlots === 0
-                ? -1
-                : Math.max(0, event.maxSlots - registeredCount),
+            distributedCount,
           };
         })
         .filter((e) => e !== null);
@@ -215,13 +209,6 @@ const SpecialEvents = () => {
         ...viewingEvent,
         isRegistered: true,
         registeredCount: (viewingEvent.registeredCount || 0) + 1,
-        availableSlots:
-          viewingEvent.maxSlots === 0
-            ? -1
-            : Math.max(
-                0,
-                (viewingEvent.availableSlots || viewingEvent.maxSlots) - 1
-              ),
       };
 
       setEvents((prevEvents) =>
@@ -491,10 +478,8 @@ const SpecialEvents = () => {
                       </div>
                       <div>
                         <Text type="secondary">
-                          Slot còn lại:{" "}
-                          {event.availableSlots === -1 || event.maxSlots === 0
-                            ? "Không giới hạn"
-                            : `${event.availableSlots}/${event.maxSlots}`}
+                          Tỷ lệ nhận quà:{" "}
+                          {event.distributedCount || 0} / {event.registeredCount || 0}
                         </Text>
                       </div>
                       {event.description && (
@@ -587,13 +572,8 @@ const SpecialEvents = () => {
                   "N/A"
                 )}
               </Descriptions.Item>
-              <Descriptions.Item label="Slot còn lại">
-                {viewingEvent.availableSlots === -1 ||
-                viewingEvent.maxSlots === 0
-                  ? "Không giới hạn"
-                  : `${viewingEvent.availableSlots || 0}/${
-                      viewingEvent.maxSlots
-                    }`}
+              <Descriptions.Item label="Tỷ lệ nhận quà">
+                {viewingEvent.distributedCount || 0} / {viewingEvent.registeredCount || 0}
               </Descriptions.Item>
               {viewingEvent.budget && (
                 <Descriptions.Item label="Giá trị quà">

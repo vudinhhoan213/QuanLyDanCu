@@ -209,6 +209,7 @@ const RewardDistributions = () => {
       title: "STT",
       key: "index",
       width: 60,
+      fixed: "left",
       render: (_, __, index) => {
         return (pagination.current - 1) * pagination.pageSize + index + 1;
       },
@@ -216,13 +217,15 @@ const RewardDistributions = () => {
     {
       title: "Sự kiện",
       key: "event",
-      width: 200,
+      width: 150,
+      ellipsis: true,
       render: (_, record) => <Text strong>{record.event?.name || "N/A"}</Text>,
     },
     {
       title: "Họ tên",
       key: "fullName",
-      width: 180,
+      width: 140,
+      ellipsis: true,
       render: (_, record) => (
         <Text strong>{record.citizen?.fullName || "N/A"}</Text>
       ),
@@ -230,34 +233,39 @@ const RewardDistributions = () => {
     {
       title: "CMND/CCCD",
       key: "nationalId",
-      width: 150,
+      width: 120,
+      ellipsis: true,
       render: (_, record) => record.citizen?.nationalId || "N/A",
     },
     {
       title: "Hộ khẩu",
       key: "household",
-      width: 120,
+      width: 100,
+      ellipsis: true,
       render: (_, record) => record.household?.code || "N/A",
     },
     {
-      title: "Thời gian đăng ký",
-      key: "createdAt",
-      width: 180,
+      title: "Thời gian nhận",
+      key: "distributedAt",
+      width: 150,
       render: (_, record) =>
-        record.createdAt
+        record.distributedAt
+          ? dayjs(record.distributedAt).format("DD/MM/YYYY HH:mm")
+          : record.createdAt
           ? dayjs(record.createdAt).format("DD/MM/YYYY HH:mm")
-          : "N/A",
+          : "-",
     },
     {
       title: "Số lượng",
       key: "quantity",
-      width: 100,
+      width: 80,
       render: (_, record) => record.quantity || 1,
     },
     {
       title: "Giá trị",
       key: "totalValue",
-      width: 150,
+      width: 130,
+      ellipsis: true,
       render: (_, record) =>
         record.totalValue
           ? `${record.totalValue.toLocaleString("vi-VN")} VNĐ`
@@ -266,22 +274,14 @@ const RewardDistributions = () => {
     {
       title: "Trạng thái",
       key: "status",
-      width: 150,
+      width: 120,
       render: (_, record) => getStatusTag(record.status),
-    },
-    {
-      title: "Thời gian phát quà",
-      key: "distributedAt",
-      width: 180,
-      render: (_, record) =>
-        record.distributedAt
-          ? dayjs(record.distributedAt).format("DD/MM/YYYY HH:mm")
-          : "-",
     },
     {
       title: "Hành động",
       key: "actions",
       width: 100,
+      fixed: "right",
       render: (_, record) => (
         <Space size="small">
           <Button
@@ -404,7 +404,7 @@ const RewardDistributions = () => {
                 setPagination({ ...pagination, current: page, pageSize });
               },
             }}
-            scroll={{ x: 1400 }}
+            scroll={{ x: 1150 }}
           />
         </Space>
       </Card>
@@ -475,13 +475,17 @@ const RewardDistributions = () => {
               <Text>{viewingRegistration.household?.code || "N/A"}</Text>
             </div>
             <div>
-              <Text strong>Thời gian đăng ký: </Text>
+              <Text strong>Thời gian nhận: </Text>
               <Text>
-                {viewingRegistration.createdAt
+                {viewingRegistration.distributedAt
+                  ? dayjs(viewingRegistration.distributedAt).format(
+                      "DD/MM/YYYY HH:mm:ss"
+                    )
+                  : viewingRegistration.createdAt
                   ? dayjs(viewingRegistration.createdAt).format(
                       "DD/MM/YYYY HH:mm:ss"
                     )
-                  : "N/A"}
+                  : "-"}
               </Text>
             </div>
             <div>
