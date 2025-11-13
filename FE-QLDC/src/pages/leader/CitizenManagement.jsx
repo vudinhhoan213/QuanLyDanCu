@@ -613,11 +613,6 @@ const CitizenManagement = () => {
             <Form.Item name="phone" label="Số điện thoại">
               <Input placeholder="Nhập số điện thoại" />
             </Form.Item>
-            <Form.Item name="email" label="Email"
-            rules={[{ type: "email", message: "Email không hợp lệ" },]}
->
-  <Input placeholder="Nhập địa chỉ email" />
-</Form.Item>
             <Form.Item
               name="status"
               label="Trạng thái"
