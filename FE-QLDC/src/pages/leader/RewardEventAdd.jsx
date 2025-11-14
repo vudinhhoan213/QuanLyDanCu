@@ -36,6 +36,7 @@ const RewardEventAdd = () => {
         name: values.name,
         type: values.type,
         description: values.description,
+        rewardDescription: values.rewardDescription || undefined,
         startDate: values.dateRange?.[0]?.toISOString(),
         endDate: values.dateRange?.[1]?.toISOString(),
         budget: values.budget || undefined,
@@ -163,6 +164,17 @@ const RewardEventAdd = () => {
                   <TextArea
                     rows={4}
                     placeholder="Nhập mô tả chi tiết về sự kiện (tùy chọn)"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={24}>
+                <Form.Item name="rewardDescription" label="Phần thưởng">
+                  <TextArea
+                    rows={3}
+                    placeholder="Nhập mô tả phần thưởng (ví dụ: 5 cuốn sách, 1 bộ quà Tết, 200.000 VNĐ...)"
                   />
                 </Form.Item>
               </Col>

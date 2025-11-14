@@ -468,14 +468,12 @@ const MyRegistrations = () => {
       render: (_, record) => <Text strong>{record.event?.name || "N/A"}</Text>,
     },
     {
-      title: "Thời gian nhận",
+      title: "Thời gian nhận quà",
       key: "distributedAt",
       width: 150,
       render: (_, record) =>
         record.distributedAt
           ? dayjs(record.distributedAt).format("DD/MM/YYYY HH:mm")
-          : record.createdAt
-          ? dayjs(record.createdAt).format("DD/MM/YYYY HH:mm")
           : "-",
     },
     {
@@ -613,13 +611,9 @@ const MyRegistrations = () => {
             <Descriptions.Item label="Sự kiện">
               {viewingRegistration.event?.name || "N/A"}
             </Descriptions.Item>
-            <Descriptions.Item label="Thời gian nhận">
+            <Descriptions.Item label="Thời gian nhận quà">
               {viewingRegistration.distributedAt
                 ? dayjs(viewingRegistration.distributedAt).format(
-                    "DD/MM/YYYY HH:mm:ss"
-                  )
-                : viewingRegistration.createdAt
-                ? dayjs(viewingRegistration.createdAt).format(
                     "DD/MM/YYYY HH:mm:ss"
                   )
                 : "-"}
@@ -627,13 +621,6 @@ const MyRegistrations = () => {
             <Descriptions.Item label="Trạng thái">
               {getStatusTag(viewingRegistration)}
             </Descriptions.Item>
-            {viewingRegistration.distributedAt && (
-              <Descriptions.Item label="Thời gian phát quà">
-                {dayjs(viewingRegistration.distributedAt).format(
-                  "DD/MM/YYYY HH:mm:ss"
-                )}
-              </Descriptions.Item>
-            )}
             <Descriptions.Item label="Số lượng">
               {viewingRegistration.quantity || 1}
             </Descriptions.Item>

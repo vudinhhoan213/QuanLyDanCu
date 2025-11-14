@@ -16,7 +16,6 @@ import {
   Select,
 } from "antd";
 import {
-  PlusOutlined,
   SearchOutlined,
   EditOutlined,
   DeleteOutlined,
@@ -396,13 +395,6 @@ const RewardEventList = () => {
                 Xuất Excel
               </Button>
               <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => navigate("/leader/reward-events/add")}
-              >
-                Tạo sự kiện mới
-              </Button>
-              <Button
                 icon={<CalendarOutlined />}
                 onClick={() => navigate("/leader/reward-events/schedule")}
               >
@@ -564,6 +556,13 @@ const RewardEventList = () => {
                 {viewingEvent.distributedCount || 0} / {viewingEvent.registeredCount || 0}
               </Text>
             </Descriptions.Item>
+            {viewingEvent.rewardDescription && (
+              <Descriptions.Item label="Phần thưởng" span={2}>
+                <Text strong style={{ color: "#1890ff" }}>
+                  {viewingEvent.rewardDescription}
+                </Text>
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label="Ngân sách" span={2}>
               {viewingEvent.budget
                 ? `${viewingEvent.budget.toLocaleString("vi-VN")} VNĐ`

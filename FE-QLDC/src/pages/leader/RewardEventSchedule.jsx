@@ -14,16 +14,20 @@ import {
   Form,
   InputNumber,
   DatePicker,
+  Input,
+  Badge,
 } from "antd";
 import {
   ArrowLeftOutlined,
   CalendarOutlined,
   CheckCircleOutlined,
   EditOutlined,
+  GiftOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Layout from "../../components/Layout";
 import { rewardService } from "../../services";
+import { ANNUAL_OCCASIONS } from "../../constants/annualOccasions";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
@@ -35,31 +39,21 @@ const RewardEventSchedule = () => {
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [form] = Form.useForm();
+  const [templateOverrides, setTemplateOverrides] = useState(() => {
+    // Load từ localStorage nếu có
+    try {
+      const saved = localStorage.getItem("annualOccasionOverrides");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
 
-  // Các mẫu sự kiện thường niên
-  const annualTemplates = [
-    {
-      id: "mid-autumn",
-      name: "Trung Thu",
-      description: "Phát quà Trung Thu cho trẻ em",
-      defaultDate: "15/08 ÂL", // 15 tháng 8 Âm lịch
-      type: "ANNUAL",
-    },
-    {
-      id: "tet",
-      name: "Tết Nguyên Đán",
-      description: "Phát quà Tết cho các hộ gia đình",
-      defaultDate: "28/12 ÂL", // 28 tháng Chạp
-      type: "ANNUAL",
-    },
-    {
-      id: "children-day",
-      name: "Quốc tế Thiếu nhi",
-      description: "Phát quà ngày Quốc tế Thiếu nhi 1/6",
-      defaultDate: "01/06",
-      type: "ANNUAL",
-    },
-  ];
+  // Sử dụng danh sách dịp cố định từ constants và merge với overrides
+  const annualTemplates = ANNUAL_OCCASIONS.map((template) => {
+    const override = templateOverrides[template.id];
+    return override ? { ...template, ...override } : template;
+  });
 
   useEffect(() => {
     fetchExistingEvents();
@@ -112,6 +106,7 @@ const RewardEventSchedule = () => {
         name: `${template.name} ${getCurrentYear()}`,
         type: template.type,
         description: template.description,
+        rewardDescription: template.rewardDescription || undefined,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         status: "OPEN",
@@ -135,13 +130,27 @@ const RewardEventSchedule = () => {
     form.setFieldsValue({
       name: template.name,
       description: template.description,
+      rewardDescription: template.rewardDescription || "",
     });
     setIsEditModalVisible(true);
   };
 
   const handleSaveTemplate = () => {
     form.validateFields().then((values) => {
-      // TODO: Lưu template đã chỉnh sửa (có thể lưu vào localStorage hoặc backend)
+      if (!editingTemplate) return;
+
+      // Lưu override vào localStorage
+      const newOverrides = {
+        ...templateOverrides,
+        [editingTemplate.id]: {
+          name: values.name,
+          description: values.description,
+          rewardDescription: values.rewardDescription || undefined,
+        },
+      };
+      setTemplateOverrides(newOverrides);
+      localStorage.setItem("annualOccasionOverrides", JSON.stringify(newOverrides));
+
       message.success("Đã lưu cấu hình mẫu");
       setIsEditModalVisible(false);
       setEditingTemplate(null);
@@ -175,7 +184,7 @@ const RewardEventSchedule = () => {
           </Row>
 
           <Text type="secondary">
-            Kích hoạt các sự kiện thường niên để hệ thống tự động tạo sự kiện
+            Danh sách các dịp cố định trong năm. Kích hoạt các dịp để hệ thống tự động tạo sự kiện
             với cấu hình mặc định. Bạn có thể chỉnh sửa sau khi tạo.
           </Text>
 
@@ -183,59 +192,91 @@ const RewardEventSchedule = () => {
             {annualTemplates.map((template) => {
               const exists = isEventExists(template);
               const eventDate = calculateDate(template);
+              const targetInfo = template.targetAge
+                ? `Trẻ em ${template.targetAge.min}-${template.targetAge.max} tuổi`
+                : template.targetGender === "FEMALE"
+                ? "Phụ nữ"
+                : "Tất cả mọi người";
 
               return (
-                <Col span={24} key={template.id}>
+                <Col xs={24} sm={24} md={12} lg={8} key={template.id}>
                   <Card
                     hoverable
                     style={{
                       border: exists ? "2px solid #52c41a" : "1px solid #d9d9d9",
+                      height: "100%",
                     }}
+                    cover={
+                      <div
+                        style={{
+                          textAlign: "center",
+                          padding: "20px",
+                          fontSize: "48px",
+                          backgroundColor: exists ? "#f6ffed" : "#fafafa",
+                        }}
+                      >
+                        {template.icon || <GiftOutlined />}
+                      </div>
+                    }
                   >
-                    <Row justify="space-between" align="middle">
-                      <Col flex="auto">
-                        <Space direction="vertical" size="small">
-                          <Space>
-                            <Title level={4} style={{ margin: 0 }}>
-                              {template.name}
-                            </Title>
-                            {exists && (
-                              <Tag color="green" icon={<CheckCircleOutlined />}>
-                                Đã kích hoạt năm {getCurrentYear()}
-                              </Tag>
-                            )}
-                          </Space>
-                          <Text type="secondary">{template.description}</Text>
-                          <Descriptions size="small" column={3}>
-                            <Descriptions.Item label="Ngày diễn ra">
-                              {template.defaultDate}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Ngày dự kiến">
-                              {eventDate.format("DD/MM/YYYY")}
-                            </Descriptions.Item>
-                          </Descriptions>
-                        </Space>
-                      </Col>
-                      <Col>
-                        <Space>
-                          <Button
-                            icon={<EditOutlined />}
-                            onClick={() => handleEditTemplate(template)}
-                          >
-                            Chỉnh sửa
-                          </Button>
-                          <Button
-                            type="primary"
-                            icon={<CalendarOutlined />}
-                            onClick={() => handleActivate(template)}
-                            disabled={exists || loading}
-                            loading={loading}
-                          >
-                            {exists ? "Đã kích hoạt" : "Kích hoạt năm nay"}
-                          </Button>
-                        </Space>
-                      </Col>
-                    </Row>
+                    <Space direction="vertical" size="small" style={{ width: "100%" }}>
+                      <Row justify="space-between" align="middle">
+                        <Col flex="auto">
+                          <Title level={4} style={{ margin: 0 }}>
+                            {template.name}
+                          </Title>
+                        </Col>
+                        {exists && (
+                          <Col>
+                            <Tag color="green" icon={<CheckCircleOutlined />}>
+                              Đã kích hoạt
+                            </Tag>
+                          </Col>
+                        )}
+                      </Row>
+                      <Text type="secondary" style={{ fontSize: "13px" }}>
+                        {template.description}
+                      </Text>
+                      <Descriptions size="small" column={1} bordered>
+                        <Descriptions.Item label="Ngày diễn ra">
+                          <Text strong>{template.defaultDate}</Text>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Ngày dự kiến">
+                          <Text strong style={{ color: "#1890ff" }}>
+                            {eventDate.format("DD/MM/YYYY")}
+                          </Text>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Đối tượng">
+                          <Text>{targetInfo}</Text>
+                        </Descriptions.Item>
+                        {template.rewardDescription && (
+                          <Descriptions.Item label="Phần thưởng">
+                            <Text strong style={{ color: "#1890ff" }}>
+                              {template.rewardDescription}
+                            </Text>
+                          </Descriptions.Item>
+                        )}
+                      </Descriptions>
+                      <Space style={{ width: "100%", justifyContent: "flex-end" }}>
+                        <Button
+                          icon={<EditOutlined />}
+                          onClick={() => handleEditTemplate(template)}
+                          size="small"
+                        >
+                          Chỉnh sửa
+                        </Button>
+                        <Button
+                          type="primary"
+                          icon={<CalendarOutlined />}
+                          onClick={() => handleActivate(template)}
+                          disabled={exists || loading}
+                          loading={loading}
+                          size="small"
+                        >
+                          {exists ? "Đã kích hoạt" : "Kích hoạt"}
+                        </Button>
+                      </Space>
+                    </Space>
                   </Card>
                 </Col>
               );
@@ -268,6 +309,16 @@ const RewardEventSchedule = () => {
             </Form.Item>
             <Form.Item name="description" label="Mô tả">
               <Input.TextArea rows={3} />
+            </Form.Item>
+            <Form.Item
+              name="rewardDescription"
+              label="Phần thưởng"
+              tooltip="Mô tả phần thưởng sẽ được áp dụng khi kích hoạt sự kiện (ví dụ: 200.000 VNĐ tiền mặt, 1 bộ quà Tết...)"
+            >
+              <Input.TextArea
+                rows={3}
+                placeholder="Ví dụ: 200.000 VNĐ tiền mặt, 1 bộ quà Tết (bánh kẹo, trà, rượu)..."
+              />
             </Form.Item>
           </Form>
         )}
