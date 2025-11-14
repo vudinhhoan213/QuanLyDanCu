@@ -11,6 +11,7 @@ const rewardEventSchema = new Schema(
       index: true,
     },
     description: { type: String },
+    rewardDescription: { type: String }, // Mô tả phần thưởng (ví dụ: "5 cuốn sách", "1 bộ quà Tết")
     date: { type: Date },
     startDate: { type: Date },
     endDate: { type: Date },

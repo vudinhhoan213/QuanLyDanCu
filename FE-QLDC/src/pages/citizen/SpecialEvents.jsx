@@ -575,6 +575,13 @@ const SpecialEvents = () => {
               <Descriptions.Item label="Tỷ lệ nhận quà">
                 {viewingEvent.distributedCount || 0} / {viewingEvent.registeredCount || 0}
               </Descriptions.Item>
+              {viewingEvent.rewardDescription && (
+                <Descriptions.Item label="Phần thưởng">
+                  <Text strong style={{ color: "#1890ff" }}>
+                    {viewingEvent.rewardDescription}
+                  </Text>
+                </Descriptions.Item>
+              )}
               {viewingEvent.budget && (
                 <Descriptions.Item label="Giá trị quà">
                   {viewingEvent.budget.toLocaleString("vi-VN")} VNĐ
