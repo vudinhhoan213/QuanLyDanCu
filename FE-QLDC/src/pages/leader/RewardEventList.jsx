@@ -51,10 +51,16 @@ const RewardEventList = () => {
   });
   const [viewingEvent, setViewingEvent] = useState(null);
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
   useEffect(() => {
     fetchEvents();
   }, [pagination.current, pagination.pageSize, statusFilter, typeFilter]);
+
+  useEffect(() => {
+    // Reset selection khi filter thay đổi
+    setSelectedRowKeys([]);
+  }, [statusFilter, typeFilter]);
 
   const fetchEvents = async () => {
     try {
@@ -70,14 +76,28 @@ const RewardEventList = () => {
       const response = await rewardService.events.getAll(params);
       const eventList = response.docs || [];
 
-      // Backend đã trả về registeredCount và distributedCount, không cần tính lại
-
-      setEvents(
-        eventList.map((e) => ({
-          key: e._id,
-          ...e,
-        }))
+      // Lấy eligible count cho mỗi event
+      const eventsWithEligible = await Promise.all(
+        eventList.map(async (event) => {
+          try {
+            const summary = await rewardService.events.getSummary(event._id);
+            return {
+              key: event._id,
+              ...event,
+              eligibleCount: summary.eligibleCount,
+            };
+          } catch (error) {
+            console.error(`Error fetching summary for event ${event._id}:`, error);
+            return {
+              key: event._id,
+              ...event,
+              eligibleCount: 0,
+            };
+          }
+        })
       );
+
+      setEvents(eventsWithEligible);
       setPagination({
         ...pagination,
         total: response.total || 0,
@@ -133,6 +153,28 @@ const RewardEventList = () => {
     } catch (error) {
       console.error("Error deleting event:", error);
       const errorMsg = error.response?.data?.message || "Không thể xóa sự kiện";
+      message.error(errorMsg);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning("Vui lòng chọn ít nhất một sự kiện để xóa");
+      return;
+    }
+
+    try {
+      // Xóa tuần tự để đảm bảo không có lỗi
+      for (const eventId of selectedRowKeys) {
+        await rewardService.events.delete(eventId);
+      }
+
+      message.success(`Đã xóa ${selectedRowKeys.length} sự kiện thành công`);
+      setSelectedRowKeys([]);
+      fetchEvents();
+    } catch (error) {
+      console.error("Error bulk deleting events:", error);
+      const errorMsg = error.response?.data?.message || "Không thể xóa một số sự kiện";
       message.error(errorMsg);
     }
   };
@@ -261,17 +303,21 @@ const RewardEventList = () => {
       },
     },
     {
-      title: "Tỷ lệ nhận quà",
-      key: "distributionRate",
-      width: 120,
+      title: "Số lượng",
+      dataIndex: "eligibleCount",
+      key: "eligibleCount",
+      width: 100,
+      render: (text) => <Text>{text || 0}</Text>,
+    },
+    {
+      title: "Tỷ lệ",
+      key: "ratio",
+      width: 100,
       render: (_, record) => {
+        const eligible = record.eligibleCount || 0;
         const distributed = record.distributedCount || 0;
-        const registered = record.registeredCount || 0;
-        return (
-          <Text>
-            {distributed}/{registered || 0}
-          </Text>
-        );
+        const ratio = eligible > 0 ? ((distributed / eligible) * 100).toFixed(1) : 0;
+        return <Text>{ratio}%</Text>;
       },
     },
     {
@@ -284,7 +330,7 @@ const RewardEventList = () => {
     {
       title: "Hành động",
       key: "actions",
-      width: 300,
+      width: 200,
       fixed: "right",
       render: (_, record) => {
         const hasRegistrations = (record.registeredCount || 0) > 0;
@@ -292,11 +338,6 @@ const RewardEventList = () => {
           !hasRegistrations &&
           (record.status === "OPEN" || record.status === "PLANNED");
         const canClose = record.status === "OPEN";
-        const canDelete =
-          !hasRegistrations &&
-          (record.status === "OPEN" ||
-            record.status === "PLANNED" ||
-            record.status === "CLOSED");
 
         return (
           <Space size="small">
@@ -331,29 +372,6 @@ const RewardEventList = () => {
                 </Button>
               </Popconfirm>
             )}
-            {canDelete && (
-              <Popconfirm
-                title="Bạn có chắc muốn xóa sự kiện này?"
-                description="Hành động này không thể hoàn tác. Sự kiện sẽ bị xóa vĩnh viễn."
-                onConfirm={() => handleDelete(record._id)}
-                okText="Xóa"
-                cancelText="Hủy"
-                okButtonProps={{ danger: true }}
-              >
-                <Button type="link" danger icon={<DeleteOutlined />}>
-                  Xóa
-                </Button>
-              </Popconfirm>
-            )}
-            <Button
-              type="link"
-              icon={<FileTextOutlined />}
-              onClick={() =>
-                navigate(`/leader/reward-events/${record._id}/registrations`)
-              }
-            >
-              Xem đăng ký
-            </Button>
             {(record.registeredCount || 0) > 0 && (
               <Button
                 type="link"
@@ -387,6 +405,15 @@ const RewardEventList = () => {
           </Col>
           <Col>
             <Space>
+              <Button
+                type="primary"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={handleBulkDelete}
+                disabled={selectedRowKeys.length === 0}
+              >
+                Xóa đã chọn ({selectedRowKeys.length})
+              </Button>
               <Button
                 icon={<ExportOutlined />}
                 onClick={handleExportEvents}
@@ -445,9 +472,16 @@ const RewardEventList = () => {
         </Space>
 
         <Table
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedKeys) => {
+              setSelectedRowKeys(selectedKeys);
+            },
+          }}
           columns={columns}
           dataSource={filteredEvents}
           loading={loading}
+          rowKey="_id"
           pagination={{
             ...pagination,
             showSizeChanger: true,
@@ -456,7 +490,7 @@ const RewardEventList = () => {
               setPagination({ ...pagination, current: page, pageSize });
             },
           }}
-          scroll={{ x: 1000 }}
+          scroll={{ x: 1040 }}
         />
       </Card>
 

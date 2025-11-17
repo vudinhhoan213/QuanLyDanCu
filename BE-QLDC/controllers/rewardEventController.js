@@ -264,4 +264,33 @@ module.exports = {
       next(err);
     }
   },
+
+  // Lấy thống kê cho event (eligible, registered, distributed)
+  async getSummary(req, res, next) {
+    try {
+      const { id } = req.params;
+      const summary = await rewardEventService.getEventSummary(id);
+      if (!summary) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      res.json(summary);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // Lấy danh sách công dân đủ điều kiện
+  async getEligibleCitizens(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { page, limit } = req.query;
+      const citizens = await rewardEventService.getEligibleCitizens(id, {
+        page: Number(page) || 1,
+        limit: Number(limit) || 50,
+      });
+      res.json({ docs: citizens });
+    } catch (err) {
+      next(err);
+    }
+  },
 };

@@ -13,6 +13,7 @@ import {
   Modal,
   Select,
   Statistic,
+  Tabs,
 } from "antd";
 import {
   GiftOutlined,
@@ -37,13 +38,21 @@ const RewardDistributions = () => {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [events, setEvents] = useState([]);
   const [registrations, setRegistrations] = useState([]);
+  const [eligibleCitizens, setEligibleCitizens] = useState([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [selectedEligibleKeys, setSelectedEligibleKeys] = useState([]);
   const [isDistributionModalVisible, setIsDistributionModalVisible] =
     useState(false);
   const [distributionNote, setDistributionNote] = useState("");
   const [viewingRegistration, setViewingRegistration] = useState(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState("registrations");
   const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+  const [eligiblePagination, setEligiblePagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0,
@@ -51,12 +60,23 @@ const RewardDistributions = () => {
 
   useEffect(() => {
     fetchEvents();
-    fetchRegistrations();
-  }, [pagination.current, pagination.pageSize]);
+    if (activeTab === "registrations") {
+      fetchRegistrations();
+    } else {
+      fetchEligibleCitizens();
+    }
+  }, [pagination.current, pagination.pageSize, eligiblePagination.current, eligiblePagination.pageSize, activeTab]);
 
   useEffect(() => {
-    fetchRegistrations();
-  }, [eventFilter, statusFilter]);
+    if (activeTab === "registrations") {
+      fetchRegistrations();
+    } else if (eventFilter) {
+      fetchEligibleCitizens();
+    }
+    // Reset selection khi chuyển tab hoặc thay đổi event
+    setSelectedRowKeys([]);
+    setSelectedEligibleKeys([]);
+  }, [eventFilter, statusFilter, activeTab]);
 
   const fetchEvents = async () => {
     try {
@@ -105,9 +125,80 @@ const RewardDistributions = () => {
     }
   };
 
+  const fetchEligibleCitizens = async (timestamp = null) => {
+    if (!eventFilter) {
+      setEligibleCitizens([]);
+      setEligiblePagination({ ...eligiblePagination, total: 0 });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const params = {
+        page: eligiblePagination.current,
+        limit: eligiblePagination.pageSize,
+      };
+
+      // Lấy danh sách công dân đủ điều kiện
+      const response = await rewardService.events.getEligibleCitizens(eventFilter, params);
+      let citizens = response.docs || [];
+
+      // Lấy danh sách phân phối cho event này để kiểm tra trạng thái nhận quà
+      try {
+        const distributionsResponse = await rewardService.distributions.getAll({
+          event: eventFilter,
+          limit: 1000, // Lấy nhiều để cover hết eligible citizens
+        });
+        const distributions = distributionsResponse.docs || [];
+
+        // Map distributions by citizen ID
+        const distributionMap = {};
+        distributions.forEach(dist => {
+          if (dist.citizen && dist.citizen._id) {
+            distributionMap[dist.citizen._id] = dist;
+          }
+        });
+
+        // Thêm thông tin trạng thái nhận quà cho mỗi citizen
+        citizens = citizens.map(citizen => {
+          const distribution = distributionMap[citizen._id];
+          return {
+            ...citizen,
+            hasReceivedReward: distribution?.status === 'DISTRIBUTED',
+            distributionId: distribution?._id,
+            distributedAt: distribution?.distributedAt,
+            distributionNote: distribution?.note,
+          };
+        });
+
+      } catch (error) {
+        console.error('Error fetching distributions:', error);
+        // Nếu không lấy được distributions, set default status
+        citizens = citizens.map(citizen => ({
+          ...citizen,
+          hasReceivedReward: false,
+          distributionId: null,
+          distributedAt: null,
+          distributionNote: null,
+        }));
+      }
+
+      setEligibleCitizens(citizens);
+      setEligiblePagination({
+        ...eligiblePagination,
+        total: response.total || response.docs?.length || 0,
+      });
+    } catch (error) {
+      console.error("Error fetching eligible citizens:", error);
+      message.error("Không thể tải danh sách công dân đủ điều kiện");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDistribute = () => {
     if (selectedRowKeys.length === 0) {
-      message.warning("Vui lòng chọn ít nhất một người đăng ký");
+      message.warning("Vui lòng chọn ít nhất một người nhận quà");
       return;
     }
 
@@ -121,7 +212,7 @@ const RewardDistributions = () => {
 
     if (alreadyDistributed.length > 0) {
       message.warning(
-        `Có ${alreadyDistributed.length} đăng ký đã được phân phát quà rồi. Vui lòng bỏ chọn các đăng ký này.`
+        `Có ${alreadyDistributed.length} người đã được phân phát quà rồi. Vui lòng bỏ chọn các người này.`
       );
       return;
     }
@@ -130,26 +221,73 @@ const RewardDistributions = () => {
   };
 
   const handleConfirmDistribute = async () => {
+    if (activeTab === "registrations") {
+      await handleDistribute();
+    } else if (activeTab === "eligible") {
+      await handleDistributeEligible();
+    }
+  };
+
+  const handleDistributeEligible = async () => {
+    if (selectedEligibleKeys.length === 0) {
+      message.warning("Vui lòng chọn ít nhất một công dân đủ điều kiện");
+      return;
+    }
+
     try {
       setDistributing(true);
-      const result = await rewardService.distributions.distribute(
-        selectedRowKeys,
-        distributionNote || undefined
-      );
+
+      // Tạo distribution records tuần tự để đảm bảo không có lỗi
+      console.log('Creating distributions for:', selectedEligibleKeys);
+      const createPromises = selectedEligibleKeys.map(async (citizenId) => {
+        try {
+          // Tìm household của citizen từ eligibleCitizens
+          const citizen = eligibleCitizens.find(c => c._id === citizenId);
+          if (!citizen || !citizen.household) {
+            throw new Error(`Không tìm thấy thông tin hộ gia đình cho công dân ${citizenId}`);
+          }
+
+          const result = await rewardService.distributions.create({
+            citizen: citizenId,
+            household: citizen.household._id || citizen.household,
+            event: eventFilter,
+            status: 'DISTRIBUTED',
+            note: distributionNote || 'Phân phát trực tiếp từ danh sách đủ điều kiện',
+            distributedAt: new Date(),
+            quantity: 1,
+            unitValue: 0,
+          });
+          console.log('Created distribution for citizen:', citizenId, result);
+          return result;
+        } catch (error) {
+          console.error('Error creating distribution for citizen:', citizenId, error);
+          throw error;
+        }
+      });
+
+      await Promise.all(createPromises);
+      console.log('All distributions created successfully');
 
       message.success(
-        `✅ Đã phân phát quà cho ${result.modifiedCount} đăng ký thành công!`
+        `✅ Đã phân phát quà cho ${selectedEligibleKeys.length} công dân đủ điều kiện thành công!`
       );
 
-      // Reset state
-      setSelectedRowKeys([]);
+      // Đợi một chút để đảm bảo data được sync
+      console.log('Waiting for data sync...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('Data sync complete, refreshing...');
+
+      // Refresh danh sách trước
+      console.log('Refreshing eligible citizens data...');
+      await fetchEligibleCitizens(Date.now());
+      console.log('Data refreshed successfully');
+
+      // Reset state sau khi refresh thành công
+      setSelectedEligibleKeys([]);
       setDistributionNote("");
       setIsDistributionModalVisible(false);
-
-      // Refresh danh sách
-      await fetchRegistrations();
     } catch (error) {
-      console.error("Error distributing gifts:", error);
+      console.error("Error distributing gifts to eligible citizens:", error);
       message.error(
         error.response?.data?.message ||
           "Không thể phân phát quà. Vui lòng thử lại!"
@@ -177,7 +315,7 @@ const RewardDistributions = () => {
   // Statistics - chỉ tính trên filteredRegistrations để hiển thị đúng
   const stats = {
     total: filteredRegistrations.length,
-    registered: filteredRegistrations.filter((r) => r.status === "REGISTERED")
+    pending: filteredRegistrations.filter((r) => r.status === "REGISTERED")
       .length,
     distributed: filteredRegistrations.filter((r) => r.status === "DISTRIBUTED")
       .length,
@@ -193,16 +331,118 @@ const RewardDistributions = () => {
     }),
   };
 
+  const eligibleRowSelection = {
+    selectedRowKeys: selectedEligibleKeys,
+    onChange: (selectedKeys) => {
+      setSelectedEligibleKeys(selectedKeys);
+    },
+    getCheckboxProps: (record) => ({
+      disabled: record.hasReceivedReward, // Disable nếu đã nhận quà
+    }),
+  };
+
   const getStatusTag = (status) => {
     if (status === "DISTRIBUTED") {
-      return <Tag color="green">Đã phát quà</Tag>;
-    } else if (status === "REGISTERED") {
-      return <Tag color="blue">Đã đăng ký</Tag>;
-    } else if (status === "CANCELLED") {
-      return <Tag color="red">Đã hủy</Tag>;
+      return <Tag color="green">Đã nhận quà</Tag>;
+    } else {
+      return <Tag color="orange">Chưa nhận quà</Tag>;
     }
-    return <Tag color="default">Đã đăng ký</Tag>;
   };
+
+  const eligibleColumns = [
+    {
+      title: "STT",
+      key: "index",
+      width: 60,
+      fixed: "left",
+      render: (_, __, index) => {
+        return (eligiblePagination.current - 1) * eligiblePagination.pageSize + index + 1;
+      },
+    },
+    {
+      title: "Họ tên",
+      key: "fullName",
+      width: 140,
+      ellipsis: true,
+      render: (_, record) => <Text strong>{record.fullName || "N/A"}</Text>,
+    },
+    {
+      title: "CMND/CCCD",
+      key: "nationalId",
+      width: 120,
+      ellipsis: true,
+      render: (_, record) => record.nationalId || "N/A",
+    },
+    {
+      title: "Quà tặng",
+      key: "gift",
+      width: 180,
+      ellipsis: true,
+      render: (_, record) => {
+        // Xác định quà tặng dựa trên thông tin từ event
+        const event = events.find(e => e._id === eventFilter);
+        if (!event) return "N/A";
+
+        // Ưu tiên sử dụng rewardDescription nếu có
+        if (event.rewardDescription) {
+          return event.rewardDescription;
+        }
+
+        // Fallback: Xác định dựa trên loại sự kiện và tên
+        switch (event.type) {
+          case "SCHOOL_YEAR":
+            return "Sách vở học tập";
+          case "ANNUAL":
+            if (event.name.toLowerCase().includes("trung thu")) {
+              return "Hộp quà trung thu";
+            } else if (event.name.toLowerCase().includes("tết")) {
+              return "Tiền lì xì";
+            } else if (event.name.toLowerCase().includes("noel")) {
+              return "Quà Noel cho trẻ em";
+            } else if (event.name.toLowerCase().includes("thiếu nhi")) {
+              return "Quà thiếu nhi";
+            }
+            return "Quà tặng hàng năm";
+          case "SPECIAL":
+          case "SPECIAL_OCCASION":
+            return "Quà đặc biệt";
+          default:
+            return "Quà tặng";
+        }
+      },
+    },
+    {
+      title: "Ngày nhận quà",
+      key: "distributedAt",
+      width: 150,
+      render: (_, record) => {
+        if (record.hasReceivedReward && record.distributedAt) {
+          return dayjs(record.distributedAt).format("DD/MM/YYYY HH:mm");
+        }
+        return record.hasReceivedReward ? "Đã nhận" : "Chưa nhận";
+      },
+    },
+    {
+      title: "Hộ khẩu",
+      key: "household",
+      width: 100,
+      ellipsis: true,
+      render: (_, record) => record.household?.address || "N/A",
+    },
+    {
+      title: "Trạng thái nhận quà",
+      key: "rewardStatus",
+      width: 150,
+      render: (_, record) => {
+        const hasReceived = record.hasReceivedReward;
+        return (
+          <Tag color={hasReceived ? "green" : "orange"}>
+            {hasReceived ? "Đã nhận quà" : "Chưa nhận quà"}
+          </Tag>
+        );
+      },
+    },
+  ];
 
   const columns = [
     {
@@ -310,7 +550,7 @@ const RewardDistributions = () => {
             <Col span={8}>
               <Card>
                 <Statistic
-                  title="Tổng đăng ký (đang xem)"
+                  title="Tổng số người (đang xem)"
                   value={stats.total}
                   valueStyle={{ color: "#1890ff" }}
                 />
@@ -319,8 +559,8 @@ const RewardDistributions = () => {
             <Col span={8}>
               <Card>
                 <Statistic
-                  title="Chờ phát quà"
-                  value={stats.registered}
+                  title="Chưa nhận quà"
+                  value={stats.pending}
                   valueStyle={{ color: "#faad14" }}
                 />
               </Card>
@@ -328,9 +568,9 @@ const RewardDistributions = () => {
             <Col span={8}>
               <Card>
                 <Statistic
-                  title="Đã chọn để phát quà"
-                  value={selectedRowKeys.length}
-                  valueStyle={{ color: "#722ed1" }}
+                  title="Đã nhận quà"
+                  value={stats.distributed}
+                  valueStyle={{ color: "#52c41a" }}
                 />
               </Card>
             </Col>
@@ -353,58 +593,213 @@ const RewardDistributions = () => {
             </Col>
           </Row>
 
-          <Row gutter={16}>
-            <Col span={8}>
-              <Input
-                placeholder="Tìm kiếm theo tên/CMND/hộ khẩu/sự kiện..."
-                prefix={<SearchOutlined />}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                allowClear
-              />
-            </Col>
-            <Col span={6}>
-              <Select
-                style={{ width: "100%" }}
-                placeholder="Chọn sự kiện"
-                value={eventFilter}
-                onChange={setEventFilter}
-                allowClear
-              >
-                {events.map((event) => (
-                  <Option key={event._id} value={event._id}>
-                    {event.name}
-                  </Option>
-                ))}
-              </Select>
-            </Col>
-            <Col span={6}>
-              <Select
-                style={{ width: "100%" }}
-                value={statusFilter}
-                onChange={setStatusFilter}
-              >
-                <Option value="ALL">Tất cả trạng thái</Option>
-                <Option value="REGISTERED">Đã đăng ký</Option>
-                <Option value="DISTRIBUTED">Đã phát quà</Option>
-              </Select>
-            </Col>
-          </Row>
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            type="card"
+            items={[
+              {
+                key: "registrations",
+                label: "Danh sách tổng hợp nhận quà",
+                children: (
+                  <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+                    {/* Statistics for registrations */}
+                    <Row gutter={16}>
+                      <Col span={8}>
+                        <Card>
+                          <Statistic
+                            title="Tổng đăng ký"
+                            value={stats.total}
+                            valueStyle={{ color: "#1890ff" }}
+                          />
+                        </Card>
+                      </Col>
+                      <Col span={8}>
+                        <Card>
+                          <Statistic
+                            title="Chưa nhận quà"
+                            value={stats.pending}
+                            valueStyle={{ color: "#faad14" }}
+                          />
+                        </Card>
+                      </Col>
+                      <Col span={8}>
+                        <Card>
+                          <Statistic
+                            title="Đã nhận quà"
+                            value={stats.distributed}
+                            valueStyle={{ color: "#52c41a" }}
+                          />
+                        </Card>
+                      </Col>
+                    </Row>
 
-          <Table
-            rowSelection={rowSelection}
-            columns={columns}
-            dataSource={filteredRegistrations}
-            loading={loading}
-            pagination={{
-              ...pagination,
-              showSizeChanger: true,
-              showTotal: (total) => `Tổng ${total} đăng ký`,
-              onChange: (page, pageSize) => {
-                setPagination({ ...pagination, current: page, pageSize });
+                    {/* Filters and Actions for registrations */}
+                    <Row justify="space-between" align="middle">
+                      <Col>
+                        <Space>
+                          <Button
+                            type="primary"
+                            icon={<GiftOutlined />}
+                            onClick={handleDistribute}
+                            disabled={selectedRowKeys.length === 0 || distributing}
+                            loading={distributing}
+                          >
+                            Phân phát quà ({selectedRowKeys.length})
+                          </Button>
+                        </Space>
+                      </Col>
+                    </Row>
+
+                    <Row gutter={16}>
+                      <Col span={8}>
+                        <Input
+                          placeholder="Tìm kiếm theo tên/CMND/hộ khẩu/sự kiện..."
+                          prefix={<SearchOutlined />}
+                          value={searchText}
+                          onChange={(e) => setSearchText(e.target.value)}
+                          allowClear
+                        />
+                      </Col>
+                      <Col span={6}>
+                        <Select
+                          style={{ width: "100%" }}
+                          placeholder="Chọn sự kiện"
+                          value={eventFilter}
+                          onChange={setEventFilter}
+                          allowClear
+                        >
+                          {events.map((event) => (
+                            <Option key={event._id} value={event._id}>
+                              {event.name}
+                            </Option>
+                          ))}
+                        </Select>
+                      </Col>
+                      <Col span={6}>
+                        <Select
+                          style={{ width: "100%" }}
+                          value={statusFilter}
+                          onChange={setStatusFilter}
+                        >
+                          <Option value="ALL">Tất cả trạng thái</Option>
+                          <Option value="REGISTERED">Chưa nhận quà</Option>
+                          <Option value="DISTRIBUTED">Đã nhận quà</Option>
+                        </Select>
+                      </Col>
+                    </Row>
+
+                    <Table
+                      rowSelection={rowSelection}
+                      columns={columns}
+                      dataSource={filteredRegistrations}
+                      loading={loading}
+                      rowKey="_id"
+                      pagination={{
+                        ...pagination,
+                        showSizeChanger: true,
+                        showTotal: (total) => `Tổng ${total} người`,
+                        onChange: (page, pageSize) => {
+                          setPagination({ ...pagination, current: page, pageSize });
+                        },
+                      }}
+                      scroll={{ x: 1150 }}
+                    />
+                  </Space>
+                ),
               },
-            }}
-            scroll={{ x: 1150 }}
+              {
+                key: "eligible",
+                label: "Công dân đủ điều kiện & Trạng thái nhận quà",
+                children: (
+                  <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+                    {/* Statistics for eligible citizens */}
+                    <Row gutter={16}>
+                      <Col span={8}>
+                        <Card>
+                          <Statistic
+                            title="Tổng đủ điều kiện"
+                            value={eligiblePagination.total}
+                            valueStyle={{ color: "#1890ff" }}
+                          />
+                        </Card>
+                      </Col>
+                      <Col span={8}>
+                        <Card>
+                          <Statistic
+                            title="Đã nhận quà"
+                            value={eligibleCitizens.filter(c => c.hasReceivedReward).length}
+                            valueStyle={{ color: "#52c41a" }}
+                          />
+                        </Card>
+                      </Col>
+                      <Col span={8}>
+                        <Card>
+                          <Statistic
+                            title="Đã chọn để phát quà"
+                            value={selectedEligibleKeys.length}
+                            valueStyle={{ color: "#722ed1" }}
+                          />
+                        </Card>
+                      </Col>
+                    </Row>
+
+                    {/* Filter for eligible citizens */}
+                    <Row gutter={16}>
+                      <Col span={8}>
+                        <Select
+                          style={{ width: "100%" }}
+                          placeholder="Chọn sự kiện"
+                          value={eventFilter}
+                          onChange={setEventFilter}
+                          allowClear
+                        >
+                          {events.map((event) => (
+                            <Option key={event._id} value={event._id}>
+                              {event.name}
+                            </Option>
+                          ))}
+                        </Select>
+                      </Col>
+                    </Row>
+
+                    {/* Actions for eligible citizens */}
+                    <Row justify="space-between" align="middle">
+                      <Col>
+                        <Space>
+                          <Button
+                            type="primary"
+                            icon={<GiftOutlined />}
+                            onClick={() => setIsDistributionModalVisible(true)}
+                            disabled={selectedEligibleKeys.length === 0 || distributing}
+                            loading={distributing}
+                          >
+                            Phân phát quà ({selectedEligibleKeys.length})
+                          </Button>
+                        </Space>
+                      </Col>
+                    </Row>
+
+                    <Table
+                      rowSelection={eligibleRowSelection}
+                      columns={eligibleColumns}
+                      dataSource={eligibleCitizens}
+                      loading={loading}
+                      rowKey="_id"
+                      pagination={{
+                        ...eligiblePagination,
+                        showSizeChanger: true,
+                        showTotal: (total) => `Tổng ${total} công dân`,
+                        onChange: (page, pageSize) => {
+                          setEligiblePagination({ ...eligiblePagination, current: page, pageSize });
+                        },
+                      }}
+                      scroll={{ x: 1000 }}
+                    />
+                  </Space>
+                ),
+              },
+            ]}
           />
         </Space>
       </Card>
@@ -425,7 +820,11 @@ const RewardDistributions = () => {
         <Space direction="vertical" style={{ width: "100%" }} size="middle">
           <div>
             <Text strong>
-              Bạn đang phân phát quà cho {selectedRowKeys.length} đăng ký.
+              Bạn đang phân phát quà cho {
+                activeTab === "registrations"
+                  ? `${selectedRowKeys.length} người`
+                  : `${selectedEligibleKeys.length} công dân đủ điều kiện`
+              }.
             </Text>
           </div>
           <div>
@@ -441,9 +840,8 @@ const RewardDistributions = () => {
         </Space>
       </Modal>
 
-      {/* Detail Modal */}
       <Modal
-        title="Chi tiết đăng ký"
+        title="Chi tiết người nhận quà"
         open={isDetailModalVisible}
         onCancel={() => {
           setIsDetailModalVisible(false);

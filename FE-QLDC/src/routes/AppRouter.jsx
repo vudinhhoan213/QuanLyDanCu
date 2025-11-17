@@ -38,9 +38,8 @@ import SubmitEditRequest from "../pages/citizen/SubmitEditRequest";
 import SubmitRewardProposal from "../pages/citizen/SubmitRewardProposal";
 import MyRequests from "../pages/citizen/MyRequests";
 import MyRewards from "../pages/citizen/MyRewards";
-import EventList from "../pages/citizen/EventList";
 import MyRegistrations from "../pages/citizen/MyRegistrations";
-import SpecialEvents from "../pages/citizen/SpecialEvents";
+// Event pages removed: EventList and SpecialEvents
 
 // Error Pages
 import NotFoundPage from "../pages/errors/NotFoundPage";
@@ -215,22 +214,7 @@ const AppRouter = () => {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/citizen/events"
-          element={
-            <ProtectedRoute requiredRole="citizen">
-              <EventList />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/citizen/events/special"
-          element={
-            <ProtectedRoute requiredRole="citizen">
-              <SpecialEvents />
-            </ProtectedRoute>
-          }
-        />
+        {/* Event pages removed: /citizen/events and /citizen/events/special */}
         <Route
           path="/citizen/my-registrations"
           element={
