@@ -296,9 +296,10 @@ const QuickAction = ({ icon, title, description, onClick, color }) => (
           // Filter: CHỈ lấy thông báo "yêu cầu mới" (title có "Mới")
           // Loại bỏ thông báo phản hồi (title có "được duyệt" hoặc "bị từ chối")
           const newRequestNotifs = allNotifs.filter((n) => {
-            const title = n.title || "";
-            return title.includes("Mới"); // "Yêu Cầu Chỉnh Sửa Mới", "Đề Xuất Khen Thưởng Mới"
-          });
+  const title = n.title || "";
+  // Loại bỏ thông báo phản hồi (title có "được duyệt" hoặc "bị từ chối")
+  return !title.includes("được duyệt") && !title.includes("bị từ chối");
+});
 
           console.log(
             
@@ -953,7 +954,7 @@ const QuickAction = ({ icon, title, description, onClick, color }) => (
                             lineHeight: '1.4'
                           }}
                         >
-                          {item.title}
+                          {item.title.replace(' Mới', '')}
                         </Text>
                         <div style={{ marginTop: 4 }}>
                           <Text 
@@ -1378,7 +1379,7 @@ const QuickAction = ({ icon, title, description, onClick, color }) => (
             title={
               <div style={{ display: "flex", alignItems: "center" }}>
                 <Text strong style={{ fontSize: 15 }}>
-                  {item.title}
+                  {item.title.replace(' Mới', '')}
                 </Text>
                 {!item.isRead && <Badge status="processing" color={color} />}
                 <Text
