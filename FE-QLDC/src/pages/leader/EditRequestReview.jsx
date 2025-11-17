@@ -259,10 +259,45 @@ const EditRequestReview = () => {
     <Layout>
       <div>
         {/* Page Header */}
-        <div style={{ marginBottom: 24 }}>
-          <Title level={2} style={{ marginBottom: 8 }}>
-            Duyệt Yêu Cầu Chỉnh Sửa
-          </Title>
+        <div
+          style={{
+            background:
+              "linear-gradient(352deg,rgba(131, 58, 180, 1) 0%, rgba(253, 29, 29, 1) 59%, rgba(252, 176, 69, 1) 100%)",
+            borderRadius: "12px",
+            padding: "24px 32px",
+            marginBottom: 24,
+            boxShadow: "0 4px 12px rgba(102, 126, 234, 0.15)",
+          }}
+        >
+          <Space align="center" size={16}>
+            <div
+              style={{
+                background: "rgba(255, 255, 255, 0.2)",
+                borderRadius: "12px",
+                padding: "12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            ></div>
+            <div>
+              <Title
+                level={2}
+                style={{ margin: 0, color: "#fff", fontSize: "24px" }}
+              >
+                Duyệt yêu cầu chỉnh sửa
+              </Title>
+              <div
+                style={{
+                  color: "rgba(255, 255, 255, 0.9)",
+                  fontSize: "14px",
+                  marginTop: "4px",
+                }}
+              >
+                Quản lý và duyệt các yêu cầu chỉnh sửa thông tin từ công dân
+              </div>
+            </div>
+          </Space>
         </div>
 
         {/* Statistics */}

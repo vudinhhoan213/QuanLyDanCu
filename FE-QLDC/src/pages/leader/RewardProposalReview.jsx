@@ -255,10 +255,47 @@ const RewardProposalReview = () => {
     <Layout>
       <div>
         {/* Page Header */}
-        <div style={{ marginBottom: 24 }}>
-          <Title level={2} style={{ marginBottom: 8 }}>
-            <TrophyOutlined /> Duyệt Đề Xuất Khen Thưởng
-          </Title>
+        <div
+          style={{
+            background:
+              "linear-gradient(84deg,rgba(34, 193, 195, 1) 0%, rgba(253, 187, 45, 1) 100%)",
+            borderRadius: "12px",
+            padding: "24px 32px",
+            marginBottom: 24,
+            boxShadow: "0 4px 12px rgba(102, 126, 234, 0.15)",
+          }}
+        >
+          <Space align="center" size={16}>
+            <div
+              style={{
+                background: "rgba(255, 255, 255, 0.2)",
+                borderRadius: "12px",
+                padding: "12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <TrophyOutlined style={{ fontSize: "28px", color: "#fff" }} />
+            </div>
+            <div>
+              <Title
+                level={2}
+                style={{ margin: 0, color: "#fff", fontSize: "24px" }}
+              >
+                Duyệt khen thưởng
+              </Title>
+              <div
+                style={{
+                  color: "rgba(255, 255, 255, 0.9)",
+                  fontSize: "14px",
+                  marginTop: "4px",
+                }}
+              >
+                Xem và quản lý các đề xuất khen thưởng từ công dân
+              </div>
+            </div>
+          </Space>
         </div>
 
         {/* Statistics */}

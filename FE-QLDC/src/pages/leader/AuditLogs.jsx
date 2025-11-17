@@ -407,32 +407,73 @@ const AuditLogs = () => {
   return (
     <Layout>
       <div>
-        <div style={{ marginBottom: 24 }}>
-          <Space
-            style={{ width: "100%", justifyContent: "space-between" }}
-            align="center"
-          >
-            <div>
-              <Title level={2} style={{ marginBottom: 8 }}>
-                <AuditOutlined /> Nhật Ký Hệ Thống
-              </Title>
-              {activeFilterCount > 0 && (
-                <Text type="secondary">
-                  <Badge count={activeFilterCount} style={{ marginRight: 8 }} />
-                  Đang áp dụng {activeFilterCount} bộ lọc
-                </Text>
-              )}
+        <div
+          style={{
+            background:
+              "linear-gradient(317deg,rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)",
+            borderRadius: "12px",
+            padding: "24px 32px",
+            marginBottom: 24,
+            boxShadow: "0 4px 12px rgba(102, 126, 234, 0.15)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+          }}
+        >
+          <Space align="center" size={16}>
+            <div
+              style={{
+                background: "rgba(255, 255, 255, 0.2)",
+                borderRadius: "12px",
+                padding: "12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <AuditOutlined style={{ fontSize: "28px", color: "#fff" }} />
             </div>
-            {activeFilterCount > 0 && (
-              <Button
-                icon={<ClearOutlined />}
-                onClick={handleClearFilters}
-                type="default"
+            <div>
+              <Title
+                level={2}
+                style={{ margin: 0, color: "#fff", fontSize: "24px" }}
               >
-                Xóa bộ lọc
-              </Button>
-            )}
+                Nhật ký Hệ thống
+              </Title>
+              <div
+                style={{
+                  color: "rgba(255, 255, 255, 0.9)",
+                  fontSize: "14px",
+                  marginTop: "4px",
+                }}
+              >
+                {activeFilterCount > 0 ? (
+                  <span
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <Badge
+                      count={activeFilterCount}
+                      style={{ backgroundColor: "#fff", color: "#764ba2" }}
+                    />
+                    <span>Đang áp dụng {activeFilterCount} bộ lọc</span>
+                  </span>
+                ) : (
+                  "Theo dõi chi tiết các thao tác và thay đổi dữ liệu"
+                )}
+              </div>
+            </div>
           </Space>
+          {activeFilterCount > 0 && (
+            <Button
+              icon={<ClearOutlined />}
+              onClick={handleClearFilters}
+              type="default"
+              ghost
+            >
+              Xóa bộ lọc
+            </Button>
+          )}
         </div>
 
         <Card bordered={false} style={{ marginBottom: 16 }}>
