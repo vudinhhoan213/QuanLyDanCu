@@ -83,6 +83,16 @@ export const rewardService = {
       });
       return data;
     },
+
+    getSummary: async (eventId) => {
+      const { data } = await api.get(`/reward-events/${eventId}/summary`);
+      return data;
+    },
+
+    getEligibleCitizens: async (eventId, params = {}) => {
+      const { data } = await api.get(`/reward-events/${eventId}/eligible-citizens`, { params });
+      return data;
+    },
   },
 
   // Reward Distributions
