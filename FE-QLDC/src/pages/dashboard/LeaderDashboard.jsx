@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Card,
   Row,
@@ -20,10 +21,14 @@ import {
   Select,
   Badge,
   List,
-  Alert,
   Upload,
 } from "antd";
+
 import {
+  BellOutlined, 
+  CheckOutlined, 
+  UserAddOutlined, 
+  UserDeleteOutlined,
   TeamOutlined,
   UserOutlined,
   FileTextOutlined,
@@ -41,11 +46,17 @@ import {
   MailOutlined,
   PhoneOutlined,
   LockOutlined,
-  BellOutlined,
   CameraOutlined,
   UploadOutlined,
   DeleteOutlined,
+  HomeOutlined, 
+  SendOutlined,
+  SwapOutlined,
+  TrophyOutlined,
+  InfoCircleOutlined,
+  RocketOutlined,
 } from "@ant-design/icons";
+
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Layout from "../../components/Layout";
@@ -59,7 +70,16 @@ import {
   uploadService,
 } from "../../services";
 
-const { Title, Text } = Typography;
+
+const NotificationType = {
+  SUCCESS: "success",
+  WARNING: "warning",
+  ERROR: "error",
+  INFO: "info",
+  AWARD: "award",
+};
+  
+const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 
 const LeaderDashboard = () => {
@@ -86,6 +106,114 @@ const LeaderDashboard = () => {
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
 
+  const getNotificationIcon = (category) => {
+  const iconStyle = { fontSize: "20px" };
+
+  switch (category) {
+    case "add":
+      return <UserAddOutlined style={iconStyle} />;
+    case "delete":
+      return <UserDeleteOutlined style={iconStyle} />;
+    case "edit":
+      return <EditOutlined style={iconStyle} />;
+    case "tam-tru":
+      return <HomeOutlined style={iconStyle} />;
+    case "tam-vang":
+      return <SendOutlined style={iconStyle} />;
+    case "chuyen-den":
+    case "chuyen-di":
+      return <SwapOutlined style={iconStyle} />;
+    case "khen-thuong":
+      return <TrophyOutlined style={iconStyle} />;
+    default:
+      return <InfoCircleOutlined style={iconStyle} />;
+  }
+};
+
+const getNotificationColor = (type) => {
+  switch (type) {
+    case "success":
+      return "#52c41a";
+    case "warning":
+      return "#faad14";
+    case "error":
+      return "#ff4d4f";
+    case "info":
+      return "#1890ff";
+    case "award":
+      return "#fadb14";
+    default:
+      return "#1890ff";
+  }
+};
+
+const getTimeAgo = (dateString) => {
+  const date = new Date(dateString);
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+
+  if (seconds < 60) return "Vừa xong";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} phút trước`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} giờ trước`;
+  return `${Math.floor(seconds / 86400)} ngày trước`;
+};
+
+const QuickAction = ({ icon, title, description, onClick, color }) => (
+  <motion.div 
+    whileHover={{ scale: 1.05 }} 
+    whileTap={{ scale: 0.95 }}
+    style={{ height: '100%' }}
+  >
+    <Card 
+      hoverable 
+      bordered={false}
+      onClick={onClick}
+      style={{ 
+        textAlign: 'center',
+        background: `linear-gradient(135deg, ${color}15, ${color}08)`,
+        border: `1px solid ${color}20`,
+        borderRadius: '12px',
+        height: '100%',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+      }}
+      bodyStyle={{ padding: '20px 16px' }}
+    >
+      {/* Icon lớn ở giữa */}
+      <div 
+        style={{ 
+          fontSize: 32,
+          color: color,
+          marginBottom: 12,
+          display: 'flex',
+          justifyContent: 'center',
+        }}
+      >
+        {icon}
+      </div>
+      
+      {/* Tiêu đề */}
+      <Text strong style={{ 
+        display: 'block', 
+        marginBottom: 4,
+        fontSize: '16px',
+        color: '#1a1a1a'
+      }}>
+        {title}
+      </Text>
+      
+      {/* Mô tả */}
+      <Text type="secondary" style={{ 
+        fontSize: 12,
+        lineHeight: '1.4'
+      }}>
+        {description}
+      </Text>
+    </Card>
+  </motion.div>
+);
+
+
+
   // Fetch dashboard data
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -95,11 +223,8 @@ const LeaderDashboard = () => {
         // Fetch leader info
         try {
           const leaderResponse = await citizenService.getMe();
-          console.log("👤 Fetched leader info:", leaderResponse);
-          console.log("🖼️ Leader avatarUrl:", leaderResponse?.avatarUrl);
           setLeaderInfo(leaderResponse);
         } catch (err) {
-          console.log("⚠️ Could not fetch leader info:", err.message);
         }
 
         // Fetch all stats in parallel
@@ -176,7 +301,7 @@ const LeaderDashboard = () => {
           });
 
           console.log(
-            `📊 Total notifications: ${allNotifs.length}, New requests: ${newRequestNotifs.length}`
+            
           );
           setNotifications(newRequestNotifs);
           const unread = newRequestNotifs.filter((n) => !n.isRead).length;
@@ -272,10 +397,9 @@ const LeaderDashboard = () => {
     setUploading(true);
     try {
       const file = fileList[0].originFileObj;
-      console.log("📤 Uploading avatar file:", file.name);
 
       const response = await uploadService.uploadAvatar(file);
-      console.log("📥 Upload response:", response);
+    
 
       // Update leader info với avatar mới
       setLeaderInfo(response.citizen);
@@ -339,61 +463,7 @@ const LeaderDashboard = () => {
     }
   };
 
-  const requestColumns = [
-    {
-      title: "STT",
-      key: "index",
-      width: 70,
-      align: "center",
-      render: (_, __, index) => (
-        <Text strong style={{ color: "#1890ff" }}>
-          #{index + 1}
-        </Text>
-      ),
-    },
-    {
-      title: "Công dân",
-      dataIndex: "citizen",
-      key: "citizen",
-    },
-    {
-      title: "Loại yêu cầu",
-      dataIndex: "type",
-      key: "type",
-    },
-    {
-      title: "Ngày gửi",
-      dataIndex: "date",
-      key: "date",
-    },
-    {
-      title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
-      render: (status) => {
-        const statusConfig = {
-          pending: { color: "gold", text: "Chờ duyệt" },
-          approved: { color: "green", text: "Đã duyệt" },
-          rejected: { color: "red", text: "Từ chối" },
-        };
-        const config = statusConfig[status];
-        return <Tag color={config.color}>{config.text}</Tag>;
-      },
-    },
-    {
-      title: "Hành động",
-      key: "action",
-      render: (_, record) => (
-        <Button
-          type="link"
-          icon={<EyeOutlined />}
-          onClick={() => navigate(`/leader/edit-requests/${record.id}`)}
-        >
-          Xem
-        </Button>
-      ),
-    },
-  ];
+
 
   return (
     <Layout>
@@ -436,11 +506,6 @@ const LeaderDashboard = () => {
                       : "#eb2f96",
                   }}
                   onError={(e) => {
-                    console.error(
-                      "❌ Avatar image failed to load:",
-                      leaderInfo?.avatarUrl
-                    );
-                    console.log("📋 Full leaderInfo:", leaderInfo);
                     return true; // Fallback to icon
                   }}
                 />
@@ -604,236 +669,422 @@ const LeaderDashboard = () => {
         </Card>
 
         {/* Statistics Cards */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} lg={6}>
-            <Card bordered={false} hoverable>
-              <Statistic
-                title="Tổng Hộ Khẩu"
-                value={stats.households.total}
-                prefix={<TeamOutlined style={{ color: "#1890ff" }} />}
-                suffix={
-                  <Space size={4} style={{ fontSize: 14 }}>
-                    <ArrowUpOutlined style={{ color: "#3f8600" }} />
-                    <Text type="success">{stats.households.percentage}%</Text>
-                  </Space>
-                }
-              />
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                +{stats.households.increase} so với tháng trước
-              </Text>
-            </Card>
-          </Col>
+<Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+  <Col xs={24} sm={12} lg={6}>
+    <Card 
+      bordered={false} 
+      hoverable
+      style={{ 
+        background: 'linear-gradient(135deg, #1890ff15, #1890ff08)',
+        borderLeft: '4px solid #1890ff'
+      }}
+    >
+      <Statistic
+        title="Tổng Hộ Khẩu"
+        value={stats.households.total}
+        prefix={<TeamOutlined style={{ color: "#1890ff" }} />}
+        suffix={
+          <Space size={4} style={{ fontSize: 14 }}>
+            <ArrowUpOutlined style={{ color: "#3f8600" }} />
+            <Text type="success">{stats.households.percentage}%</Text>
+          </Space>
+        }
+      />
+      <Text type="secondary" style={{ fontSize: 12 }}>
+        +{stats.households.increase} so với tháng trước
+      </Text>
+    </Card>
+  </Col>
 
-          <Col xs={24} sm={12} lg={6}>
-            <Card bordered={false} hoverable>
-              <Statistic
-                title="Tổng Công Dân"
-                value={stats.citizens.total}
-                prefix={<UserOutlined style={{ color: "#52c41a" }} />}
-                suffix={
-                  <Space size={4} style={{ fontSize: 14 }}>
-                    <ArrowUpOutlined style={{ color: "#3f8600" }} />
-                    <Text type="success">{stats.citizens.percentage}%</Text>
-                  </Space>
-                }
-              />
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                +{stats.citizens.increase} so với tháng trước
-              </Text>
-            </Card>
-          </Col>
+  <Col xs={24} sm={12} lg={6}>
+    <Card 
+      bordered={false} 
+      hoverable
+      style={{ 
+        background: 'linear-gradient(135deg, #52c41a15, #52c41a08)',
+        borderLeft: '4px solid #52c41a'
+      }}
+    >
+      <Statistic
+        title="Tổng Công Dân"
+        value={stats.citizens.total}
+        prefix={<UserOutlined style={{ color: "#52c41a" }} />}
+        suffix={
+          <Space size={4} style={{ fontSize: 14 }}>
+            <ArrowUpOutlined style={{ color: "#3f8600" }} />
+            <Text type="success">{stats.citizens.percentage}%</Text>
+          </Space>
+        }
+      />
+      <Text type="secondary" style={{ fontSize: 12 }}>
+        +{stats.citizens.increase} so với tháng trước
+      </Text>
+    </Card>
+  </Col>
 
-          <Col xs={24} sm={12} lg={6}>
-            <Card bordered={false} hoverable>
-              <Statistic
-                title="Yêu Cầu Chờ Duyệt"
-                value={stats.pendingRequests.total}
-                prefix={<FileTextOutlined style={{ color: "#faad14" }} />}
-                suffix={
-                  <Space size={4} style={{ fontSize: 14 }}>
-                    <ArrowDownOutlined style={{ color: "#cf1322" }} />
-                    <Text type="danger">
-                      {Math.abs(stats.pendingRequests.percentage)}%
-                    </Text>
-                  </Space>
-                }
-              />
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {stats.pendingRequests.decrease} so với tháng trước
-              </Text>
-            </Card>
-          </Col>
+  <Col xs={24} sm={12} lg={6}>
+    <Card 
+      bordered={false} 
+      hoverable
+      style={{ 
+        background: 'linear-gradient(135deg, #faad1415, #faad1408)',
+        borderLeft: '4px solid #faad14'
+      }}
+    >
+      <Statistic
+        title="Yêu Cầu Chờ Duyệt"
+        value={stats.pendingRequests.total}
+        prefix={<FileTextOutlined style={{ color: "#faad14" }} />}
+        suffix={
+          <Space size={4} style={{ fontSize: 14 }}>
+            <ArrowDownOutlined style={{ color: "#cf1322" }} />
+            <Text type="danger">
+              {Math.abs(stats.pendingRequests.percentage)}%
+            </Text>
+          </Space>
+        }
+      />
+      <Text type="secondary" style={{ fontSize: 12 }}>
+        {stats.pendingRequests.decrease} so với tháng trước
+      </Text>
+    </Card>
+  </Col>
 
-          <Col xs={24} sm={12} lg={6}>
-            <Card bordered={false} hoverable>
-              <Statistic
-                title="Khen Thưởng Tháng Này"
-                value={stats.rewards.total}
-                prefix={<GiftOutlined style={{ color: "#eb2f96" }} />}
-                suffix={
-                  <Space size={4} style={{ fontSize: 14 }}>
-                    <ArrowUpOutlined style={{ color: "#3f8600" }} />
-                    <Text type="success">{stats.rewards.percentage}%</Text>
-                  </Space>
-                }
-              />
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                +{stats.rewards.increase} so với tháng trước
-              </Text>
-            </Card>
-          </Col>
-        </Row>
+  <Col xs={24} sm={12} lg={6}>
+    <Card 
+      bordered={false} 
+      hoverable
+      style={{ 
+        background: 'linear-gradient(135deg, #eb2f9615, #eb2f9608)',
+        borderLeft: '4px solid #eb2f96'
+      }}
+    >
+      <Statistic
+        title="Khen Thưởng Tháng Này"
+        value={stats.rewards.total}
+        prefix={<GiftOutlined style={{ color: "#eb2f96" }} />}
+        suffix={
+          <Space size={4} style={{ fontSize: 14 }}>
+            <ArrowUpOutlined style={{ color: "#3f8600" }} />
+            <Text type="success">{stats.rewards.percentage}%</Text>
+          </Space>
+        }
+      />
+      <Text type="secondary" style={{ fontSize: 12 }}>
+        +{stats.rewards.increase} so với tháng trước
+      </Text>
+    </Card>
+  </Col>
+</Row>
 
         {/* Notifications Card */}
-        <Card
-          title={
-            <Space>
-              <span>Thông báo yêu cầu mới</span>
-            </Space>
-          }
-          extra={
-            unreadCount > 0 && (
-              <Button type="link" onClick={handleMarkAllAsRead}>
-                Đánh dấu tất cả đã đọc
-              </Button>
-            )
-          }
-          bordered={false}
-          style={{ marginBottom: 24 }}
-        >
-          {notifications.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px 0" }}>
-              <BellOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
-              <div style={{ marginTop: 16, color: "#999" }}>
-                Chưa có yêu cầu mới nào
-              </div>
-            </div>
-          ) : (
-            <List
-              itemLayout="horizontal"
-              dataSource={notifications.slice(0, 5)}
-              renderItem={(item) => (
-                <List.Item
-                  style={{
-                    backgroundColor: item.isRead ? "transparent" : "#e6f7ff",
-                    padding: "12px",
-                    borderRadius: "8px",
-                    marginBottom: "8px",
-                    cursor: item.isRead ? "default" : "pointer",
-                  }}
-                  onClick={() => !item.isRead && handleMarkAsRead(item._id)}
-                  actions={
-                    !item.isRead
-                      ? [
-                          <Button
-                            key="mark-read"
-                            type="link"
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleMarkAsRead(item._id);
+<Card
+  title={
+    <div style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'space-between',
+      width: '100%'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{
+          width: 40,
+          height: 40,
+          borderRadius: '10px',
+          background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)'
+        }}>
+          <BellOutlined style={{ fontSize: '20px', color: 'white' }} />
+        </div>
+        <div>
+          <Title level={5} style={{ margin: 0, color: '#1f2937' }}>
+            Thông báo mới
+          </Title>
+          <Text type="secondary" style={{ fontSize: '13px' }}>
+            Các yêu cầu cần xử lý
+          </Text>
+        </div>
+      </div>
+      
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        {unreadCount > 0 && (
+          <Badge 
+            count={unreadCount} 
+            style={{ 
+              backgroundColor: '#ff4d4f',
+              boxShadow: '0 2px 6px rgba(255, 77, 79, 0.3)'
+            }}
+          />
+        )}
+        {unreadCount > 0 && (
+          <Button 
+            type="link" 
+            onClick={handleMarkAllAsRead}
+            style={{ 
+              padding: '4px 8px',
+              fontSize: '13px',
+              fontWeight: 500,
+              color: '#1890ff'
+            }}
+          >
+            Đánh dấu đã đọc
+          </Button>
+        )}
+      </div>
+    </div>
+  }
+  bordered={false}
+  style={{ 
+    marginBottom: 24,
+    borderRadius: '16px',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+    border: '1px solid #f0f0f0'
+  }}
+  bodyStyle={{ padding: '8px 0' }}
+>
+  {notifications.length === 0 ? (
+    <div style={{ 
+      textAlign: 'center', 
+      padding: '48px 24px',
+      background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
+      borderRadius: '12px',
+      margin: '8px 16px'
+    }}>
+      <div style={{
+        width: 80,
+        height: 80,
+        borderRadius: '50%',
+        background: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        margin: '0 auto 16px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+      }}>
+        <BellOutlined style={{ fontSize: 32, color: '#d9d9d9' }} />
+      </div>
+      <Title level={5} style={{ color: '#bfbfbf', marginBottom: 8 }}>
+        Không có thông báo
+      </Title>
+      <Text type="secondary" style={{ fontSize: '14px' }}>
+        Tất cả yêu cầu đã được xử lý
+      </Text>
+    </div>
+  ) : (
+    <div style={{ padding: '0 8px' }}>
+      <List
+        dataSource={notifications.slice(0, 5)}
+        renderItem={(item, index) => {
+          const color = getNotificationColor(item.type);
+
+          return (
+            <motion.div
+              key={item._id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+            >
+              <List.Item
+                style={{
+                  padding: '16px 12px',
+                  background: !item.isRead 
+                    ? `linear-gradient(135deg, ${color}08, ${color}04)` 
+                    : '#ffffff',
+                  borderRadius: '12px',
+                  border: !item.isRead 
+                    ? `1px solid ${color}20` 
+                    : '1px solid #f0f0f0',
+                  margin: '8px 0',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                onClick={() => !item.isRead && handleMarkAsRead(item._id)}
+              >
+                {!item.isRead && (
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 4,
+                      background: `linear-gradient(180deg, ${color}, ${color}80)`,
+                      borderRadius: '4px 0 0 4px'
+                    }}
+                  />
+                )}
+                
+                <List.Item.Meta
+                  avatar={
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: '12px',
+                        background: `linear-gradient(135deg, ${color}20, ${color}10)`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: color,
+                        border: `1px solid ${color}30`,
+                        marginRight: 12
+                      }}
+                    >
+                      {getNotificationIcon(item.category)}
+                    </div>
+                  }
+                  title={
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between'
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <Text 
+                          strong 
+                          style={{ 
+                            fontSize: '14px',
+                            color: !item.isRead ? '#1f2937' : '#9ca3af',
+                            lineHeight: '1.4'
+                          }}
+                        >
+                          {item.title}
+                        </Text>
+                        <div style={{ marginTop: 4 }}>
+                          <Text 
+                            style={{ 
+                              fontSize: '13px',
+                              color: !item.isRead ? '#6b7280' : '#d1d5db',
+                              lineHeight: '1.4'
                             }}
                           >
-                            Đánh dấu đã đọc
-                          </Button>,
-                        ]
-                      : []
-                  }
-                >
-                  <List.Item.Meta
-                    avatar={
-                      <Badge dot={!item.isRead}>
-                        <Avatar
-                          icon={<BellOutlined />}
-                          style={{
-                            backgroundColor: item.isRead
-                              ? "#d9d9d9"
-                              : "#1890ff",
+                            {item.message}
+                          </Text>
+                        </div>
+                      </div>
+                      <div style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'flex-end',
+                        gap: 4
+                      }}>
+                        <Text
+                          type="secondary"
+                          style={{ 
+                            fontSize: '11px',
+                            fontWeight: 500,
+                            color: '#9ca3af'
                           }}
-                        />
-                      </Badge>
-                    }
-                    title={
-                      <Space>
-                        <Text strong={!item.isRead}>{item.title}</Text>
-                        {!item.isRead && <Tag color="blue">Mới</Tag>}
-                      </Space>
-                    }
-                    description={
-                      <Space direction="vertical" size={0}>
-                        <Text type="secondary">{item.message}</Text>
-                        <Text type="secondary" style={{ fontSize: "12px" }}>
-                          {dayjs(item.createdAt).format("DD/MM/YYYY HH:mm")}
+                        >
+                          {getTimeAgo(item.createdAt)}
                         </Text>
-                      </Space>
-                    }
-                  />
-                </List.Item>
-              )}
-            />
-          )}
-          {notifications.length > 5 && (
-            <div style={{ textAlign: "center", marginTop: 16 }}>
-              <Button
-                type="link"
-                onClick={() => setIsNotificationModalVisible(true)}
-              >
-                Xem tất cả {notifications.length} thông báo
-              </Button>
-            </div>
-          )}
-        </Card>
+                        {!item.isRead && (
+                          <Badge 
+                            status="processing" 
+                            color={color}
+                            text={
+                              <Text 
+                                style={{ 
+                                  fontSize: '11px',
+                                  color: color,
+                                  fontWeight: 500
+                                }}
+                              >
+                                Mới
+                              </Text>
+                            }
+                          />
+                        )}
+                      </div>
+                    </div>
+                  }
+                />
+              </List.Item>
+            </motion.div>
+          );
+        }}
+      />
+      
+      {notifications.length > 5 && (
+        <div style={{ 
+          textAlign: 'center', 
+          marginTop: 16,
+          padding: '16px 0 8px'
+        }}>
+          <Button
+            type="link"
+            onClick={() => setIsNotificationModalVisible(true)}
+            style={{ 
+              fontSize: '14px',
+              fontWeight: 500,
+              color: '#1890ff'
+            }}
+            icon={<EyeOutlined />}
+          >
+            Xem tất cả {notifications.length} thông báo
+          </Button>
+        </div>
+      )}
+    </div>
+  )}
+</Card>
 
         {/* Quick Actions */}
         <Divider />
-        <Card title="Thao tác nhanh" bordered={false} style={{ marginTop: 24 }}>
-          <Row gutter={[16, 16]}>
-            <Col xs={24} sm={12} md={6}>
-              <Button
-                type="default"
-                icon={<TeamOutlined />}
-                size="large"
-                block
-                onClick={() => navigate("/leader/households")}
-              >
-                Quản lý Hộ khẩu
-              </Button>
-            </Col>
-            <Col xs={24} sm={12} md={6}>
-              <Button
-                type="default"
-                icon={<UserOutlined />}
-                size="large"
-                block
-                onClick={() => navigate("/leader/citizens")}
-              >
-                Quản lý Công dân
-              </Button>
-            </Col>
-            <Col xs={24} sm={12} md={6}>
-              <Button
-                type="default"
-                icon={<FileTextOutlined />}
-                size="large"
-                block
-                onClick={() => navigate("/leader/edit-requests")}
-              >
-                Duyệt Yêu cầu
-              </Button>
-            </Col>
-            <Col xs={24} sm={12} md={6}>
-              <Button
-                type="default"
-                icon={<GiftOutlined />}
-                size="large"
-                block
-                onClick={() => navigate("/leader/reward-proposals")}
-              >
-                Duyệt Khen thưởng
-              </Button>
-            </Col>
-          </Row>
-        </Card>
+        <Card 
+  title={
+    <Space>
+      <RocketOutlined />
+      <span>Thao tác nhanh</span>
+    </Space>
+  } 
+  bordered={false}
+  style={{ marginBottom: 24 }}
+>
+  <Row gutter={[16, 16]}>
+    <Col xs={12} sm={8} md={6}>
+      <QuickAction
+        icon={<TeamOutlined />}
+        title="Hộ khẩu"
+        description="Quản lý hộ khẩu"
+        color="#1890ff"
+        onClick={() => navigate("/leader/households")}
+      />
+    </Col>
+    <Col xs={12} sm={8} md={6}>
+      <QuickAction
+        icon={<UserOutlined />}
+        title="Công dân"
+        description="Quản lý công dân"
+        color="#52c41a"
+        onClick={() => navigate("/leader/citizens")}
+      />
+    </Col>
+    <Col xs={12} sm={8} md={6}>
+      <QuickAction
+        icon={<FileTextOutlined />}
+        title="Yêu cầu"
+        description="Duyệt yêu cầu"
+        color="#faad14"
+        onClick={() => navigate("/leader/edit-requests")}
+      />
+    </Col>
+    <Col xs={12} sm={8} md={6}>
+      <QuickAction
+        icon={<GiftOutlined />}
+        title="Khen thưởng"
+        description="Đề xuất khen thưởng"
+        color="#eb2f96"
+        onClick={() => navigate("/leader/reward-proposals")}
+      />
+    </Col>
+  </Row>
+</Card>
 
         {/* Edit Profile Modal */}
         <Modal
@@ -1084,69 +1335,70 @@ const LeaderDashboard = () => {
                 }}
               >
                 <List
-                  itemLayout="horizontal"
-                  dataSource={notifications}
-                  renderItem={(item) => (
-                    <List.Item
-                      style={{
-                        backgroundColor: item.isRead
-                          ? "transparent"
-                          : "#e6f7ff",
-                        padding: "12px",
-                        borderRadius: "8px",
-                        marginBottom: "8px",
-                        cursor: item.isRead ? "default" : "pointer",
-                      }}
-                      onClick={() => !item.isRead && handleMarkAsRead(item._id)}
-                      actions={
-                        !item.isRead
-                          ? [
-                              <Button
-                                key="mark-read"
-                                type="link"
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleMarkAsRead(item._id);
-                                }}
-                              >
-                                Đánh dấu đã đọc
-                              </Button>,
-                            ]
-                          : []
-                      }
-                    >
-                      <List.Item.Meta
-                        avatar={
-                          <Badge dot={!item.isRead}>
-                            <Avatar
-                              icon={<BellOutlined />}
-                              style={{
-                                backgroundColor: item.isRead
-                                  ? "#d9d9d9"
-                                  : "#1890ff",
-                              }}
-                            />
-                          </Badge>
-                        }
-                        title={
-                          <Space>
-                            <Text strong={!item.isRead}>{item.title}</Text>
-                            {!item.isRead && <Tag color="blue">Mới</Tag>}
-                          </Space>
-                        }
-                        description={
-                          <Space direction="vertical" size={0}>
-                            <Text type="secondary">{item.message}</Text>
-                            <Text type="secondary" style={{ fontSize: "12px" }}>
-                              {dayjs(item.createdAt).format("DD/MM/YYYY HH:mm")}
-                            </Text>
-                          </Space>
-                        }
-                      />
-                    </List.Item>
-                  )}
-                />
+  dataSource={notifications}
+  renderItem={(item) => {
+    const color = getNotificationColor(item.type);
+
+    return (
+      <motion.div
+        key={item._id}
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 20 }}
+        transition={{ duration: 0.2 }}
+      >
+        <List.Item
+          style={{
+            padding: "16px",
+            backgroundColor: !item.isRead ? "#f0f7ff" : "#fff",
+            borderRadius: "8px",
+            borderBottom: "1px solid #f0f0f0",
+            cursor: "pointer",
+            marginBottom: 8,
+          }}
+          onClick={() => !item.isRead && handleMarkAsRead(item._id)}
+        >
+          <List.Item.Meta
+            avatar={
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  backgroundColor: `${color}15`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: color,
+                }}
+              >
+                {getNotificationIcon(item.category)}
+              </div>
+            }
+            title={
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <Text strong style={{ fontSize: 15 }}>
+                  {item.title}
+                </Text>
+                {!item.isRead && <Badge status="processing" color={color} />}
+                <Text
+                  type="secondary"
+                  style={{ marginLeft: "auto", fontSize: 12 }}
+                >
+                  {getTimeAgo(item.createdAt)}
+                </Text>
+              </div>
+            }
+            description={
+              <Text style={{ color: "#64748b" }}>{item.message}</Text>
+            }
+          />
+        </List.Item>
+      </motion.div>
+    );
+  }}
+/>
+
               </div>
             </>
           )}
