@@ -23,6 +23,7 @@ import {
   CheckCircleOutlined,
   EditOutlined,
   GiftOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Layout from "../../components/Layout";
@@ -99,21 +100,56 @@ const RewardEventSchedule = () => {
       setLoading(true);
 
       const eventDate = calculateDate(template);
-      const startDate = eventDate.subtract(7, "days"); // Mở đăng ký trước 7 ngày
-      const endDate = eventDate.subtract(1, "day"); // Đóng đăng ký trước 1 ngày
-
+      
+      // Tạo sự kiện với thời gian phát quà (không có đăng ký)
       const eventData = {
         name: `${template.name} ${getCurrentYear()}`,
         type: template.type,
         description: template.description,
         rewardDescription: template.rewardDescription || undefined,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
+        date: eventDate.toISOString(), // Ngày phát quà chính
+        startDate: eventDate.subtract(1, "day").toISOString(), // Bắt đầu phát quà (có thể trước 1 ngày)
+        endDate: eventDate.add(3, "days").toISOString(), // Kết thúc phát quà (có thể sau 3 ngày)
         status: "OPEN",
+        budget: template.budget || undefined,
       };
 
-      await rewardService.events.create(eventData);
+      const createdEvent = await rewardService.events.create(eventData);
       message.success(`Đã tạo sự kiện "${template.name} ${getCurrentYear()}"`);
+      
+      // Nếu có targetAge, tự động tạo danh sách phân phối
+      if (template.targetAge) {
+        try {
+          message.loading({
+            content: "Đang tạo danh sách phân phối quà...",
+            key: "generate",
+            duration: 0,
+          });
+          
+          await rewardService.distributions.generateFromAgeRange(
+            createdEvent._id,
+            template.targetAge.min || 0,
+            template.targetAge.max || 18,
+            {
+              quantity: 1,
+              unitValue: template.budget || 50000,
+            },
+            false
+          );
+          
+          message.success({
+            content: "Đã tạo danh sách phân phối quà tự động!",
+            key: "generate",
+          });
+        } catch (genError) {
+          console.error("Error generating distributions:", genError);
+          message.warning({
+            content: "Đã tạo sự kiện nhưng không thể tự động tạo danh sách. Bạn có thể tạo thủ công sau.",
+            key: "generate",
+          });
+        }
+      }
+      
       fetchExistingEvents();
     } catch (error) {
       console.error("Error creating event:", error);
@@ -131,6 +167,7 @@ const RewardEventSchedule = () => {
       name: template.name,
       description: template.description,
       rewardDescription: template.rewardDescription || "",
+      budget: template.budget || undefined,
     });
     setIsEditModalVisible(true);
   };
@@ -146,6 +183,7 @@ const RewardEventSchedule = () => {
           name: values.name,
           description: values.description,
           rewardDescription: values.rewardDescription || undefined,
+          budget: values.budget || undefined,
         },
       };
       setTemplateOverrides(newOverrides);
@@ -185,7 +223,8 @@ const RewardEventSchedule = () => {
 
           <Text type="secondary">
             Danh sách các dịp cố định trong năm. Kích hoạt các dịp để hệ thống tự động tạo sự kiện
-            với cấu hình mặc định. Bạn có thể chỉnh sửa sau khi tạo.
+            phát quà với cấu hình mặc định. Với các dịp có đối tượng cụ thể (ví dụ: trẻ em 0-18 tuổi),
+            hệ thống sẽ tự động tạo danh sách phân phối quà. Bạn có thể chỉnh sửa template trước khi kích hoạt.
           </Text>
 
           <Row gutter={[16, 16]}>
@@ -265,16 +304,34 @@ const RewardEventSchedule = () => {
                         >
                           Chỉnh sửa
                         </Button>
-                        <Button
-                          type="primary"
-                          icon={<CalendarOutlined />}
-                          onClick={() => handleActivate(template)}
-                          disabled={exists || loading}
-                          loading={loading}
-                          size="small"
-                        >
-                          {exists ? "Đã kích hoạt" : "Kích hoạt"}
-                        </Button>
+                        {exists ? (
+                          <Button
+                            type="default"
+                            icon={<EyeOutlined />}
+                            onClick={() => {
+                              const event = events.find(
+                                (e) => e.name === `${template.name} ${getCurrentYear()}`
+                              );
+                              if (event) {
+                                navigate(`/leader/reward-events/${event._id}/registrations`);
+                              }
+                            }}
+                            size="small"
+                          >
+                            Xem danh sách
+                          </Button>
+                        ) : (
+                          <Button
+                            type="primary"
+                            icon={<CalendarOutlined />}
+                            onClick={() => handleActivate(template)}
+                            disabled={loading}
+                            loading={loading}
+                            size="small"
+                          >
+                            Kích hoạt
+                          </Button>
+                        )}
                       </Space>
                     </Space>
                   </Card>
@@ -318,6 +375,21 @@ const RewardEventSchedule = () => {
               <Input.TextArea
                 rows={3}
                 placeholder="Ví dụ: 200.000 VNĐ tiền mặt, 1 bộ quà Tết (bánh kẹo, trà, rượu)..."
+              />
+            </Form.Item>
+            <Form.Item
+              name="budget"
+              label="Ngân sách (VNĐ)"
+              tooltip="Ngân sách cho mỗi phần quà (dùng để tự động tạo danh sách phân phối)"
+            >
+              <InputNumber
+                style={{ width: "100%" }}
+                min={0}
+                formatter={(value) =>
+                  `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                }
+                parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+                placeholder="Nhập ngân sách (tùy chọn)"
               />
             </Form.Item>
           </Form>

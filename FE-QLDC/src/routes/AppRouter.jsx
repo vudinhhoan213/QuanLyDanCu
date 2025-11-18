@@ -27,7 +27,6 @@ import RewardEventAdd from "../pages/leader/RewardEventAdd";
 import RewardEventEdit from "../pages/leader/RewardEventEdit";
 import RewardEventRegistrations from "../pages/leader/RewardEventRegistrations";
 import RewardEventSchedule from "../pages/leader/RewardEventSchedule";
-import RewardDistributions from "../pages/leader/RewardDistributions";
 
 // Lazy load StudentAchievements để tránh lỗi khi import
 const StudentAchievements = lazy(() => import("../pages/leader/StudentAchievements"));
@@ -143,14 +142,6 @@ const AppRouter = () => {
           element={
             <ProtectedRoute requiredRole="leader">
               <RewardEventSchedule />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/leader/reward-distributions"
-          element={
-            <ProtectedRoute requiredRole="leader">
-              <RewardDistributions />
             </ProtectedRoute>
           }
         />

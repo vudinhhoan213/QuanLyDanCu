@@ -89,6 +89,11 @@ export const rewardService = {
       return data;
     },
 
+    getHouseholdStats: async (eventId) => {
+      const { data } = await api.get(`/reward-distributions/summary/household/${eventId}`);
+      return data;
+    },
+
     getEligibleCitizens: async (eventId, params = {}) => {
       const { data } = await api.get(`/reward-events/${eventId}/eligible-citizens`, { params });
       return data;
@@ -154,6 +159,26 @@ export const rewardService = {
       const { data } = await api.post("/reward-distributions/distribute", {
         registrationIds,
         distributionNote,
+      });
+      return data;
+    },
+
+    generateFromAchievements: async (eventId, schoolYear, overwriteExisting = false) => {
+      const { data } = await api.post("/reward-distributions/generate-from-achievements", {
+        eventId,
+        schoolYear,
+        overwriteExisting,
+      });
+      return data;
+    },
+
+    generateFromAgeRange: async (eventId, minAge, maxAge, rewardConfig, overwriteExisting = false) => {
+      const { data } = await api.post("/reward-distributions/generate-from-age-range", {
+        eventId,
+        minAge,
+        maxAge,
+        rewardConfig,
+        overwriteExisting,
       });
       return data;
     },

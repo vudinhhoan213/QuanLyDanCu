@@ -99,55 +99,92 @@ module.exports = {
 
   // Helper: Tính eligible count cho ANNUAL events
   async getAnnualEligibleCount(event) {
-    // Hardcoded logic dựa trên tên event (có thể cải thiện sau)
     const eventName = event.name.toLowerCase();
+    let query = { status: "ALIVE" };
 
-    if (eventName.includes("trung thu") || eventName.includes("thiếu nhi")) {
-      // Trẻ em 0-14 tuổi cho Trung Thu và Quốc tế Thiếu nhi
-      const cutoffDate = new Date();
-      cutoffDate.setFullYear(cutoffDate.getFullYear() - 14);
-      return await Citizen.countDocuments({
-        status: "ALIVE",
-        dateOfBirth: { $gte: cutoffDate },
-      });
-    } else if (eventName.includes("tết nguyên đán") || eventName.includes("đoan ngọ")) {
-      // Tất cả công dân
-      return await Citizen.countDocuments({
-        status: "ALIVE",
-        residenceStatus: "THUONG_TRU",
-      });
-    } else {
-      // Mặc định: tất cả công dân
-      return await Citizen.countDocuments({
-        status: "ALIVE",
-        residenceStatus: "THUONG_TRU",
-      });
+    // Sử dụng ngày sự kiện hoặc ngày hiện tại để tính tuổi chính xác
+    const referenceDate = event.date ? new Date(event.date) : new Date();
+    
+    // Trẻ em 0-18 tuổi (Trung Thu)
+    if (eventName.includes("trung thu")) {
+      // Người có tuổi từ 0-18 tại thời điểm sự kiện
+      // Sinh từ (referenceDate - 18 năm) đến referenceDate
+      // Ví dụ: Nếu sự kiện 15/09/2024, thì:
+      // - minDate = 15/09/2006 (người 18 tuổi)
+      // - maxDate = 15/09/2024 (người 0 tuổi, mới sinh)
+      const minDate = new Date(referenceDate);
+      minDate.setFullYear(referenceDate.getFullYear() - 18);
+      minDate.setHours(0, 0, 0, 0);
+      const maxDate = new Date(referenceDate);
+      maxDate.setHours(23, 59, 59, 999);
+      query.dateOfBirth = { $gte: minDate, $lte: maxDate };
+      query.residenceStatus = "THUONG_TRU"; // Phải có hộ khẩu
     }
+    // Trẻ em 0-14 tuổi (Quốc tế Thiếu nhi)
+    else if (eventName.includes("thiếu nhi") || eventName.includes("quốc tế thiếu nhi")) {
+      const minDate = new Date(referenceDate);
+      minDate.setFullYear(referenceDate.getFullYear() - 14);
+      minDate.setHours(0, 0, 0, 0);
+      const maxDate = new Date(referenceDate);
+      maxDate.setHours(23, 59, 59, 999);
+      query.dateOfBirth = { $gte: minDate, $lte: maxDate };
+      query.residenceStatus = "THUONG_TRU"; // Phải có hộ khẩu
+    }
+    // Phụ nữ (Ngày Phụ nữ Việt Nam)
+    else if (eventName.includes("phụ nữ") || eventName.includes("20/10")) {
+      query.gender = "FEMALE";
+      query.residenceStatus = "THUONG_TRU";
+    }
+    // Tất cả công dân thường trú (Tết, Quốc khánh, v.v.)
+    else {
+      query.residenceStatus = "THUONG_TRU";
+    }
+
+    return await Citizen.countDocuments(query);
   },
 
   // Helper: Lấy eligible citizens cho ANNUAL events
   async getAnnualEligibleCitizens(event, options = {}) {
     const { limit = 50, page = 1 } = options;
     const eventName = event.name.toLowerCase();
-
     let query = { status: "ALIVE" };
 
-    if (eventName.includes("trung thu") || eventName.includes("thiếu nhi")) {
-      // Trẻ em 0-14 tuổi
-      const cutoffDate = new Date();
-      cutoffDate.setFullYear(cutoffDate.getFullYear() - 14);
-      query.dateOfBirth = { $gte: cutoffDate };
-    } else if (eventName.includes("tết nguyên đán") || eventName.includes("đoan ngọ")) {
-      // Tất cả công dân thường trú
+    // Sử dụng ngày sự kiện hoặc ngày hiện tại để tính tuổi chính xác
+    const referenceDate = event.date ? new Date(event.date) : new Date();
+
+    // Trẻ em 0-18 tuổi (Trung Thu)
+    if (eventName.includes("trung thu")) {
+      const minDate = new Date(referenceDate);
+      minDate.setFullYear(referenceDate.getFullYear() - 18);
+      minDate.setHours(0, 0, 0, 0);
+      const maxDate = new Date(referenceDate);
+      maxDate.setHours(23, 59, 59, 999);
+      query.dateOfBirth = { $gte: minDate, $lte: maxDate };
+      query.residenceStatus = "THUONG_TRU"; // Phải có hộ khẩu
+    }
+    // Trẻ em 0-14 tuổi (Quốc tế Thiếu nhi)
+    else if (eventName.includes("thiếu nhi") || eventName.includes("quốc tế thiếu nhi")) {
+      const minDate = new Date(referenceDate);
+      minDate.setFullYear(referenceDate.getFullYear() - 14);
+      minDate.setHours(0, 0, 0, 0);
+      const maxDate = new Date(referenceDate);
+      maxDate.setHours(23, 59, 59, 999);
+      query.dateOfBirth = { $gte: minDate, $lte: maxDate };
+      query.residenceStatus = "THUONG_TRU"; // Phải có hộ khẩu
+    }
+    // Phụ nữ (Ngày Phụ nữ Việt Nam)
+    else if (eventName.includes("phụ nữ") || eventName.includes("20/10")) {
+      query.gender = "FEMALE";
       query.residenceStatus = "THUONG_TRU";
-    } else {
-      // Mặc định: tất cả công dân thường trú
+    }
+    // Tất cả công dân thường trú (Tết, Quốc khánh, v.v.)
+    else {
       query.residenceStatus = "THUONG_TRU";
     }
 
     return await Citizen.find(query)
-      .populate("household", "address")
-      .sort("-createdAt")
+      .populate("household", "code address")
+      .sort("household createdAt") // Sắp xếp theo hộ gia đình để dễ nhóm
       .limit(limit)
       .skip((page - 1) * limit);
   },

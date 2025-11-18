@@ -1,13 +1,13 @@
 const { RewardDistribution, StudentAchievement, Citizen, RewardEvent } = require("../models");
 
-// Helper function để tính tuổi từ ngày sinh
-function calculateAge(dateOfBirth) {
+// Helper function để tính tuổi từ ngày sinh tại một thời điểm cụ thể
+function calculateAge(dateOfBirth, referenceDate = null) {
   if (!dateOfBirth) return null;
-  const today = new Date();
+  const refDate = referenceDate ? new Date(referenceDate) : new Date();
   const birthDate = new Date(dateOfBirth);
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+  let age = refDate.getFullYear() - birthDate.getFullYear();
+  const monthDiff = refDate.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && refDate.getDate() < birthDate.getDate())) {
     age--;
   }
   return age;
@@ -15,6 +15,10 @@ function calculateAge(dateOfBirth) {
 
 module.exports = {
   async create(data) {
+    // Nếu status là DISTRIBUTED nhưng chưa có distributedAt, tự động set
+    if (data.status === "DISTRIBUTED" && !data.distributedAt) {
+      data.distributedAt = new Date();
+    }
     return RewardDistribution.create(data);
   },
   async bulkCreate(items = []) {
@@ -91,6 +95,58 @@ module.exports = {
       },
     ]);
     return agg[0] || { totalHouseholds: 0, totalQuantity: 0, totalValue: 0 };
+  },
+
+  // Lấy thống kê theo hộ gia đình cho một sự kiện
+  async summarizeByHousehold(eventId) {
+    const agg = await RewardDistribution.aggregate([
+      {
+        $match: {
+          event: require("mongoose").Types.ObjectId.createFromHexString(
+            String(eventId)
+          ),
+          status: "DISTRIBUTED", // Chỉ tính những hộ đã nhận quà
+        },
+      },
+      {
+        $group: {
+          _id: "$household",
+          householdCode: { $first: "$household" },
+          totalQuantity: { $sum: "$quantity" },
+          totalValue: { $sum: "$totalValue" },
+          recipients: { $addToSet: "$citizen" },
+        },
+      },
+      {
+        $lookup: {
+          from: "households",
+          localField: "_id",
+          foreignField: "_id",
+          as: "householdInfo",
+        },
+      },
+      {
+        $unwind: {
+          path: "$householdInfo",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          householdId: "$_id",
+          householdCode: "$householdInfo.code",
+          householdAddress: "$householdInfo.address",
+          totalQuantity: 1,
+          totalValue: 1,
+          recipientCount: { $size: "$recipients" },
+        },
+      },
+      {
+        $sort: { householdCode: 1 },
+      },
+    ]);
+    return agg;
   },
   
   /**
@@ -205,17 +261,36 @@ module.exports = {
       throw new Error("Sự kiện khen thưởng không tồn tại");
     }
 
-    // Lấy tất cả công dân
-    const allCitizens = await Citizen.find({
-      status: "ALIVE", // Chỉ lấy công dân còn sống
-      household: { $exists: true, $ne: null }, // Phải có hộ khẩu
-    }).populate("household");
+    // Sử dụng ngày sự kiện hoặc ngày hiện tại để tính tuổi chính xác
+    const referenceDate = event.date ? new Date(event.date) : new Date();
 
-    // Lọc công dân theo độ tuổi
-    const eligibleCitizens = allCitizens.filter(citizen => {
-      const age = calculateAge(citizen.dateOfBirth);
-      return age !== null && age >= minAge && age <= maxAge;
-    });
+    // Tính date range cho độ tuổi (tối ưu hơn filter ở frontend)
+    // Người có tuổi từ minAge đến maxAge tại thời điểm sự kiện
+    // Ví dụ: minAge=0, maxAge=18, referenceDate=15/09/2024
+    // - minBirthDate = 15/09/2006 (người 18 tuổi)
+    // - maxBirthDate = 15/09/2024 (người 0 tuổi)
+    const minBirthDate = new Date(referenceDate);
+    minBirthDate.setFullYear(referenceDate.getFullYear() - maxAge);
+    minBirthDate.setHours(0, 0, 0, 0);
+    
+    const maxBirthDate = new Date(referenceDate);
+    if (minAge > 0) {
+      maxBirthDate.setFullYear(referenceDate.getFullYear() - minAge);
+      maxBirthDate.setHours(23, 59, 59, 999);
+    } else {
+      maxBirthDate.setHours(23, 59, 59, 999);
+    }
+
+    // Query tối ưu với MongoDB thay vì filter ở frontend
+    const eligibleCitizens = await Citizen.find({
+      status: "ALIVE",
+      household: { $exists: true, $ne: null },
+      residenceStatus: "THUONG_TRU",
+      dateOfBirth: { 
+        $gte: minBirthDate, 
+        $lte: maxBirthDate 
+      },
+    }).populate("household");
 
     if (eligibleCitizens.length === 0) {
       return { created: 0, skipped: 0, message: `Không có công dân nào trong độ tuổi ${minAge}-${maxAge}` };
@@ -231,35 +306,64 @@ module.exports = {
     const distributionsToCreate = [];
     let skipped = 0;
 
-    for (const citizen of eligibleCitizens) {
-      if (!citizen.household) {
-        skipped++;
-        continue;
-      }
-
-      // Kiểm tra đã có distribution cho event và citizen này chưa
-      if (!overwriteExisting) {
-        const existing = await RewardDistribution.findOne({
-          event: eventId,
-          citizen: citizen._id,
-        });
-        if (existing) {
+    // Lấy tất cả existing distributions một lần để tránh query nhiều lần
+    let existingDistributions = [];
+    if (!overwriteExisting) {
+      const existingCitizenIds = eligibleCitizens.map(c => c._id);
+      existingDistributions = await RewardDistribution.find({
+        event: eventId,
+        citizen: { $in: existingCitizenIds },
+      }).select("citizen");
+      const existingCitizenIdSet = new Set(
+        existingDistributions.map(d => String(d.citizen))
+      );
+      
+      // Filter ra những citizen đã có distribution
+      const newEligibleCitizens = eligibleCitizens.filter(c => 
+        !existingCitizenIdSet.has(String(c._id))
+      );
+      
+      // Tạo distributions cho những citizen mới
+      for (const citizen of newEligibleCitizens) {
+        if (!citizen.household || !citizen.dateOfBirth) {
           skipped++;
           continue;
         }
-      }
 
-      const age = calculateAge(citizen.dateOfBirth);
-      distributionsToCreate.push({
-        event: eventId,
-        household: citizen.household._id || citizen.household,
-        citizen: citizen._id,
-        quantity: config.quantity,
-        unitValue: config.unitValue,
-        totalValue: config.quantity * config.unitValue,
-        note: `Khen thưởng dịp đặc biệt - Độ tuổi: ${age} tuổi`,
-        status: "REGISTERED",
-      });
+        const age = calculateAge(citizen.dateOfBirth, referenceDate);
+        distributionsToCreate.push({
+          event: eventId,
+          household: citizen.household._id || citizen.household,
+          citizen: citizen._id,
+          quantity: config.quantity,
+          unitValue: config.unitValue,
+          totalValue: config.quantity * config.unitValue,
+          note: `Khen thưởng dịp đặc biệt - Độ tuổi: ${age} tuổi (tại thời điểm sự kiện)`,
+          status: "REGISTERED",
+        });
+      }
+      
+      skipped += existingDistributions.length;
+    } else {
+      // Nếu overwrite, tạo cho tất cả
+      for (const citizen of eligibleCitizens) {
+        if (!citizen.household || !citizen.dateOfBirth) {
+          skipped++;
+          continue;
+        }
+
+        const age = calculateAge(citizen.dateOfBirth, referenceDate);
+        distributionsToCreate.push({
+          event: eventId,
+          household: citizen.household._id || citizen.household,
+          citizen: citizen._id,
+          quantity: config.quantity,
+          unitValue: config.unitValue,
+          totalValue: config.quantity * config.unitValue,
+          note: `Khen thưởng dịp đặc biệt - Độ tuổi: ${age} tuổi (tại thời điểm sự kiện)`,
+          status: "REGISTERED",
+        });
+      }
     }
 
     if (distributionsToCreate.length === 0) {

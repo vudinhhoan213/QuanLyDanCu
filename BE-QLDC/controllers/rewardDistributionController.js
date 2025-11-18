@@ -97,6 +97,16 @@ module.exports = {
       next(err);
     }
   },
+  async summarizeByHousehold(req, res, next) {
+    try {
+      const summary = await rewardDistributionService.summarizeByHousehold(
+        req.params.eventId
+      );
+      res.json(summary);
+    } catch (err) {
+      next(err);
+    }
+  },
   async register(req, res, next) {
     try {
       const { eventId, quantity = 1, note } = req.body;
@@ -268,18 +278,21 @@ module.exports = {
 
       console.log(`✅ [getMyRegistrations] Found citizen ${citizen._id}, household: ${citizen.household}`);
 
-      // Lấy tất cả đăng ký của citizen hoặc household
-      const { page, limit, sort, event } = req.query;
+      // CHỈ lấy đăng ký của chính citizen này (không lấy của cả hộ)
+      // Mỗi người chỉ xem quà của chính mình
+      const { page, limit, sort, event, status } = req.query;
       const filter = {
-        $or: [
-          { citizen: citizen._id },
-          { household: citizen.household }
-        ]
+        citizen: citizen._id
       };
 
       // Nếu có filter theo event, thêm vào filter
       if (event) {
         filter.event = event;
+      }
+
+      // Nếu có filter theo status, thêm vào filter
+      if (status) {
+        filter.status = status;
       }
 
       console.log(`📋 [getMyRegistrations] Filter:`, JSON.stringify(filter));
