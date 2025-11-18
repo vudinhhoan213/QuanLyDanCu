@@ -112,6 +112,11 @@ export const rewardService = {
       return data;
     },
 
+    update: async (id, distributionData) => {
+      const { data } = await api.patch(`/reward-distributions/${id}`, distributionData);
+      return data;
+    },
+
     create: async (distributionData) => {
       const { data } = await api.post(
         "/reward-distributions",

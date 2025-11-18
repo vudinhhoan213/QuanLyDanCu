@@ -10,7 +10,7 @@ const auditLogSchema = new Schema(
     },
     entityType: {
       type: String,
-      enum: ['Citizen', 'Household', 'RewardProposal', 'EditRequest', 'User', 'Notification'],
+      enum: ['Citizen', 'Household', 'RewardProposal', 'RewardDistribution', 'RewardEvent', 'EditRequest', 'User', 'Notification'],
       required: true,
     },
     entityId: { type: Schema.Types.ObjectId, required: true },

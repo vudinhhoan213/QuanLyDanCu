@@ -498,60 +498,135 @@ const MyRegistrations = () => {
     {
       title: "Hành động",
       key: "actions",
-      width: 180,
-      fixed: "right",
+      width: 100,
       render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="primary"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => handleViewDetails(record)}
-          >
-            Xem
-          </Button>
-          <Button
-            type="link"
-            icon={<PrinterOutlined />}
-            onClick={() => handlePrint(record)}
-          >
-            In
-          </Button>
-          <Button
-            type="link"
-            icon={<QrcodeOutlined />}
-            onClick={() => handleShowQR(record)}
-          >
-            QR
-          </Button>
-        </Space>
+        <Button
+          type="primary"
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={() => handleViewDetails(record)}
+        >
+          Xem
+        </Button>
       ),
     },
   ];
 
   return (
     <Layout>
-      <Card>
-        <Space direction="vertical" size="large" style={{ width: "100%" }}>
+      <style>
+        {`
+          .ant-modal-body::-webkit-scrollbar {
+            display: none;
+          }
+          .ant-modal-body {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+        `}
+      </style>
+      <div>
+        {/* Header gradient */}
+        <Card
+          bordered={false}
+          style={{
+            marginBottom: 24,
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            border: "none",
+            borderRadius: "12px",
+            boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
+            transition: "transform 0.3s ease, box-shadow 0.3s ease",
+          }}
+          bodyStyle={{ padding: "32px" }}
+          className="hover-card"
+        >
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
               alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
             }}
           >
-            <Title level={2} style={{ margin: 0 }}>
-              <GiftOutlined /> Lịch sử Đăng ký của tôi
-            </Title>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={handleManualRefresh}
-              loading={loading}
-            >
-              Làm mới
-            </Button>
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "50%",
+                  background: "rgba(255, 255, 255, 0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backdropFilter: "blur(10px)",
+                }}
+              >
+                <GiftOutlined style={{ fontSize: 32, color: "#fff" }} />
+              </div>
+
+              <div>
+                <Title
+                  level={2}
+                  style={{
+                    color: "#fff",
+                    margin: 0,
+                    marginBottom: 8,
+                    fontWeight: 700,
+                  }}
+                >
+                  Danh Sách Quà
+                </Title>
+                <Text
+                  style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}
+                >
+                  Quản lý và theo dõi các đăng ký nhận quà của bạn
+                </Text>
+              </div>
+            </div>
+
+            <div>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={handleManualRefresh}
+                loading={loading}
+                style={{
+                  background: "#fff",
+                  color: "#667eea",
+                  fontWeight: 500,
+                  height: 40,
+                  borderRadius: 8,
+                  transition: "all 0.3s ease",
+                }}
+                className="hover-back"
+              >
+                Làm mới
+              </Button>
+            </div>
           </div>
 
+          {/* Hover effect */}
+          <style>{`
+            .hover-card:hover {
+              transform: translateY(-4px);
+              box-shadow: 0 10px 25px rgba(102, 126, 234, 0.35);
+            }
+            .hover-back:hover {
+              transform: translateY(-3px);
+              box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+            }
+          `}</style>
+        </Card>
+
+        {/* Table Card */}
+        <Card
+          bordered={false}
+          style={{
+            borderRadius: 12,
+            transition: "all 0.3s ease",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          }}
+          className="hover-table-card"
+        >
           {registrations.length === 0 && !loading ? (
             <div style={{ textAlign: "center", padding: "60px 20px" }}>
               <Text
@@ -585,11 +660,34 @@ const MyRegistrations = () => {
                   }));
                 },
               }}
-              scroll={{ x: 780 }}
+              rowClassName={() => "hoverable-row"}
             />
           )}
-        </Space>
-      </Card>
+        </Card>
+
+        {/* CSS hover effects */}
+        <style>
+          {`
+            .hover-table-card:hover {
+              transform: translateY(-4px);
+              box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            }
+
+            .hoverable-row:hover {
+              background-color: #fafafa !important;
+              transition: background 0.2s ease;
+            }
+
+            .ant-btn {
+              transition: all 0.2s ease;
+            }
+            .ant-btn:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+          `}
+        </style>
+      </div>
 
       {/* View Details Modal */}
       <Modal
@@ -605,9 +703,20 @@ const MyRegistrations = () => {
           </Button>,
         ]}
         width={600}
+        centered
+        bodyStyle={{ 
+          maxHeight: "70vh", 
+          overflow: "auto", 
+          padding: "24px",
+          scrollbarWidth: "none", // Firefox
+          msOverflowStyle: "none", // IE and Edge
+        }}
+        style={{
+          overflow: "hidden",
+        }}
       >
         {viewingRegistration && (
-          <Descriptions bordered column={1}>
+          <Descriptions bordered column={1} labelStyle={{ textAlign: "center" }}>
             <Descriptions.Item label="Sự kiện">
               {viewingRegistration.event?.name || "N/A"}
             </Descriptions.Item>

@@ -30,18 +30,30 @@ module.exports = {
       console.log("User:", req.user);
       console.log("Body:", req.body);
 
-      // Tìm citizen của user hiện tại
-      const citizen = await Citizen.findOne({ user: req.user._id });
-
-      if (!citizen) {
-        console.log("❌ Citizen not found for user:", req.user._id);
-        return res.status(404).json({
-          message: "Citizen profile not found",
-          detail: "Vui lòng liên hệ tổ trưởng để được thêm vào hộ khẩu.",
-        });
+      let citizen;
+      
+      // Nếu là leader (TO_TRUONG) và có citizen ID trong body, sử dụng citizen đó
+      if (req.user.role === "TO_TRUONG" && req.body.citizen) {
+        citizen = await Citizen.findById(req.body.citizen).populate('user');
+        if (!citizen) {
+          return res.status(404).json({
+            message: "Citizen not found",
+            detail: "Không tìm thấy công dân được chỉ định.",
+          });
+        }
+        console.log("👤 Leader creating request for citizen:", citizen._id, citizen.fullName);
+      } else {
+        // Tìm citizen của user hiện tại (cho citizen tự tạo yêu cầu)
+        citizen = await Citizen.findOne({ user: req.user._id }).populate('user');
+        if (!citizen) {
+          console.log("❌ Citizen not found for user:", req.user._id);
+          return res.status(404).json({
+            message: "Citizen profile not found",
+            detail: "Vui lòng liên hệ tổ trưởng để được thêm vào hộ khẩu.",
+          });
+        }
+        console.log("👤 Found citizen:", citizen._id, citizen.fullName);
       }
-
-      console.log("👤 Found citizen:", citizen._id, citizen.fullName);
 
       // Chuẩn bị payload với citizen và reason
       const payload = {
@@ -58,31 +70,54 @@ module.exports = {
 
       console.log("✅ Edit request created:", doc._id);
 
-      // Tạo notification cho leaders
+      // Tạo notification
       try {
         const { User, Notification } = require("../models");
-        const leaders = await User.find({ role: "TO_TRUONG", isActive: true });
-
-        if (leaders.length > 0) {
-          const notifications = leaders.map((leader) => ({
-            toUser: leader._id,
-            fromUser: req.user._id,
-            title: "Yêu Cầu Chỉnh Sửa Mới",
-            message: `${
-              req.user.fullName || req.user.username
-            } đã gửi yêu cầu: ${payload.title || "Chỉnh sửa thông tin"}`,
-            type: "EDIT_REQUEST",
-            entityType: "EditRequest",
-            entityId: doc._id,
-            priority: "NORMAL",
-          }));
-
-          await Notification.insertMany(notifications);
-          console.log(
-            `📬 Created ${notifications.length} notifications for leaders`
-          );
+        
+        // Nếu là leader tạo yêu cầu cho citizen khác, gửi notification cho citizen đó
+        if (req.user.role === "TO_TRUONG" && req.body.citizen) {
+          // Kiểm tra xem citizen có user account không
+          if (citizen.user) {
+            const userId = citizen.user._id || citizen.user;
+            await Notification.create({
+              toUser: userId,
+              fromUser: req.user._id,
+              title: "Yêu Cầu Nhập Hộ Khẩu",
+              message: `Tổ trưởng đã tạo yêu cầu nhập hộ khẩu cho bạn. Vui lòng cập nhật thông tin hộ khẩu.`,
+              type: "EDIT_REQUEST",
+              entityType: "EditRequest",
+              entityId: doc._id,
+              priority: "HIGH",
+            });
+            console.log(`📬 Created notification for citizen user: ${userId}`);
+          } else {
+            console.log(`⚠️ Citizen ${citizen._id} does not have a user account`);
+          }
         } else {
-          console.log("⚠️ No leaders found to notify");
+          // Nếu là citizen tự tạo yêu cầu, gửi notification cho leaders
+          const leaders = await User.find({ role: "TO_TRUONG", isActive: true });
+
+          if (leaders.length > 0) {
+            const notifications = leaders.map((leader) => ({
+              toUser: leader._id,
+              fromUser: req.user._id,
+              title: "Yêu Cầu Chỉnh Sửa Mới",
+              message: `${
+                req.user.fullName || req.user.username
+              } đã gửi yêu cầu: ${payload.title || "Chỉnh sửa thông tin"}`,
+              type: "EDIT_REQUEST",
+              entityType: "EditRequest",
+              entityId: doc._id,
+              priority: "NORMAL",
+            }));
+
+            await Notification.insertMany(notifications);
+            console.log(
+              `📬 Created ${notifications.length} notifications for leaders`
+            );
+          } else {
+            console.log("⚠️ No leaders found to notify");
+          }
         }
       } catch (notifError) {
         console.error("❌ Error creating notifications:", notifError);

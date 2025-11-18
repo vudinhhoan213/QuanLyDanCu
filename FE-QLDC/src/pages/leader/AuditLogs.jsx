@@ -24,6 +24,8 @@ import {
   InfoCircleOutlined,
   EyeOutlined,
   ClearOutlined,
+  GiftOutlined,
+  TrophyOutlined,
 } from "@ant-design/icons";
 import Layout from "../../components/Layout";
 import dayjs from "dayjs";
@@ -110,6 +112,8 @@ const AuditLogs = () => {
     Household: { text: "Hộ khẩu", icon: <FileTextOutlined /> },
     EditRequest: { text: "Yêu cầu chỉnh sửa", icon: <FileTextOutlined /> },
     RewardProposal: { text: "Đề xuất khen thưởng", icon: <AuditOutlined /> },
+    RewardDistribution: { text: "Phân phối quà", icon: <GiftOutlined /> },
+    RewardEvent: { text: "Sự kiện khen thưởng", icon: <TrophyOutlined /> },
     User: { text: "Người dùng", icon: <UserOutlined /> },
     Notification: { text: "Thông báo", icon: <InfoCircleOutlined /> },
   };

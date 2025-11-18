@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Layout as AntLayout,
   Menu,
@@ -59,6 +59,19 @@ const Layout = ({ children }) => {
   const { user, logout } = useAuth();
 
   const isLeader = user?.role === "TO_TRUONG";
+
+  // Quản lý openKeys cho menu
+  const isRewardPage =
+    location.pathname.startsWith("/leader/reward-") ||
+    location.pathname === "/leader/student-achievements";
+  
+  const [openKeys, setOpenKeys] = useState([]);
+
+  // Tự động đóng menu sau khi navigate (giống các web chuyên nghiệp)
+  useEffect(() => {
+    // Đóng menu khi navigate đến một trang mới
+    setOpenKeys([]);
+  }, [location.pathname]);
 
   // Fetch user avatar
   const fetchUserAvatar = useCallback(async () => {
@@ -161,61 +174,84 @@ const Layout = ({ children }) => {
     }
   };
 
+  // Hàm lấy label của trang hiện tại trong menu "Khen thưởng"
+  const getCurrentRewardPageLabel = useMemo(() => {
+    const rewardPages = {
+      "/leader/reward-proposals": "Duyệt Đề xuất",
+      "/leader/reward-events": "Sự kiện phát quà",
+      "/leader/student-achievements": "Thành tích học sinh",
+    };
+    return rewardPages[location.pathname] || "Khen thưởng";
+  }, [location.pathname]);
+
+  // Hàm helper để navigate và đóng menu (giống các web chuyên nghiệp)
+  const handleNavigateWithMenuClose = useCallback(
+    (path) => {
+      navigate(path);
+      setOpenKeys([]);
+    },
+    [navigate]
+  );
+
   // Menu items cho Leader (Tổ trưởng)
-  const leaderMenuItems = [
-    {
-      key: "/leader/dashboard",
-      icon: <HomeOutlined />,
-      label: "Dashboard",
-      onClick: () => navigate("/leader/dashboard"),
-    },
-    {
-      key: "/leader/households",
-      icon: <TeamOutlined />,
-      label: "Quản lý Hộ khẩu",
-      onClick: () => navigate("/leader/households"),
-    },
-    {
-      key: "/leader/citizens",
-      icon: <UserOutlined />,
-      label: "Quản lý Nhân khẩu",
-      onClick: () => navigate("/leader/citizens"),
-    },
-    {
-      key: "/leader/edit-requests",
-      icon: <FileTextOutlined />,
-      label: "Duyệt Yêu cầu",
-      onClick: () => navigate("/leader/edit-requests"),
-    },
-    {
-      key: "rewards",
-      icon: <GiftOutlined />,
-      label: "Khen thưởng",
-      children: [
-        {
-          key: "/leader/reward-proposals",
-          label: "Duyệt Đề xuất",
-          onClick: () => navigate("/leader/reward-proposals"),
-        },
-        {
-          key: "/leader/reward-events",
-          label: "Sự kiện phát quà",
-          onClick: () => navigate("/leader/reward-events"),
-        },
-        {
-          key: "/leader/student-achievements",
-          label: "Thành tích học sinh",
-          onClick: () => navigate("/leader/student-achievements"),
-        },
-      ],
-    },
-    {
-      key: "/leader/audit-logs",
-      icon: <AuditOutlined />,
-      label: "Nhật ký",
-      onClick: () => navigate("/leader/audit-logs"),
-    },
-  ];
+  const leaderMenuItems = useMemo(
+    () => [
+      {
+        key: "/leader/dashboard",
+        icon: <HomeOutlined />,
+        label: "Dashboard",
+        onClick: () => navigate("/leader/dashboard"),
+      },
+      {
+        key: "/leader/households",
+        icon: <TeamOutlined />,
+        label: "Quản lý Hộ khẩu",
+        onClick: () => navigate("/leader/households"),
+      },
+      {
+        key: "/leader/citizens",
+        icon: <UserOutlined />,
+        label: "Quản lý Nhân khẩu",
+        onClick: () => navigate("/leader/citizens"),
+      },
+      {
+        key: "/leader/edit-requests",
+        icon: <FileTextOutlined />,
+        label: "Duyệt Yêu cầu",
+        onClick: () => navigate("/leader/edit-requests"),
+      },
+      {
+        key: "rewards",
+        icon: <GiftOutlined />,
+        label: getCurrentRewardPageLabel,
+        children: [
+          {
+            key: "/leader/reward-proposals",
+            label: "Duyệt Đề xuất",
+            onClick: () => handleNavigateWithMenuClose("/leader/reward-proposals"),
+          },
+          {
+            key: "/leader/reward-events",
+            label: "Sự kiện phát quà",
+            onClick: () => handleNavigateWithMenuClose("/leader/reward-events"),
+          },
+          {
+            key: "/leader/student-achievements",
+            label: "Thành tích học sinh",
+            onClick: () =>
+              handleNavigateWithMenuClose("/leader/student-achievements"),
+          },
+        ],
+      },
+      {
+        key: "/leader/audit-logs",
+        icon: <AuditOutlined />,
+        label: "Nhật ký",
+        onClick: () => navigate("/leader/audit-logs"),
+      },
+    ],
+    [navigate, getCurrentRewardPageLabel, handleNavigateWithMenuClose]
+  );
 
   // Menu items cho Citizen (Công dân)
   const citizenMenuItems = [
@@ -258,12 +294,15 @@ const Layout = ({ children }) => {
     {
       key: "/citizen/my-registrations",
       icon: <GiftOutlined />,
-      label: "Lịch sử của tôi",
+      label: "Danh sách quà",
       onClick: () => navigate("/citizen/my-registrations"),
     },
   ];
 
-  const menuItems = isLeader ? leaderMenuItems : citizenMenuItems;
+  const menuItems = useMemo(
+    () => (isLeader ? leaderMenuItems : citizenMenuItems),
+    [isLeader, leaderMenuItems, citizenMenuItems]
+  );
 
   // User menu dropdown
   const userMenuItems = [
@@ -321,6 +360,8 @@ const Layout = ({ children }) => {
           theme="dark"
           mode="inline"
           selectedKeys={[location.pathname]}
+          openKeys={openKeys}
+          onOpenChange={setOpenKeys}
           items={menuItems}
         />
       </Sider>

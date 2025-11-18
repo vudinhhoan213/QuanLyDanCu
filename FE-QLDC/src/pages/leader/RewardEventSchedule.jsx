@@ -203,29 +203,113 @@ const RewardEventSchedule = () => {
 
   return (
     <Layout>
-      <Card>
-        <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          <Row justify="space-between" align="middle">
-            <Col>
-              <Space>
-                <Button
-                  icon={<ArrowLeftOutlined />}
-                  onClick={() => navigate("/leader/reward-events")}
-                >
-                  Quay lại
-                </Button>
-                <Title level={2} style={{ margin: 0 }}>
-                  <CalendarOutlined /> Lịch Tự động Sự kiện Thường niên
-                </Title>
-              </Space>
-            </Col>
-          </Row>
+      <div>
+        {/* Header gradient */}
+        <Card
+          bordered={false}
+          style={{
+            marginBottom: 24,
+            background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+            border: "none",
+            borderRadius: "12px",
+            boxShadow: "0 4px 12px rgba(24, 144, 255, 0.3)",
+            transition: "transform 0.3s ease, box-shadow 0.3s ease",
+          }}
+          bodyStyle={{ padding: "32px" }}
+          className="hover-card"
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "50%",
+                  background: "rgba(255, 255, 255, 0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backdropFilter: "blur(10px)",
+                }}
+              >
+                <CalendarOutlined style={{ fontSize: 32, color: "#fff" }} />
+              </div>
 
-          <Text type="secondary">
-            Danh sách các dịp cố định trong năm. Kích hoạt các dịp để hệ thống tự động tạo sự kiện
-            phát quà với cấu hình mặc định. Với các dịp có đối tượng cụ thể (ví dụ: trẻ em 0-18 tuổi),
-            hệ thống sẽ tự động tạo danh sách phân phối quà. Bạn có thể chỉnh sửa template trước khi kích hoạt.
-          </Text>
+              <div>
+                <Title
+                  level={2}
+                  style={{
+                    color: "#fff",
+                    margin: 0,
+                    marginBottom: 8,
+                    fontWeight: 700,
+                  }}
+                >
+                  Sự kiện Phát quà Thường niên
+                </Title>
+                <Text
+                  style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}
+                >
+                  Quản lý và kích hoạt các sự kiện phát quà thường niên
+                </Text>
+              </div>
+            </div>
+
+            <div>
+              <Button
+                icon={<ArrowLeftOutlined />}
+                onClick={() => navigate("/leader/reward-events")}
+                style={{
+                  background: "#fff",
+                  color: "#1890ff",
+                  fontWeight: 500,
+                  height: 40,
+                  borderRadius: 8,
+                  transition: "all 0.3s ease",
+                }}
+                className="hover-back"
+              >
+                Quay lại
+              </Button>
+            </div>
+          </div>
+
+          {/* Hover effect */}
+          <style>{`
+            .hover-card:hover {
+              transform: translateY(-4px);
+              box-shadow: 0 10px 25px rgba(24, 144, 255, 0.35);
+            }
+            .hover-back:hover {
+              transform: translateY(-3px);
+              box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+            }
+          `}</style>
+        </Card>
+
+        {/* Content Card */}
+        <Card
+          bordered={false}
+          style={{
+            borderRadius: 12,
+            transition: "all 0.3s ease",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          }}
+        >
+          <Space direction="vertical" size="large" style={{ width: "100%" }}>
+            <Text type="secondary" style={{ fontSize: "14px", lineHeight: "1.6" }}>
+              Hệ thống quản lý các sự kiện thường niên. 
+              Kích hoạt các dịp lễ để hệ thống tạo sự kiện phát quà theo cấu hình mặc định. 
+              Đối với các dịp có đối tượng cụ thể (theo độ tuổi hoặc giới tính), hệ thống sẽ tự động 
+              tạo danh sách phân phối quà phù hợp. Bạn có thể tùy chỉnh mẫu sự kiện trước khi kích hoạt.
+            </Text>
 
           <Row gutter={[16, 16]}>
             {annualTemplates.map((template) => {
@@ -244,24 +328,40 @@ const RewardEventSchedule = () => {
                     style={{
                       border: exists ? "2px solid #52c41a" : "1px solid #d9d9d9",
                       height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                    bodyStyle={{
+                      display: "flex",
+                      flexDirection: "column",
+                      flex: 1,
+                      padding: "16px",
                     }}
                     cover={
                       <div
                         style={{
                           textAlign: "center",
-                          padding: "20px",
+                          padding: "24px 20px",
                           fontSize: "48px",
                           backgroundColor: exists ? "#f6ffed" : "#fafafa",
+                          minHeight: "100px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                         }}
                       >
                         {template.icon || <GiftOutlined />}
                       </div>
                     }
                   >
-                    <Space direction="vertical" size="small" style={{ width: "100%" }}>
+                    <Space 
+                      direction="vertical" 
+                      size="middle" 
+                      style={{ width: "100%", flex: 1 }}
+                    >
                       <Row justify="space-between" align="middle">
                         <Col flex="auto">
-                          <Title level={4} style={{ margin: 0 }}>
+                          <Title level={4} style={{ margin: 0, fontSize: "16px" }}>
                             {template.name}
                           </Title>
                         </Col>
@@ -273,10 +373,25 @@ const RewardEventSchedule = () => {
                           </Col>
                         )}
                       </Row>
-                      <Text type="secondary" style={{ fontSize: "13px" }}>
+                      
+                      <Text 
+                        type="secondary" 
+                        style={{ 
+                          fontSize: "13px",
+                          minHeight: "40px",
+                          display: "block",
+                          lineHeight: "1.5",
+                        }}
+                      >
                         {template.description}
                       </Text>
-                      <Descriptions size="small" column={1} bordered>
+                      
+                      <Descriptions 
+                        size="small" 
+                        column={1} 
+                        bordered
+                        style={{ marginBottom: 0 }}
+                      >
                         <Descriptions.Item label="Ngày diễn ra">
                           <Text strong>{template.defaultDate}</Text>
                         </Descriptions.Item>
@@ -288,15 +403,29 @@ const RewardEventSchedule = () => {
                         <Descriptions.Item label="Đối tượng">
                           <Text>{targetInfo}</Text>
                         </Descriptions.Item>
-                        {template.rewardDescription && (
-                          <Descriptions.Item label="Phần thưởng">
-                            <Text strong style={{ color: "#1890ff" }}>
-                              {template.rewardDescription}
-                            </Text>
-                          </Descriptions.Item>
-                        )}
+                        <Descriptions.Item 
+                          label="Phần thưởng"
+                          style={{ minHeight: "32px" }}
+                        >
+                          <Text 
+                            strong 
+                            style={{ 
+                              color: template.rewardDescription ? "#1890ff" : "#d9d9d9" 
+                            }}
+                          >
+                            {template.rewardDescription || "Chưa cấu hình"}
+                          </Text>
+                        </Descriptions.Item>
                       </Descriptions>
-                      <Space style={{ width: "100%", justifyContent: "flex-end" }}>
+                      
+                      <Space 
+                        style={{ 
+                          width: "100%", 
+                          justifyContent: "flex-end",
+                          marginTop: "auto",
+                          paddingTop: "8px",
+                        }}
+                      >
                         <Button
                           icon={<EditOutlined />}
                           onClick={() => handleEditTemplate(template)}
@@ -339,8 +468,9 @@ const RewardEventSchedule = () => {
               );
             })}
           </Row>
-        </Space>
-      </Card>
+          </Space>
+        </Card>
+      </div>
 
       {/* Edit Template Modal */}
       <Modal
