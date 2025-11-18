@@ -27,10 +27,11 @@ import {
   FileAddOutlined,
   ExperimentOutlined,
   HomeOutlined,
+  UndoOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import Layout from "../../components/Layout";
-import { rewardService } from "../../services";
+import { rewardService, editRequestService, notificationService, householdService } from "../../services";
 import { exportRegistrationsToExcel } from "../../utils/exportExcel";
 import dayjs from "dayjs";
 
@@ -189,46 +190,167 @@ const RewardEventRegistrations = () => {
         return;
       }
       
-      const params = {
-        page: pagination.current,
-        limit: pagination.pageSize,
-      };
-
-      // Lấy danh sách công dân đủ điều kiện
-      const response = await rewardService.events.getEligibleCitizens(id, params);
-      let citizens = response.docs || [];
-
-      // Lấy danh sách phân phối cho event này để kiểm tra trạng thái nhận quà
+      // Kiểm tra xem event có distributions (danh sách phân phối) chưa
+      // Nếu có thì lấy từ distributions, nếu chưa thì lấy từ eligible citizens
+      let hasDistributions = false;
+      let allDistributions = [];
+      
       try {
-        const distributionsResponse = await rewardService.distributions.getAll({
+        const checkDistributionsResponse = await rewardService.distributions.getAll({
           event: id,
-          limit: 1000,
+          limit: 1, // Chỉ cần kiểm tra xem có hay không
         });
-        const distributions = distributionsResponse.docs || [];
+        hasDistributions = (checkDistributionsResponse.docs || []).length > 0;
+        
+        if (hasDistributions) {
+          // Lấy tất cả distributions để tính thống kê
+          const allDistributionsResponse = await rewardService.distributions.getAll({
+            event: id,
+            limit: 1000,
+          });
+          allDistributions = allDistributionsResponse.docs || [];
+        }
+      } catch (checkError) {
+        console.error("Error checking distributions:", checkError);
+        hasDistributions = false;
+      }
 
-        // Map distributions by citizen ID
-        const distributionMap = {};
-        distributions.forEach((dist) => {
-          if (dist.citizen) {
-            const citizenId = dist.citizen._id || dist.citizen;
-            distributionMap[citizenId] = dist;
+      if (hasDistributions && allDistributions.length > 0) {
+        // Có distributions → Lấy từ danh sách phân phối (khen thưởng)
+        try {
+          // Tính thống kê từ tất cả distributions
+          const total = allDistributions.length;
+          let received = 0;
+          let notReceived = 0;
+
+          allDistributions.forEach((dist) => {
+            if (dist.status === "DISTRIBUTED") {
+              received++;
+            } else {
+              notReceived++;
+            }
+          });
+
+          setStats({
+            total,
+            received,
+            notReceived,
+          });
+
+          // Lấy danh sách phân phối với pagination và filter
+          const distributionsParams = {
+            event: id,
+            page: pagination.current,
+            limit: pagination.pageSize,
+          };
+
+          // Thêm filter status nếu có
+          if (statusFilter === "DISTRIBUTED") {
+            distributionsParams.status = "DISTRIBUTED";
           }
-        });
 
-        // Thêm thông tin trạng thái nhận quà cho mỗi citizen
+          // Lấy danh sách phân phối (distributions) cho event này
+          const distributionsResponse = await rewardService.distributions.getAll(distributionsParams);
+          let distributions = distributionsResponse.docs || [];
+          let totalDistributions = distributionsResponse.total || 0;
+
+          // Nếu filter là NOT_RECEIVED, cần lấy tất cả rồi filter ở frontend
+          // vì backend không hỗ trợ $ne operator qua query params
+          if (statusFilter === "NOT_RECEIVED") {
+            distributions = allDistributions.filter(
+              (dist) => dist.status !== "DISTRIBUTED"
+            );
+            totalDistributions = distributions.length;
+            
+            // Paginate sau khi filter
+            const start = (pagination.current - 1) * pagination.pageSize;
+            const end = start + pagination.pageSize;
+            distributions = distributions.slice(start, end);
+          }
+
+          // Chuyển đổi distributions thành format citizen với đầy đủ thông tin
+          const citizens = distributions.map((dist) => {
+            const citizen = dist.citizen || {};
+            return {
+              key: citizen._id || dist._id,
+              _id: citizen._id,
+              fullName: citizen.fullName || "N/A",
+              nationalId: citizen.nationalId || "N/A",
+              dateOfBirth: citizen.dateOfBirth,
+              gender: citizen.gender,
+              household: dist.household || citizen.household,
+              // Thông tin từ distribution
+              distributionId: dist._id,
+              status: dist.status || "REGISTERED",
+              distributedAt: dist.distributedAt,
+              distributionNote: dist.note || dist.distributionNote,
+              quantity: dist.quantity || 1,
+              totalValue: dist.totalValue || 0,
+              unitValue: dist.unitValue || 0,
+            };
+          });
+
+          setEligibleCitizens(citizens);
+          setPagination({
+            ...pagination,
+            total: totalDistributions,
+          });
+        } catch (distError) {
+          console.error("Error fetching distributions:", distError);
+          throw distError; // Re-throw để fallback về eligible citizens
+        }
+      } else {
+        // Chưa có distributions → Lấy từ eligible citizens (công dân đủ điều kiện)
+        const params = {
+          page: pagination.current,
+          limit: pagination.pageSize,
+        };
+
+        const response = await rewardService.events.getEligibleCitizens(id, params);
+        let citizens = response.docs || [];
+
+        // Lấy distributions để kiểm tra trạng thái nhận quà (nếu có)
+        let distributionMap = {};
+        try {
+          const distributionsResponse = await rewardService.distributions.getAll({
+            event: id,
+            limit: 1000,
+          });
+          const distributions = distributionsResponse.docs || [];
+          distributions.forEach((dist) => {
+            if (dist.citizen) {
+              const citizenId = dist.citizen._id || dist.citizen;
+              distributionMap[citizenId] = dist;
+            }
+          });
+        } catch (distError) {
+          console.error("Error fetching distributions for status check:", distError);
+        }
+
+        // Map citizens với thông tin từ distributions nếu có
         citizens = citizens.map((citizen) => {
           const distribution = distributionMap[citizen._id];
           return {
             key: citizen._id,
             ...citizen,
-            distributionId: distribution?._id,
+            distributionId: distribution?._id || null,
             status: distribution?.status || "NOT_RECEIVED",
-            distributedAt: distribution?.distributedAt,
-            distributionNote: distribution?.note,
+            distributedAt: distribution?.distributedAt || null,
+            distributionNote: distribution?.note || distribution?.distributionNote || null,
             quantity: distribution?.quantity || 1,
             totalValue: distribution?.totalValue || 0,
+            unitValue: distribution?.unitValue || 0,
           };
         });
+
+        // Lọc theo status nếu có filter
+        if (statusFilter !== "ALL") {
+          if (statusFilter === "DISTRIBUTED") {
+            citizens = citizens.filter(c => c.status === "DISTRIBUTED");
+          } else if (statusFilter === "NOT_RECEIVED") {
+            citizens = citizens.filter(c => c.status !== "DISTRIBUTED");
+          }
+        }
 
         setEligibleCitizens(citizens);
         setPagination({
@@ -240,13 +362,21 @@ const RewardEventRegistrations = () => {
         const allParams = { limit: 1000 };
         const allResponse = await rewardService.events.getEligibleCitizens(id, allParams);
         const allCitizens = allResponse.docs || [];
-        const allDistributionsResponse = await rewardService.distributions.getAll({
-          event: id,
-          limit: 1000,
-        });
-        const allDistributions = allDistributionsResponse.docs || [];
+        
+        // Lấy tất cả distributions để tính thống kê chính xác
+        let allDistributionsForStats = [];
+        try {
+          const allDistributionsResponse = await rewardService.distributions.getAll({
+            event: id,
+            limit: 1000,
+          });
+          allDistributionsForStats = allDistributionsResponse.docs || [];
+        } catch (err) {
+          console.error("Error fetching all distributions for stats:", err);
+        }
+        
         const allDistributionMap = {};
-        allDistributions.forEach((dist) => {
+        allDistributionsForStats.forEach((dist) => {
           if (dist.citizen) {
             const citizenId = dist.citizen._id || dist.citizen;
             allDistributionMap[citizenId] = dist;
@@ -271,17 +401,10 @@ const RewardEventRegistrations = () => {
           received,
           notReceived,
         });
-      } catch (error) {
-        console.error("Error fetching distributions:", error);
-        setStats({
-          total: response.total || 0,
-          received: 0,
-          notReceived: response.total || 0,
-        });
       }
     } catch (error) {
       console.error("Error fetching eligible citizens:", error);
-      message.error("Không thể tải danh sách công dân đủ điều kiện");
+      message.error("Không thể tải danh sách nhận quà");
     } finally {
       setLoading(false);
     }
@@ -311,6 +434,7 @@ const RewardEventRegistrations = () => {
       // Phân loại: những người đã có distribution và chưa có
       const citizensToUpdate = [];
       const citizensToCreate = [];
+      const citizensWithoutHousehold = []; // Thu thập công dân chưa có hộ khẩu (với thông tin đầy đủ)
 
       citizenIds.forEach((citizenId) => {
         const citizen = eligibleCitizens.find((c) => c._id === citizenId);
@@ -348,7 +472,10 @@ const RewardEventRegistrations = () => {
           const householdId = citizen.household?._id || citizen.household;
           if (!householdId) {
             console.error(`Citizen ${citizen.fullName} (${citizenId}) chưa có hộ khẩu`);
-            message.warning(`Công dân ${citizen.fullName} chưa có hộ khẩu, bỏ qua`);
+            citizensWithoutHousehold.push({
+              id: citizenId,
+              name: citizen.fullName || `ID: ${citizenId}`,
+            });
             return;
           }
           citizensToCreate.push({
@@ -393,12 +520,97 @@ const RewardEventRegistrations = () => {
         }
       }
 
+      // Tạo yêu cầu chỉnh sửa cho các công dân chưa có hộ khẩu
+      if (citizensWithoutHousehold.length > 0) {
+        try {
+          const requestPromises = citizensWithoutHousehold.map((citizen) =>
+            editRequestService.create({
+              citizen: citizen.id,
+              title: "Yêu cầu nhập hộ khẩu",
+              description: `Công dân ${citizen.name} chưa có hộ khẩu. Vui lòng cập nhật thông tin hộ khẩu để có thể tham gia các sự kiện khen thưởng.`,
+              reason: `Công dân ${citizen.name} chưa có hộ khẩu. Yêu cầu được tạo tự động khi phân phát quà.`,
+              requestType: "ADD_MEMBER",
+              proposedChanges: {
+                details: `Yêu cầu nhập hộ khẩu cho công dân ${citizen.name}`,
+                targetField: "household",
+              },
+            })
+          );
+
+          await Promise.all(requestPromises);
+          
+          const namesList = citizensWithoutHousehold.map((c) => c.name).join(", ");
+          const successMessage = 
+            citizensWithoutHousehold.length === 1
+              ? `Đã tạo yêu cầu nhập hộ khẩu cho công dân "${namesList}". Yêu cầu đã được gửi đến công dân.`
+              : `Đã tạo ${citizensWithoutHousehold.length} yêu cầu nhập hộ khẩu cho các công dân: ${namesList}. Yêu cầu đã được gửi đến các công dân.`;
+          
+          message.warning(successMessage, 10); // Hiển thị trong 10 giây
+        } catch (requestError) {
+          console.error("Error creating edit requests:", requestError);
+          const namesList = citizensWithoutHousehold.map((c) => c.name).join(", ");
+          const errorMessage = 
+            citizensWithoutHousehold.length === 1
+              ? `Công dân "${namesList}" chưa có hộ khẩu. Không thể tạo yêu cầu tự động. Vui lòng thử lại.`
+              : `${citizensWithoutHousehold.length} công dân chưa có hộ khẩu: ${namesList}. Không thể tạo yêu cầu tự động. Vui lòng thử lại.`;
+          message.error(errorMessage, 8);
+        }
+      }
+
       const totalProcessed = citizensToUpdate.length + citizensToCreate.length;
       if (totalProcessed > 0) {
+        // Gửi thông báo cho chủ hộ của các công dân đã nhận quà
+        try {
+          const processedCitizens = eligibleCitizens.filter((c) => 
+            citizenIds.includes(c._id)
+          );
+          
+          // Lấy danh sách household IDs duy nhất
+          const householdIds = [...new Set(
+            processedCitizens
+              .map((c) => c.household?._id || c.household)
+              .filter(Boolean)
+          )];
+
+          // Gửi thông báo cho từng chủ hộ
+          const notificationPromises = householdIds.map(async (householdId) => {
+            try {
+              const household = await householdService.getById(householdId);
+              const head = household?.head;
+              
+              if (head && head.user) {
+                const headUserId = head.user._id || head.user;
+                const citizenNames = processedCitizens
+                  .filter((c) => (c.household?._id || c.household)?.toString() === householdId.toString())
+                  .map((c) => c.fullName)
+                  .join(", ");
+                
+                await notificationService.create({
+                  toUser: headUserId,
+                  title: "Thành viên trong hộ đã nhận quà",
+                  message: `${citizenNames} trong hộ khẩu ${household?.code || ""} đã nhận quà từ sự kiện "${event?.name || ""}".`,
+                  type: "REWARD",
+                  entityType: "RewardDistribution",
+                  entityId: id,
+                  priority: "NORMAL",
+                });
+              }
+            } catch (notifError) {
+              console.error(`Error sending notification to household ${householdId}:`, notifError);
+              // Không throw error, chỉ log để không ảnh hưởng đến quá trình đánh dấu
+            }
+          });
+
+          await Promise.all(notificationPromises);
+        } catch (notifError) {
+          console.error("Error sending notifications to household heads:", notifError);
+          // Không throw error, chỉ log để không ảnh hưởng đến quá trình đánh dấu
+        }
+
         message.success(`Đã đánh dấu ${totalProcessed} người đã nhận quà`);
         setSelectedRowKeys([]);
         fetchEligibleCitizens();
-      } else {
+      } else if (citizensWithoutHousehold.length === 0) {
         message.warning("Không có công dân nào được xử lý");
       }
     } catch (error) {
@@ -428,6 +640,37 @@ const RewardEventRegistrations = () => {
 
   const handleSingleMarkAsReceived = async (citizenId) => {
     await handleMarkAsReceived([citizenId]);
+  };
+
+  const handleUndoReceived = async (distributionId) => {
+    if (!distributionId) {
+      message.warning("Không tìm thấy thông tin phân phối");
+      return;
+    }
+
+    try {
+      setDistributing(true);
+      
+      // Cập nhật status từ DISTRIBUTED về REGISTERED
+      await rewardService.distributions.update(distributionId, {
+        status: "REGISTERED",
+        distributedAt: null,
+        distributedBy: null,
+        distributionNote: null,
+      });
+
+      message.success("Đã hoàn tác trạng thái nhận quà");
+      fetchEligibleCitizens();
+    } catch (error) {
+      console.error("Error undoing received status:", error);
+      const errorMsg = 
+        error.response?.data?.message || 
+        error.message || 
+        "Không thể hoàn tác trạng thái. Vui lòng thử lại!";
+      message.error(errorMsg);
+    } finally {
+      setDistributing(false);
+    }
   };
 
   const handleGenerateDistributions = async () => {
@@ -554,6 +797,7 @@ const RewardEventRegistrations = () => {
       key: "index",
       width: 60,
       fixed: "left",
+      align: "center",
       render: (_, __, index) => {
         return (pagination.current - 1) * pagination.pageSize + index + 1;
       },
@@ -561,7 +805,8 @@ const RewardEventRegistrations = () => {
     {
       title: "Họ tên",
       key: "fullName",
-      width: 180,
+      width: 200,
+      fixed: "left",
       ellipsis: true,
       render: (_, record) => (
         <Button
@@ -574,56 +819,54 @@ const RewardEventRegistrations = () => {
       ),
     },
     {
-      title: "Thông tin",
-      key: "info",
-      width: 200,
+      title: "CMND/CCCD",
+      key: "nationalId",
+      width: 140,
       render: (_, record) => (
-        <Space direction="vertical" size={0} style={{ fontSize: "12px" }}>
-          <Text type="secondary">
-            <Text strong>CMND:</Text> {record.nationalId || "N/A"}
-          </Text>
-          <Text type="secondary">
-            <Text strong>Hộ khẩu:</Text> {record.household?.code || record.household || "N/A"}
-          </Text>
-          {record.dateOfBirth && (
-            <Text type="secondary">
-              <Text strong>Ngày sinh:</Text> {dayjs(record.dateOfBirth).format("DD/MM/YYYY")}
-            </Text>
-          )}
-        </Space>
+        <Text>{record.nationalId || "N/A"}</Text>
+      ),
+    },
+    {
+      title: "Hộ khẩu",
+      key: "household",
+      width: 120,
+      render: (_, record) => (
+        <Text>{record.household?.code || record.household || "N/A"}</Text>
+      ),
+    },
+    {
+      title: "Ngày sinh",
+      key: "dateOfBirth",
+      width: 110,
+      align: "center",
+      render: (_, record) => (
+        <Text>
+          {record.dateOfBirth ? dayjs(record.dateOfBirth).format("DD/MM/YYYY") : "N/A"}
+        </Text>
       ),
     },
     {
       title: "Trạng thái",
       key: "status",
-      width: 130,
+      width: 140,
       align: "center",
       render: (_, record) => {
         if (record.status === "DISTRIBUTED") {
           return (
-            <Tag color="green" icon={<CheckCircleOutlined />}>
-              Đã nhận quà
-            </Tag>
+            <Space direction="vertical" size={4}>
+              <Tag color="green" icon={<CheckCircleOutlined />}>
+                Đã nhận quà
+              </Tag>
+              {record.distributedAt && (
+                <Text type="secondary" style={{ fontSize: "11px" }}>
+                  {dayjs(record.distributedAt).format("DD/MM/YYYY HH:mm")}
+                </Text>
+              )}
+            </Space>
           );
         }
         return <Tag color="orange">Chưa nhận quà</Tag>;
       },
-    },
-    {
-      title: "Thời gian nhận",
-      key: "distributedAt",
-      width: 150,
-      align: "center",
-      render: (_, record) =>
-        record.distributedAt ? (
-          <Text type="secondary" style={{ fontSize: "12px" }}>
-            {dayjs(record.distributedAt).format("DD/MM/YYYY HH:mm")}
-          </Text>
-        ) : (
-          <Text type="secondary" style={{ fontSize: "12px" }}>
-            Chưa nhận
-          </Text>
-        ),
     },
     {
       title: "Hành động",
@@ -634,9 +877,23 @@ const RewardEventRegistrations = () => {
       render: (_, record) => {
         if (record.status === "DISTRIBUTED") {
           return (
-            <Tag color="success" icon={<CheckCircleOutlined />}>
-              Đã nhận
-            </Tag>
+            <Popconfirm
+              title="Hoàn tác trạng thái nhận quà?"
+              description="Bạn có chắc muốn hoàn tác trạng thái đã nhận quà cho người này?"
+              onConfirm={() => handleUndoReceived(record.distributionId)}
+              okText="Xác nhận"
+              cancelText="Hủy"
+            >
+              <Button
+                type="default"
+                size="small"
+                icon={<UndoOutlined />}
+                loading={distributing}
+                danger
+              >
+                Quay lại
+              </Button>
+            </Popconfirm>
           );
         }
         return (
@@ -648,7 +905,7 @@ const RewardEventRegistrations = () => {
             loading={distributing}
             disabled={useMockData}
           >
-            Đánh dấu
+            Nhận quà
           </Button>
         );
       },
@@ -703,92 +960,127 @@ const RewardEventRegistrations = () => {
 
   return (
     <Layout>
-      <Card>
-        <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          <Row justify="space-between" align="middle">
-            <Col>
-              <Space>
-                <Button
-                  icon={<ArrowLeftOutlined />}
-                  onClick={() => navigate("/leader/reward-events")}
+      <div>
+        {/* Header gradient */}
+        <Card
+          bordered={false}
+          style={{
+            marginBottom: 24,
+            background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+            border: "none",
+            borderRadius: "12px",
+            boxShadow: "0 4px 12px rgba(24, 144, 255, 0.3)",
+            transition: "transform 0.3s ease, box-shadow 0.3s ease",
+          }}
+          bodyStyle={{ padding: "32px" }}
+          className="hover-card"
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "50%",
+                  background: "rgba(255, 255, 255, 0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backdropFilter: "blur(10px)",
+                }}
+              >
+                <GiftOutlined style={{ fontSize: 32, color: "#fff" }} />
+              </div>
+
+              <div>
+                <Title
+                  level={2}
+                  style={{
+                    color: "#fff",
+                    margin: 0,
+                    marginBottom: 8,
+                    fontWeight: 700,
+                  }}
                 >
-                  Quay lại
-                </Button>
-                <Title level={2} style={{ margin: 0 }}>
                   Danh sách Nhận quà
                 </Title>
-                {event && <Text type="secondary">- {event.name}</Text>}
-              </Space>
-            </Col>
-            <Col>
+                <Text
+                  style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}
+                >
+                  {event ? event.name : "Quản lý danh sách nhận quà"}
+                </Text>
+              </div>
+            </div>
+
+            <div>
               <Space>
                 <Button
-                  type={useMockData ? "primary" : "default"}
-                  icon={<ExperimentOutlined />}
-                  onClick={() => {
-                    const newValue = !useMockData;
-                    setUseMockData(newValue);
-                    setPagination({ ...pagination, current: 1 });
-                    if (newValue) {
-                      message.info("Đã bật chế độ dữ liệu ảo để test. Các chức năng tạo/cập nhật sẽ bị vô hiệu hóa.");
-                    } else {
-                      message.success("Đã tắt chế độ dữ liệu ảo. Đang tải dữ liệu thực...");
-                    }
+                  icon={<ExportOutlined />}
+                  onClick={handleExport}
+                  style={{
+                    background: "rgba(255,255,255,0.2)",
+                    borderColor: "rgba(255,255,255,0.5)",
+                    color: "#fff",
+                    fontWeight: 500,
+                    height: 40,
+                    borderRadius: 8,
+                    transition: "all 0.3s ease",
                   }}
-                  danger={useMockData}
+                  className="hover-back"
                 >
-                  {useMockData ? "Tắt dữ liệu ảo" : "Bật dữ liệu ảo"}
-                </Button>
-                <Button
-                  type="default"
-                  icon={<FileAddOutlined />}
-                  onClick={() => setIsGenerateModalVisible(true)}
-                  disabled={useMockData}
-                >
-                  Tạo danh sách phân phối
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<CheckCircleOutlined />}
-                  onClick={handleBulkMarkAsReceived}
-                  disabled={selectedRowKeys.length === 0 || distributing || useMockData}
-                  loading={distributing}
-                >
-                  Đánh dấu đã nhận ({selectedRowKeys.length})
-                </Button>
-                <Button icon={<ReloadOutlined />} onClick={fetchEligibleCitizens}>
-                  Làm mới
-                </Button>
-                <Button icon={<ExportOutlined />} onClick={handleExport}>
                   Xuất danh sách
                 </Button>
-                <Button 
-                  icon={<HomeOutlined />} 
+                <Button
+                  icon={<HomeOutlined />}
                   onClick={fetchHouseholdStats}
                   loading={loadingHouseholdStats}
-                  disabled={useMockData}
+                  style={{
+                    background: "#fff",
+                    color: "#1890ff",
+                    fontWeight: 500,
+                    height: 40,
+                    borderRadius: 8,
+                    transition: "all 0.3s ease",
+                  }}
+                  className="hover-back"
                 >
                   Thống kê theo hộ
                 </Button>
               </Space>
-            </Col>
-          </Row>
+            </div>
+          </div>
 
-          {/* Thông báo dữ liệu ảo */}
-          {useMockData && (
-            <Row style={{ marginBottom: 16 }}>
-              <Col span={24}>
-                <Card style={{ backgroundColor: "#fff7e6", borderColor: "#ffd591" }}>
-                  <Space>
-                    <ExperimentOutlined style={{ color: "#fa8c16", fontSize: "20px" }} />
-                    <Text strong style={{ color: "#fa8c16" }}>
-                      Đang ở chế độ dữ liệu ảo để test. Dữ liệu này chỉ để quan sát, không lưu vào hệ thống.
-                    </Text>
-                  </Space>
-                </Card>
-              </Col>
-            </Row>
-          )}
+          {/* Hover effect */}
+          <style>{`
+            .hover-card:hover {
+              transform: translateY(-4px);
+              box-shadow: 0 10px 25px rgba(24, 144, 255, 0.35);
+            }
+            .hover-back:hover {
+              transform: translateY(-3px);
+              box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+            }
+          `}</style>
+        </Card>
+
+        {/* Content Card */}
+        <Card
+          bordered={false}
+          style={{
+            borderRadius: 12,
+            transition: "all 0.3s ease",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          }}
+          className="hover-table-card"
+        >
+          <Space direction="vertical" size="large" style={{ width: "100%" }}>
 
           {/* Thống kê */}
           <Row gutter={16} style={{ marginBottom: 16 }}>
@@ -857,7 +1149,6 @@ const RewardEventRegistrations = () => {
           </Row>
 
           <Table
-            rowSelection={rowSelection}
             columns={columns}
             dataSource={filteredCitizens}
             loading={loading}
@@ -869,10 +1160,34 @@ const RewardEventRegistrations = () => {
                 setPagination({ ...pagination, current: page, pageSize });
               },
             }}
-            scroll={{ x: 800 }}
+            rowClassName={() => "hoverable-row"}
           />
-        </Space>
-      </Card>
+          </Space>
+        </Card>
+
+        {/* CSS hover effects */}
+        <style>
+          {`
+            .hover-table-card:hover {
+              transform: translateY(-4px);
+              box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            }
+
+            .hoverable-row:hover {
+              background-color: #fafafa !important;
+              transition: background 0.2s ease;
+            }
+
+            .ant-btn {
+              transition: all 0.2s ease;
+            }
+            .ant-btn:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+          `}
+        </style>
+      </div>
 
       {/* Modal tạo danh sách phân phối */}
       <Modal
@@ -1036,13 +1351,25 @@ const RewardEventRegistrations = () => {
               title: "Tổng giá trị",
               dataIndex: "totalValue",
               key: "totalValue",
-              width: 150,
+              width: 200,
               align: "right",
-              render: (value) => (
-                <Text strong style={{ color: "#52c41a" }}>
-                  {value ? `${value.toLocaleString("vi-VN")} VNĐ` : "0 VNĐ"}
-                </Text>
-              ),
+              render: (value, record) => {
+                const unitValue = record.totalQuantity > 0 
+                  ? (record.totalValue || 0) / record.totalQuantity 
+                  : 0;
+                return (
+                  <Space direction="vertical" size={2} style={{ textAlign: "right" }}>
+                    <Text strong style={{ color: "#52c41a" }}>
+                      {value ? `${value.toLocaleString("vi-VN")} VNĐ` : "0 VNĐ"}
+                    </Text>
+                    {unitValue > 0 && (
+                      <Text type="secondary" style={{ fontSize: "11px" }}>
+                        ({Math.round(unitValue).toLocaleString("vi-VN")} VNĐ/phần quà)
+                      </Text>
+                    )}
+                  </Space>
+                );
+              },
             },
           ]}
           dataSource={householdStats}
@@ -1054,47 +1381,35 @@ const RewardEventRegistrations = () => {
           }}
           scroll={{ x: 700 }}
           summary={(pageData) => {
-            const totalQuantity = pageData.reduce((sum, record) => sum + (record.totalQuantity || 0), 0);
-            const totalValue = pageData.reduce((sum, record) => sum + (record.totalValue || 0), 0);
-            const totalRecipients = pageData.reduce((sum, record) => sum + (record.recipientCount || 0), 0);
+            const totalQuantity = householdStats.reduce((sum, h) => sum + (h.totalQuantity || 0), 0);
+            const totalValue = householdStats.reduce((sum, h) => sum + (h.totalValue || 0), 0);
+            const totalRecipients = householdStats.reduce((sum, h) => sum + (h.recipientCount || 0), 0);
+            const avgUnitValue = totalQuantity > 0 ? totalValue / totalQuantity : 0;
             
             return (
               <Table.Summary>
-                <Table.Summary.Row>
-                  <Table.Summary.Cell index={0} colSpan={3}>
-                    <Text strong>Tổng cộng (trang này)</Text>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={1} align="center">
-                    <Text strong>{totalRecipients}</Text>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={2} align="center">
-                    <Text strong>{totalQuantity}</Text>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={3} align="right">
-                    <Text strong style={{ color: "#52c41a" }}>
-                      {totalValue.toLocaleString("vi-VN")} VNĐ
-                    </Text>
-                  </Table.Summary.Cell>
-                </Table.Summary.Row>
                 {householdStats.length > 0 && (
                   <Table.Summary.Row>
                     <Table.Summary.Cell index={0} colSpan={3}>
                       <Text strong>Tổng cộng (tất cả)</Text>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell index={1} align="center">
-                      <Text strong>
-                        {householdStats.reduce((sum, h) => sum + (h.recipientCount || 0), 0)}
-                      </Text>
+                      <Text strong>{totalRecipients}</Text>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell index={2} align="center">
-                      <Text strong>
-                        {householdStats.reduce((sum, h) => sum + (h.totalQuantity || 0), 0)}
-                      </Text>
+                      <Text strong>{totalQuantity}</Text>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell index={3} align="right">
-                      <Text strong style={{ color: "#52c41a" }}>
-                        {householdStats.reduce((sum, h) => sum + (h.totalValue || 0), 0).toLocaleString("vi-VN")} VNĐ
-                      </Text>
+                      <Space direction="vertical" size={2} style={{ textAlign: "right" }}>
+                        <Text strong style={{ color: "#52c41a" }}>
+                          {totalValue.toLocaleString("vi-VN")} VNĐ
+                        </Text>
+                        {avgUnitValue > 0 && (
+                          <Text type="secondary" style={{ fontSize: "11px" }}>
+                            ({Math.round(avgUnitValue).toLocaleString("vi-VN")} VNĐ/phần quà)
+                          </Text>
+                        )}
+                      </Space>
                     </Table.Summary.Cell>
                   </Table.Summary.Row>
                 )}

@@ -17,12 +17,10 @@ import {
 } from "antd";
 import {
   SearchOutlined,
-  EyeOutlined,
   TrophyOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
   UserOutlined,
-  BookOutlined,
 } from "@ant-design/icons";
 import Layout from "../../components/Layout";
 import dayjs from "dayjs";
@@ -303,13 +301,14 @@ const StudentAchievements = () => {
       {
         title: "STT",
         key: "index",
-        width: 60,
+        width: 80,
+        align: "center",
         render: (_, __, index) => index + 1,
       },
       {
         title: "Họ tên học sinh",
         key: "citizenName",
-        width: 180,
+        width: 250,
         render: (_, record) => (
           <Space>
             <UserOutlined />
@@ -318,80 +317,28 @@ const StudentAchievements = () => {
         ),
       },
       {
-        title: "CMND/CCCD",
+        title: "CCCD",
         key: "nationalId",
-        width: 150,
+        width: 180,
         render: (_, record) => record?.nationalId || "N/A",
       },
       {
         title: "Năm học",
         key: "schoolYear",
-        width: 120,
+        width: 150,
+        align: "center",
         render: (_, record) => record?.schoolYear || "N/A",
-      },
-      {
-        title: "Trường",
-        key: "schoolName",
-        width: 200,
-        render: (_, record) => (
-          <Space>
-            <BookOutlined />
-            <Text>{record?.schoolName || "N/A"}</Text>
-          </Space>
-        ),
-      },
-      {
-        title: "Lớp",
-        key: "className",
-        width: 100,
-        render: (_, record) => record?.className || "N/A",
       },
       {
         title: "Thành tích",
         key: "achievement",
-        width: 120,
-        render: (_, record) => getAchievementTag(record?.achievement),
-      },
-      {
-        title: "Số vở thưởng",
-        key: "notebooksRewarded",
-        width: 120,
-        render: (_, record) => record?.notebooksRewarded || 0,
-      },
-      {
-        title: "Trạng thái khen thưởng",
-        key: "rewardStatus",
-        width: 180,
-        render: (_, record) => getRewardStatusTag(record?.status),
-      },
-      {
-        title: "Thời gian khai báo",
-        key: "createdAt",
-        width: 180,
-        render: (_, record) =>
-          record?.createdAt
-            ? dayjs(record.createdAt).format("DD/MM/YYYY HH:mm")
-            : "N/A",
-      },
-      {
-        title: "Hành động",
-        key: "actions",
-        width: 100,
+        width: 300,
         render: (_, record) => (
-          <Space size="small">
-            <Button
-              type="primary"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => handleView(record)}
-            >
-              Xem
-            </Button>
-          </Space>
+          <Text>{record?.title || "N/A"}</Text>
         ),
       },
     ],
-    [getAchievementTag, getRewardStatusTag]
+    []
   );
 
   // Debug log
@@ -410,13 +357,73 @@ const StudentAchievements = () => {
   try {
     return (
       <Layout>
-        <div style={{ padding: "24px", minHeight: "100vh" }}>
-          {/* Page Header */}
-          <div style={{ marginBottom: 24 }}>
-            <Title level={2} style={{ marginBottom: 8 }}>
-              <TrophyOutlined /> Thành tích học sinh
-            </Title>
-          </div>
+        <div>
+          {/* Header gradient */}
+          <Card
+            bordered={false}
+            style={{
+              marginBottom: 24,
+              background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+              border: "none",
+              borderRadius: "12px",
+              boxShadow: "0 4px 12px rgba(24, 144, 255, 0.3)",
+              transition: "transform 0.3s ease, box-shadow 0.3s ease",
+            }}
+            bodyStyle={{ padding: "32px" }}
+            className="hover-card"
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+              }}
+            >
+              <div
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "50%",
+                  background: "rgba(255, 255, 255, 0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backdropFilter: "blur(10px)",
+                }}
+              >
+                <TrophyOutlined style={{ fontSize: 32, color: "#fff" }} />
+              </div>
+
+              <div>
+                <Title
+                  level={2}
+                  style={{
+                    color: "#fff",
+                    margin: 0,
+                    marginBottom: 8,
+                    fontWeight: 700,
+                  }}
+                >
+                  Thành tích học sinh
+                </Title>
+                <Text
+                  style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}
+                >
+                  Quản lý và theo dõi thành tích học tập của học sinh
+                </Text>
+              </div>
+            </div>
+
+            {/* Hover effect */}
+            <style>{`
+              .hover-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 10px 25px rgba(24, 144, 255, 0.35);
+              }
+            `}</style>
+          </Card>
+
+          <div style={{ padding: "0", minHeight: "100vh" }}>
 
           {/* Error Message */}
           {error && (
@@ -433,7 +440,14 @@ const StudentAchievements = () => {
           )}
 
           {/* Statistics */}
-          <Card bordered={false} style={{ marginBottom: 16 }}>
+          <Card
+            bordered={false}
+            style={{
+              marginBottom: 16,
+              borderRadius: 12,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+            }}
+          >
             <Space size="large">
               <div>
                 <Text type="secondary">Tổng thành tích</Text>
@@ -463,7 +477,14 @@ const StudentAchievements = () => {
           </Card>
 
           {/* Filter Bar */}
-          <Card bordered={false} style={{ marginBottom: 16 }}>
+          <Card
+            bordered={false}
+            style={{
+              marginBottom: 16,
+              borderRadius: 12,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+            }}
+          >
             <Space style={{ width: "100%", justifyContent: "space-between" }}>
               <Space>
                 <Input
@@ -498,7 +519,15 @@ const StudentAchievements = () => {
           </Card>
 
           {/* Table */}
-          <Card bordered={false}>
+          <Card
+            bordered={false}
+            style={{
+              borderRadius: 12,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+              transition: "all 0.3s ease",
+            }}
+            className="hover-table-card"
+          >
             {!loading &&
             filteredAchievements.length === 0 &&
             achievements.length === 0 ? (
@@ -525,9 +554,34 @@ const StudentAchievements = () => {
                   showSizeChanger: true,
                   showTotal: (total) => `Tổng ${total} thành tích`,
                 }}
+                rowClassName={() => "hoverable-row"}
               />
             )}
           </Card>
+
+          {/* CSS hover effects */}
+          <style>
+            {`
+              .hover-table-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+              }
+
+              .hoverable-row:hover {
+                background-color: #fafafa !important;
+                transition: background 0.2s ease;
+              }
+
+              .ant-btn {
+                transition: all 0.2s ease;
+              }
+              .ant-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+              }
+            `}
+          </style>
+          </div>
 
           {/* View Modal */}
           <Modal
@@ -565,9 +619,9 @@ const StudentAchievements = () => {
                   <Descriptions.Item label="Số vở thưởng">
                     {currentAchievement.notebooksRewarded || 0}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Tiêu đề đề xuất">
+                  <Descriptions.Item label="Khen thưởng">
                     <Text strong>
-                      {currentAchievement.description || "N/A"}
+                      {currentAchievement.title || "N/A"}
                     </Text>
                   </Descriptions.Item>
                   <Descriptions.Item label="Mô tả">

@@ -29,6 +29,12 @@ const notificationService = {
     );
     return Promise.all(promises);
   },
+
+  // Tạo thông báo mới (chỉ leader mới có quyền)
+  create: async (notificationData) => {
+    const { data } = await api.post("/notifications", notificationData);
+    return data;
+  },
 };
 
 export default notificationService;

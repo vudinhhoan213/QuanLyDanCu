@@ -73,29 +73,76 @@ const RewardEventList = () => {
       const response = await rewardService.events.getAll(params);
       const eventList = response.docs || [];
 
-      // Lấy eligible count và distributed count cho mỗi event
+      // Lấy thống kê cho mỗi event
+      // Nếu có distributions thì lấy từ distributions, nếu không thì lấy từ eligible citizens
       const eventsWithEligible = await Promise.all(
         eventList.map(async (event) => {
           try {
-            const summary = await rewardService.events.getSummary(event._id);
-            // Lấy số lượng đã phân phối
-            let distributedCount = 0;
+            let totalCount = 0; // Tổng số người
+            let distributedCount = 0; // Số người đã nhận quà
+            
+            // Kiểm tra xem có distributions không
+            let hasDistributions = false;
             try {
-              const regResponse = await rewardService.events.getRegistrations(event._id);
-              distributedCount = regResponse.docs?.filter(
-                (reg) => reg.status === "DISTRIBUTED"
-              ).length || 0;
-            } catch (err) {
-              console.error(`Error fetching distributions for event ${event._id}:`, err);
+              const checkDistributionsResponse = await rewardService.distributions.getAll({
+                event: event._id,
+                limit: 1,
+              });
+              hasDistributions = (checkDistributionsResponse.docs || []).length > 0;
+            } catch (checkErr) {
+              hasDistributions = false;
             }
+            
+            if (hasDistributions) {
+              // Có distributions → Lấy từ danh sách phân phối
+              try {
+                const distributionsResponse = await rewardService.distributions.getAll({
+                  event: event._id,
+                  limit: 1000,
+                });
+                const distributions = distributionsResponse.docs || [];
+                totalCount = distributions.length;
+                
+                // Đếm số distributions có status = "DISTRIBUTED"
+                distributedCount = distributions.filter(
+                  (dist) => dist.status === "DISTRIBUTED"
+                ).length;
+              } catch (err) {
+                console.error(`Error fetching distributions for event ${event._id}:`, err);
+              }
+            } else {
+              // Chưa có distributions → Lấy từ eligible citizens
+              try {
+                const summary = await rewardService.events.getSummary(event._id);
+                totalCount = summary.eligibleCount || 0;
+                
+                // Vẫn kiểm tra distributions để đếm số người đã nhận quà
+                try {
+                  const distributionsResponse = await rewardService.distributions.getAll({
+                    event: event._id,
+                    limit: 1000,
+                  });
+                  const distributions = distributionsResponse.docs || [];
+                  distributedCount = distributions.filter(
+                    (dist) => dist.status === "DISTRIBUTED"
+                  ).length;
+                } catch (distErr) {
+                  // Không có distributions thì distributedCount = 0
+                  distributedCount = 0;
+                }
+              } catch (summaryErr) {
+                console.error(`Error fetching summary for event ${event._id}:`, summaryErr);
+              }
+            }
+            
             return {
               key: event._id,
               ...event,
-              eligibleCount: summary.eligibleCount || 0,
+              eligibleCount: totalCount,
               distributedCount,
             };
           } catch (error) {
-            console.error(`Error fetching summary for event ${event._id}:`, error);
+            console.error(`Error fetching stats for event ${event._id}:`, error);
             return {
               key: event._id,
               ...event,
@@ -121,7 +168,7 @@ const RewardEventList = () => {
 
   const getStatusTag = (status) => {
     const statusMap = {
-      OPEN: { color: "green", text: "Mở" },
+      OPEN: { color: "green", text: "Đang phát" },
       CLOSED: { color: "orange", text: "Đóng" },
       EXPIRED: { color: "red", text: "Hết hạn" },
       ENDED: { color: "default", text: "Đã kết thúc" },
@@ -169,27 +216,63 @@ const RewardEventList = () => {
     try {
       const event = await rewardService.events.getById(eventId);
 
-      // Fetch registration và distribution count
+      // Kiểm tra xem có distributions không
+      let registeredCount = 0;
+      let distributedCount = 0;
+      
       try {
-        const regResponse = await rewardService.events.getRegistrations(
-          eventId
-        );
-        const registeredCount = regResponse.docs?.length || 0;
-        const distributedCount = regResponse.docs?.filter(
-          (reg) => reg.status === "DISTRIBUTED"
-        ).length || 0;
-        setViewingEvent({ 
-          ...event, 
-          registeredCount,
-          distributedCount,
+        const checkDistributionsResponse = await rewardService.distributions.getAll({
+          event: eventId,
+          limit: 1,
         });
+        const hasDistributions = (checkDistributionsResponse.docs || []).length > 0;
+        
+        if (hasDistributions) {
+          // Có distributions → Lấy từ danh sách phân phối
+          const distributionsResponse = await rewardService.distributions.getAll({
+            event: eventId,
+            limit: 1000,
+          });
+          const distributions = distributionsResponse.docs || [];
+          registeredCount = distributions.length; // Tổng số người trong danh sách khen thưởng
+          distributedCount = distributions.filter(
+            (dist) => dist.status === "DISTRIBUTED"
+          ).length; // Số người đã nhận quà
+        } else {
+          // Chưa có distributions → Lấy từ eligible citizens
+          const summary = await rewardService.events.getSummary(eventId);
+          registeredCount = summary.eligibleCount || 0;
+          
+          // Vẫn kiểm tra distributions để đếm số người đã nhận quà
+          try {
+            const distributionsResponse = await rewardService.distributions.getAll({
+              event: eventId,
+              limit: 1000,
+            });
+            const distributions = distributionsResponse.docs || [];
+            distributedCount = distributions.filter(
+              (dist) => dist.status === "DISTRIBUTED"
+            ).length;
+          } catch (distErr) {
+            distributedCount = 0;
+          }
+        }
       } catch (error) {
-        setViewingEvent({ 
-          ...event, 
-          registeredCount: 0,
-          distributedCount: 0,
-        });
+        console.error("Error fetching stats for event details:", error);
+        // Fallback về summary
+        try {
+          const summary = await rewardService.events.getSummary(eventId);
+          registeredCount = summary.eligibleCount || 0;
+        } catch (summaryErr) {
+          registeredCount = 0;
+        }
       }
+      
+      setViewingEvent({ 
+        ...event, 
+        registeredCount,
+        distributedCount,
+      });
 
       setIsViewModalVisible(true);
     } catch (error) {
@@ -338,44 +421,155 @@ const RewardEventList = () => {
 
   return (
     <Layout>
-      <Card>
-        <Row
-          justify="space-between"
-          align="middle"
-          style={{ marginBottom: 16 }}
+      <style>
+        {`
+          .ant-modal-body::-webkit-scrollbar {
+            display: none;
+          }
+          .ant-modal-body {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+        `}
+      </style>
+      <div>
+        {/* Header gradient */}
+        <Card
+          bordered={false}
+          style={{
+            marginBottom: 24,
+            background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+            border: "none",
+            borderRadius: "12px",
+            boxShadow: "0 4px 12px rgba(24, 144, 255, 0.3)",
+            transition: "transform 0.3s ease, box-shadow 0.3s ease",
+          }}
+          bodyStyle={{ padding: "32px" }}
+          className="hover-card"
         >
-          <Col>
-            <Title level={2} style={{ margin: 0 }}>
-              <CalendarOutlined /> Quản lý Sự kiện Phát quà
-            </Title>
-          </Col>
-          <Col>
-            <Space>
-              <Button
-                type="primary"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={handleBulkDelete}
-                disabled={selectedRowKeys.length === 0}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "50%",
+                  background: "rgba(255, 255, 255, 0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backdropFilter: "blur(10px)",
+                }}
               >
-                Xóa đã chọn ({selectedRowKeys.length})
-              </Button>
-              <Button
-                icon={<ExportOutlined />}
-                onClick={handleExportEvents}
-                disabled={events.length === 0}
-              >
-                Xuất Excel
-              </Button>
-              <Button
-                icon={<CalendarOutlined />}
-                onClick={() => navigate("/leader/reward-events/schedule")}
-              >
-                Lịch tự động
-              </Button>
-            </Space>
-          </Col>
-        </Row>
+                <CalendarOutlined style={{ fontSize: 32, color: "#fff" }} />
+              </div>
+
+              <div>
+                <Title
+                  level={2}
+                  style={{
+                    color: "#fff",
+                    margin: 0,
+                    marginBottom: 8,
+                    fontWeight: 700,
+                  }}
+                >
+                  Quản lý Sự kiện Phát quà
+                </Title>
+                <Text
+                  style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}
+                >
+                  Quản lý và theo dõi các sự kiện phát quà trong hệ thống
+                </Text>
+              </div>
+            </div>
+
+            <div>
+              <Space>
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={handleBulkDelete}
+                  disabled={selectedRowKeys.length === 0}
+                  style={{
+                    background: "rgba(255,255,255,0.2)",
+                    borderColor: "rgba(255,255,255,0.5)",
+                    color: "#fff",
+                    fontWeight: 500,
+                    height: 40,
+                    borderRadius: 8,
+                    transition: "all 0.3s ease",
+                  }}
+                  className="hover-back"
+                >
+                  Xóa đã chọn ({selectedRowKeys.length})
+                </Button>
+                <Button
+                  icon={<ExportOutlined />}
+                  onClick={handleExportEvents}
+                  disabled={events.length === 0}
+                  style={{
+                    background: "rgba(255,255,255,0.2)",
+                    borderColor: "rgba(255,255,255,0.5)",
+                    color: "#fff",
+                    fontWeight: 500,
+                    height: 40,
+                    borderRadius: 8,
+                    transition: "all 0.3s ease",
+                  }}
+                  className="hover-back"
+                >
+                  Xuất Excel
+                </Button>
+                <Button
+                  icon={<CalendarOutlined />}
+                  onClick={() => navigate("/leader/reward-events/schedule")}
+                  style={{
+                    background: "#fff",
+                    color: "#1890ff",
+                    fontWeight: 500,
+                    height: 40,
+                    borderRadius: 8,
+                    transition: "all 0.3s ease",
+                  }}
+                  className="hover-back"
+                >
+                  Lịch tự động
+                </Button>
+              </Space>
+            </div>
+          </div>
+
+          {/* Hover effect */}
+          <style>{`
+            .hover-card:hover {
+              transform: translateY(-4px);
+              box-shadow: 0 10px 25px rgba(24, 144, 255, 0.35);
+            }
+            .hover-back:hover {
+              transform: translateY(-3px);
+              box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+            }
+          `}</style>
+        </Card>
+
+        {/* Content Card */}
+        <Card
+          bordered={false}
+          style={{
+            borderRadius: 12,
+            transition: "all 0.3s ease",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          }}
+          className="hover-table-card"
+        >
 
         <Space style={{ marginBottom: 16, width: "100%" }} direction="vertical">
           <Row gutter={16}>
@@ -436,8 +630,33 @@ const RewardEventList = () => {
             },
           }}
           scroll={{ x: 700 }}
+          rowClassName={() => "hoverable-row"}
         />
-      </Card>
+        </Card>
+
+        {/* CSS hover effects */}
+        <style>
+          {`
+            .hover-table-card:hover {
+              transform: translateY(-4px);
+              box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            }
+
+            .hoverable-row:hover {
+              background-color: #fafafa !important;
+              transition: background 0.2s ease;
+            }
+
+            .ant-btn {
+              transition: all 0.2s ease;
+            }
+            .ant-btn:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+          `}
+        </style>
+      </div>
 
       {/* View Details Modal */}
       <Modal
@@ -480,6 +699,17 @@ const RewardEventList = () => {
           </Button>,
         ]}
         width={700}
+        centered
+        bodyStyle={{ 
+          maxHeight: "70vh", 
+          overflow: "auto", 
+          padding: "24px",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+        }}
+        style={{
+          overflow: "hidden",
+        }}
       >
         {viewingEvent && (
           <Descriptions bordered column={2}>
@@ -543,9 +773,7 @@ const RewardEventList = () => {
               </Descriptions.Item>
             )}
             <Descriptions.Item label="Ngân sách" span={2}>
-              {viewingEvent.budget
-                ? `${viewingEvent.budget.toLocaleString("vi-VN")} VNĐ`
-                : "N/A"}
+              <Text strong>50 - 100 triệu VNĐ</Text>
             </Descriptions.Item>
             <Descriptions.Item label="Mô tả" span={2}>
               {viewingEvent.description || "Không có mô tả"}

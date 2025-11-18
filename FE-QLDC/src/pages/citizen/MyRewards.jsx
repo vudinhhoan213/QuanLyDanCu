@@ -9,9 +9,6 @@ import {
   Empty,
   Modal,
   Descriptions,
-  Statistic,
-  Row,
-  Col,
   Spin,
   message,
   Image,
@@ -45,6 +42,10 @@ const MyRewards = () => {
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [currentReward, setCurrentReward] = useState(null);
   const [proposals, setProposals] = useState([]);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+  });
 
   useEffect(() => {
     fetchMyProposals();
@@ -69,62 +70,43 @@ const MyRewards = () => {
       color: "gold",
       text: "Chờ duyệt",
       icon: <ClockCircleOutlined />,
-      bgColor: "#fff7e6",
-      borderColor: "#ffd591",
     },
     APPROVED: {
       color: "green",
       text: "Đã duyệt",
       icon: <CheckCircleOutlined />,
-      bgColor: "#f6ffed",
-      borderColor: "#b7eb8f",
     },
     REJECTED: {
       color: "red",
       text: "Từ chối",
       icon: <CloseCircleOutlined />,
-      bgColor: "#fff1f0",
-      borderColor: "#ffa39e",
     },
   };
 
   const columns = [
     {
-      title: "Mã đề xuất",
-      dataIndex: "_id",
-      key: "_id",
-      width: 120,
-      render: (text) => (
-        <Space>
-          <IdcardOutlined style={{ color: "#1890ff" }} />
-          <Text
-            strong
-            style={{
-              fontSize: 12,
-              fontFamily: "monospace",
-              color: "#595959",
-            }}
-          >
-            {text?.slice(0, 8)}...
+      title: "STT",
+      key: "stt",
+      width: 80,
+      align: "center",
+      render: (_, __, index) => {
+        const stt = (pagination.current - 1) * pagination.pageSize + index + 1;
+        return (
+          <Text strong>
+            #{stt}
           </Text>
-        </Space>
-      ),
+        );
+      },
     },
     {
-      title: "Tiêu đề",
+      title: "Loại thành tích",
       dataIndex: "title",
       key: "title",
       ellipsis: {
         showTitle: false,
       },
       render: (text) => (
-        <Text
-          strong
-          style={{
-            color: "#262626",
-            fontSize: 14,
-          }}
-        >
+        <Text strong>
           {text || "Đề xuất khen thưởng"}
         </Text>
       ),
@@ -162,17 +144,7 @@ const MyRewards = () => {
       render: (status) => {
         const config = statusConfig[status] || statusConfig.PENDING;
         return (
-          <Tag
-            color={config.color}
-            icon={config.icon}
-            style={{
-              padding: "4px 12px",
-              borderRadius: "12px",
-              border: `1px solid ${config.borderColor}`,
-              backgroundColor: config.bgColor,
-              fontWeight: 500,
-            }}
-          >
+          <Tag color={config.color} icon={config.icon}>
             {config.text}
           </Tag>
         );
@@ -196,10 +168,6 @@ const MyRewards = () => {
           size="small"
           icon={<EyeOutlined />}
           onClick={() => handleView(record)}
-          style={{
-            borderRadius: "6px",
-            boxShadow: "0 2px 4px rgba(24, 144, 255, 0.2)",
-          }}
         >
           Xem
         </Button>
@@ -231,10 +199,8 @@ const MyRewards = () => {
 
   return (
     <Layout>
-      <div
-        style={{ padding: "24px", background: "#f5f5f5", minHeight: "100vh" }}
-      >
-        {/* Page Header with Gradient */}
+      <div>
+        {/* Header gradient */}
         <Card
           bordered={false}
           style={{
@@ -243,291 +209,174 @@ const MyRewards = () => {
             border: "none",
             borderRadius: "12px",
             boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
+            transition: "transform 0.3s ease, box-shadow 0.3s ease",
           }}
           bodyStyle={{ padding: "32px" }}
+          className="hover-card"
         >
-          <Row align="middle" justify="space-between">
-            <Col>
-              <Space size="large" align="center">
-                <div
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "50%",
+                  background: "rgba(255, 255, 255, 0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backdropFilter: "blur(10px)",
+                }}
+              >
+                <TrophyOutlined style={{ fontSize: 32, color: "#fff" }} />
+              </div>
+
+              <div>
+                <Title
+                  level={2}
                   style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: "50%",
-                    background: "rgba(255, 255, 255, 0.2)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backdropFilter: "blur(10px)",
+                    color: "#fff",
+                    margin: 0,
+                    marginBottom: 8,
+                    fontWeight: 700,
                   }}
                 >
-                  <TrophyOutlined style={{ fontSize: 32, color: "#fff" }} />
-                </div>
-                <div>
-                  <Title
-                    level={2}
-                    style={{
-                      color: "#fff",
-                      margin: 0,
-                      marginBottom: 8,
-                      fontWeight: 700,
-                    }}
-                  >
-                    Đề Xuất Khen Thưởng
-                  </Title>
-                  <Text
-                    style={{
-                      color: "rgba(255, 255, 255, 0.9)",
-                      fontSize: 16,
-                    }}
-                  >
-                    Quản lý và theo dõi các đề xuất khen thưởng của bạn
-                  </Text>
-                </div>
-              </Space>
-            </Col>
-            <Col>
+                  Đề Xuất Khen Thưởng
+                </Title>
+                <Text
+                  style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}
+                >
+                  Quản lý và theo dõi các đề xuất khen thưởng của bạn
+                </Text>
+              </div>
+            </div>
+
+            <div>
               <Button
-                type="primary"
-                size="large"
                 icon={<PlusOutlined />}
                 onClick={() => navigate("/citizen/submit-reward-proposal")}
                 style={{
-                  height: 48,
-                  borderRadius: "8px",
-                  fontSize: 16,
-                  fontWeight: 600,
                   background: "#fff",
                   color: "#667eea",
-                  border: "none",
-                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                  fontWeight: 500,
+                  height: 40,
+                  borderRadius: 8,
+                  transition: "all 0.3s ease",
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow =
-                    "0 6px 16px rgba(0, 0, 0, 0.2)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow =
-                    "0 4px 12px rgba(0, 0, 0, 0.15)";
-                }}
+                className="hover-back"
               >
                 Đề xuất mới
               </Button>
-            </Col>
-          </Row>
-        </Card>
+            </div>
+          </div>
 
-        {/* Statistics Cards */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} lg={6}>
-            <Card
-              bordered={false}
-              style={{
-                borderRadius: "12px",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                transition: "all 0.3s ease",
-                borderTop: "4px solid #1890ff",
-              }}
-              hoverable
-              bodyStyle={{ padding: "24px" }}
-            >
-              <Statistic
-                title={
-                  <Text style={{ color: "#8c8c8c", fontSize: 14 }}>
-                    Tổng đề xuất
-                  </Text>
-                }
-                value={totalCount}
-                prefix={<FileTextOutlined style={{ color: "#1890ff" }} />}
-                valueStyle={{
-                  color: "#1890ff",
-                  fontSize: 28,
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card
-              bordered={false}
-              style={{
-                borderRadius: "12px",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                transition: "all 0.3s ease",
-                borderTop: "4px solid #faad14",
-              }}
-              hoverable
-              bodyStyle={{ padding: "24px" }}
-            >
-              <Statistic
-                title={
-                  <Text style={{ color: "#8c8c8c", fontSize: 14 }}>
-                    Chờ duyệt
-                  </Text>
-                }
-                value={pendingCount}
-                prefix={<ClockCircleOutlined style={{ color: "#faad14" }} />}
-                valueStyle={{
-                  color: "#faad14",
-                  fontSize: 28,
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card
-              bordered={false}
-              style={{
-                borderRadius: "12px",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                transition: "all 0.3s ease",
-                borderTop: "4px solid #52c41a",
-              }}
-              hoverable
-              bodyStyle={{ padding: "24px" }}
-            >
-              <Statistic
-                title={
-                  <Text style={{ color: "#8c8c8c", fontSize: 14 }}>
-                    Đã duyệt
-                  </Text>
-                }
-                value={approvedCount}
-                prefix={<CheckCircleOutlined style={{ color: "#52c41a" }} />}
-                valueStyle={{
-                  color: "#52c41a",
-                  fontSize: 28,
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card
-              bordered={false}
-              style={{
-                borderRadius: "12px",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                transition: "all 0.3s ease",
-                borderTop: "4px solid #ff4d4f",
-              }}
-              hoverable
-              bodyStyle={{ padding: "24px" }}
-            >
-              <Statistic
-                title={
-                  <Text style={{ color: "#8c8c8c", fontSize: 14 }}>
-                    Từ chối
-                  </Text>
-                }
-                value={rejectedCount}
-                prefix={<CloseCircleOutlined style={{ color: "#ff4d4f" }} />}
-                valueStyle={{
-                  color: "#ff4d4f",
-                  fontSize: 28,
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
-          </Col>
-        </Row>
+          {/* Hover effect */}
+          <style>{`
+            .hover-card:hover {
+              transform: translateY(-4px);
+              box-shadow: 0 10px 25px rgba(102, 126, 234, 0.35);
+            }
+            .hover-back:hover {
+              transform: translateY(-3px);
+              box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+            }
+          `}</style>
+        </Card>
 
         {/* Table Card */}
         <Card
           bordered={false}
           style={{
-            borderRadius: "12px",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+            borderRadius: 12,
+            transition: "all 0.3s ease",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
           }}
-          bodyStyle={{ padding: "24px" }}
+          className="hover-table-card"
         >
-          {proposals.length === 0 ? (
+
+          {proposals.length === 0 && !loading ? (
             <Empty
+              description="Chưa có đề xuất nào"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={
-                <div>
-                  <TrophyOutlined
-                    style={{
-                      fontSize: 64,
-                      color: "#d9d9d9",
-                      marginBottom: 16,
-                    }}
-                  />
-                  <Title level={4} style={{ color: "#8c8c8c" }}>
-                    Chưa có đề xuất nào
-                  </Title>
-                  <Paragraph style={{ color: "#bfbfbf" }}>
-                    Bắt đầu bằng cách tạo đề xuất khen thưởng mới
-                  </Paragraph>
-                </div>
-              }
               style={{ padding: "60px 0" }}
-            >
-              <Button
-                type="primary"
-                size="large"
-                icon={<PlusOutlined />}
-                onClick={() => navigate("/citizen/submit-reward-proposal")}
-                style={{
-                  height: 48,
-                  borderRadius: "8px",
-                  fontSize: 16,
-                  fontWeight: 600,
-                }}
-              >
-                Tạo đề xuất mới
-              </Button>
-            </Empty>
+            />
           ) : (
             <Table
               columns={columns}
               dataSource={proposals}
+              loading={loading}
               rowKey="_id"
               pagination={{
-                pageSize: 10,
+                current: pagination.current,
+                pageSize: pagination.pageSize,
                 showSizeChanger: true,
                 showTotal: (total, range) =>
                   `${range[0]}-${range[1]} của ${total} đề xuất`,
                 pageSizeOptions: ["10", "20", "50"],
-                style: { marginTop: 16 },
+                onChange: (page, pageSize) => {
+                  setPagination({
+                    current: page,
+                    pageSize: pageSize,
+                  });
+                },
+                onShowSizeChange: (current, size) => {
+                  setPagination({
+                    current: 1,
+                    pageSize: size,
+                  });
+                },
               }}
-              style={{
-                borderRadius: "8px",
-              }}
-              rowClassName={(record, index) =>
-                index % 2 === 0 ? "table-row-light" : "table-row-dark"
-              }
+              rowClassName={() => "hoverable-row"}
             />
           )}
         </Card>
 
+        {/* CSS hover effects */}
+        <style>
+          {`
+            .hover-table-card:hover {
+              transform: translateY(-4px);
+              box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            }
+
+            .hoverable-row:hover {
+              background-color: #fafafa !important;
+              transition: background 0.2s ease;
+            }
+
+            .ant-btn {
+              transition: all 0.2s ease;
+            }
+            .ant-btn:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+          `}
+        </style>
+      </div>
+
         {/* View Modal */}
         <Modal
-          title={
-            <Space>
-              <TrophyOutlined style={{ color: "#667eea", fontSize: 20 }} />
-              <Title level={4} style={{ margin: 0 }}>
-                Chi tiết đề xuất khen thưởng
-              </Title>
-            </Space>
-          }
+          title="Chi tiết đề xuất khen thưởng"
           open={viewModalVisible}
           onCancel={() => setViewModalVisible(false)}
           footer={[
             <Button
               key="close"
               onClick={() => setViewModalVisible(false)}
-              size="large"
-              style={{ borderRadius: "6px" }}
             >
               Đóng
             </Button>,
           ]}
           width={900}
-          style={{ top: 20 }}
+          centered
         >
           {currentReward && (
             <div style={{ marginTop: 16 }}>
@@ -559,7 +408,7 @@ const MyRewards = () => {
                 </Descriptions.Item>
 
                 {currentReward.title && (
-                  <Descriptions.Item label="Tiêu đề" span={2}>
+                  <Descriptions.Item label="Loại thành tích" span={2}>
                     <Text strong style={{ fontSize: 15, color: "#262626" }}>
                       {currentReward.title}
                     </Text>
@@ -601,16 +450,6 @@ const MyRewards = () => {
                     <Tag
                       color={statusConfig[currentReward.status].color}
                       icon={statusConfig[currentReward.status].icon}
-                      style={{
-                        padding: "4px 12px",
-                        borderRadius: "12px",
-                        border: `1px solid ${
-                          statusConfig[currentReward.status].borderColor
-                        }`,
-                        backgroundColor:
-                          statusConfig[currentReward.status].bgColor,
-                        fontWeight: 500,
-                      }}
                     >
                       {statusConfig[currentReward.status].text}
                     </Tag>
@@ -709,24 +548,7 @@ const MyRewards = () => {
                 )}
             </div>
           )}
-        </Modal>
-      </div>
-
-      <style>{`
-        .table-row-light {
-          background-color: #fafafa;
-        }
-        .table-row-dark {
-          background-color: #fff;
-        }
-        .ant-table-tbody > tr:hover > td {
-          background-color: #e6f7ff !important;
-        }
-        .ant-table-thead > tr > th {
-          background-color: #fafafa;
-          font-weight: 600;
-        }
-      `}</style>
+      </Modal>
     </Layout>
   );
 };
