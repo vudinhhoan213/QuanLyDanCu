@@ -41,6 +41,12 @@ router.get(
   isLeader,
   rewardDistributionController.summarizeByEvent
 );
+router.get(
+  "/summary/household/:eventId",
+  authenticate,
+  isLeader,
+  rewardDistributionController.summarizeByHousehold
+);
 
 // Routes với :id phải đặt cuối cùng để tránh conflict
 router.get(

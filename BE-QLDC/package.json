@@ -7,6 +7,9 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "create-admin": "node scripts/createAdmin.js",
+    "clear-rewards": "node scripts/clearAllRewardData.js",
+    "check-db": "node scripts/checkDatabase.js",
+    "fix-admin": "node scripts/checkAndFixAdmin.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

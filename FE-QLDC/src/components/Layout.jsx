@@ -203,11 +203,6 @@ const Layout = ({ children }) => {
           onClick: () => navigate("/leader/reward-events"),
         },
         {
-          key: "/leader/reward-distributions",
-          label: "Phân phối quà",
-          onClick: () => navigate("/leader/reward-distributions"),
-        },
-        {
           key: "/leader/student-achievements",
           label: "Thành tích học sinh",
           onClick: () => navigate("/leader/student-achievements"),

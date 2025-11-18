@@ -1,4 +1,4 @@
-import { ConfigProvider } from "antd";
+import { ConfigProvider, App as AntApp } from "antd";
 import viVN from "antd/locale/vi_VN";
 import { AuthProvider } from "./context/AuthContext";
 import AppRouter from "./routes/AppRouter";
@@ -14,9 +14,11 @@ function App() {
         },
       }}
     >
-      <AuthProvider>
-        <AppRouter />
-      </AuthProvider>
+      <AntApp>
+        <AuthProvider>
+          <AppRouter />
+        </AuthProvider>
+      </AntApp>
     </ConfigProvider>
   );
 }

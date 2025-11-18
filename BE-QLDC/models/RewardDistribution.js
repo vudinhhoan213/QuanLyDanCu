@@ -39,5 +39,7 @@ rewardDistributionSchema.pre("save", function (next) {
 });
 
 rewardDistributionSchema.index({ event: 1, household: 1 });
+// Unique index để tránh duplicate: mỗi citizen chỉ có 1 distribution cho 1 event
+rewardDistributionSchema.index({ event: 1, citizen: 1 }, { unique: true, sparse: true });
 
 module.exports = model("RewardDistribution", rewardDistributionSchema);

@@ -9,7 +9,6 @@ import {
   Typography,
   Modal,
   message,
-  Popconfirm,
   Descriptions,
   Row,
   Col,
@@ -17,10 +16,8 @@ import {
 } from "antd";
 import {
   SearchOutlined,
-  EditOutlined,
   DeleteOutlined,
   EyeOutlined,
-  CloseOutlined,
   FileTextOutlined,
   ExportOutlined,
   CalendarOutlined,
@@ -42,7 +39,7 @@ const RewardEventList = () => {
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("ANNUAL"); // Mặc định chỉ hiển thị sự kiện thường niên
   const [events, setEvents] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -76,15 +73,26 @@ const RewardEventList = () => {
       const response = await rewardService.events.getAll(params);
       const eventList = response.docs || [];
 
-      // Lấy eligible count cho mỗi event
+      // Lấy eligible count và distributed count cho mỗi event
       const eventsWithEligible = await Promise.all(
         eventList.map(async (event) => {
           try {
             const summary = await rewardService.events.getSummary(event._id);
+            // Lấy số lượng đã phân phối
+            let distributedCount = 0;
+            try {
+              const regResponse = await rewardService.events.getRegistrations(event._id);
+              distributedCount = regResponse.docs?.filter(
+                (reg) => reg.status === "DISTRIBUTED"
+              ).length || 0;
+            } catch (err) {
+              console.error(`Error fetching distributions for event ${event._id}:`, err);
+            }
             return {
               key: event._id,
               ...event,
-              eligibleCount: summary.eligibleCount,
+              eligibleCount: summary.eligibleCount || 0,
+              distributedCount,
             };
           } catch (error) {
             console.error(`Error fetching summary for event ${event._id}:`, error);
@@ -92,6 +100,7 @@ const RewardEventList = () => {
               key: event._id,
               ...event,
               eligibleCount: 0,
+              distributedCount: 0,
             };
           }
         })
@@ -132,29 +141,6 @@ const RewardEventList = () => {
       SCHOOL_YEAR: "Năm học",
     };
     return typeMap[type] || type;
-  };
-
-  const handleCloseEvent = async (eventId) => {
-    try {
-      await rewardService.events.close(eventId);
-      message.success("Đã đóng sự kiện");
-      fetchEvents();
-    } catch (error) {
-      console.error("Error closing event:", error);
-      message.error("Không thể đóng sự kiện");
-    }
-  };
-
-  const handleDelete = async (eventId) => {
-    try {
-      await rewardService.events.delete(eventId);
-      message.success("Đã xóa sự kiện thành công");
-      fetchEvents();
-    } catch (error) {
-      console.error("Error deleting event:", error);
-      const errorMsg = error.response?.data?.message || "Không thể xóa sự kiện";
-      message.error(errorMsg);
-    }
   };
 
   const handleBulkDelete = async () => {
@@ -274,117 +260,77 @@ const RewardEventList = () => {
       title: "Tên sự kiện",
       dataIndex: "name",
       key: "name",
-      width: 200,
-      render: (text) => <Text strong>{text}</Text>,
+      width: 220,
+      ellipsis: true,
+      render: (text, record) => (
+        <Button
+          type="link"
+          style={{ padding: 0, height: "auto", fontWeight: 600, textAlign: "left" }}
+          onClick={() => handleViewDetails(record._id)}
+        >
+          {text}
+        </Button>
+      ),
     },
     {
-      title: "Loại",
-      dataIndex: "type",
-      key: "type",
-      width: 120,
-      render: (type) => <Tag>{getTypeText(type)}</Tag>,
+      title: "Thông tin",
+      key: "info",
+      width: 180,
+      render: (_, record) => (
+        <Space direction="vertical" size={0} style={{ fontSize: "12px" }}>
+          <div>
+            <Tag>{getTypeText(record.type)}</Tag>
+            {getStatusTag(record.status)}
+          </div>
+          {record.startDate && record.endDate ? (
+            <Text type="secondary">
+              {dayjs(record.startDate).format("DD/MM/YYYY")} - {dayjs(record.endDate).format("DD/MM/YYYY")}
+            </Text>
+          ) : record.date ? (
+            <Text type="secondary">{dayjs(record.date).format("DD/MM/YYYY")}</Text>
+          ) : null}
+        </Space>
+      ),
     },
     {
-      title: "Thời gian đăng ký",
-      key: "registrationTime",
-      width: 200,
-      render: (_, record) => {
-        if (record.startDate && record.endDate) {
-          return (
-            <div>
-              <div>{dayjs(record.startDate).format("DD/MM/YYYY")}</div>
-              <Text type="secondary" style={{ fontSize: "12px" }}>
-                đến {dayjs(record.endDate).format("DD/MM/YYYY")}
-              </Text>
-            </div>
-          );
-        }
-        return record.date ? dayjs(record.date).format("DD/MM/YYYY") : "N/A";
-      },
-    },
-    {
-      title: "Số lượng",
-      dataIndex: "eligibleCount",
-      key: "eligibleCount",
-      width: 100,
-      render: (text) => <Text>{text || 0}</Text>,
-    },
-    {
-      title: "Tỷ lệ",
-      key: "ratio",
-      width: 100,
+      title: "Thống kê",
+      key: "statistics",
+      width: 150,
+      align: "center",
       render: (_, record) => {
         const eligible = record.eligibleCount || 0;
         const distributed = record.distributedCount || 0;
         const ratio = eligible > 0 ? ((distributed / eligible) * 100).toFixed(1) : 0;
-        return <Text>{ratio}%</Text>;
+        return (
+          <Space direction="vertical" size={0} style={{ fontSize: "12px" }}>
+            <Text strong style={{ fontSize: "14px" }}>
+              {eligible} người
+            </Text>
+            <Text type="secondary">
+              Đã nhận: <Text strong style={{ color: distributed > 0 ? "#52c41a" : "#999" }}>
+                {distributed}
+              </Text> ({ratio}%)
+            </Text>
+          </Space>
+        );
       },
-    },
-    {
-      title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
-      width: 120,
-      render: (status) => getStatusTag(status),
     },
     {
       title: "Hành động",
       key: "actions",
-      width: 200,
+      width: 100,
       fixed: "right",
+      align: "center",
       render: (_, record) => {
-        const hasRegistrations = (record.registeredCount || 0) > 0;
-        const canEdit =
-          !hasRegistrations &&
-          (record.status === "OPEN" || record.status === "PLANNED");
-        const canClose = record.status === "OPEN";
-
         return (
-          <Space size="small">
-            <Button
-              type="primary"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewDetails(record._id)}
-            >
-              Xem
-            </Button>
-            {canEdit && (
-              <Button
-                type="link"
-                icon={<EditOutlined />}
-                onClick={() =>
-                  navigate(`/leader/reward-events/${record._id}/edit`)
-                }
-              >
-                Chỉnh sửa
-              </Button>
-            )}
-            {canClose && (
-              <Popconfirm
-                title="Bạn có chắc muốn đóng sự kiện này?"
-                onConfirm={() => handleCloseEvent(record._id)}
-                okText="Đóng"
-                cancelText="Hủy"
-              >
-                <Button type="link" danger icon={<CloseOutlined />}>
-                  Đóng sớm
-                </Button>
-              </Popconfirm>
-            )}
-            {(record.registeredCount || 0) > 0 && (
-              <Button
-                type="link"
-                icon={<ExportOutlined />}
-                onClick={() =>
-                  handleExportRegistrations(record._id, record.name)
-                }
-                style={{ color: "#1890ff" }}
-              >
-                Xuất Excel
-              </Button>
-            )}
-          </Space>
+          <Button
+            type="primary"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => handleViewDetails(record._id)}
+          >
+            Chi tiết
+          </Button>
         );
       },
     },
@@ -462,10 +408,9 @@ const RewardEventList = () => {
                 style={{ width: "100%" }}
                 value={typeFilter}
                 onChange={setTypeFilter}
-                allowClear
+                disabled
               >
                 <Option value="ANNUAL">Thường niên</Option>
-                <Option value="SPECIAL">Đặc biệt</Option>
               </Select>
             </Col>
           </Row>
@@ -490,7 +435,7 @@ const RewardEventList = () => {
               setPagination({ ...pagination, current: page, pageSize });
             },
           }}
-          scroll={{ x: 1040 }}
+          scroll={{ x: 700 }}
         />
       </Card>
 

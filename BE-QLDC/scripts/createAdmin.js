@@ -45,11 +45,11 @@ const createAdminUser = async () => {
     // Hash password
     const passwordHash = await bcrypt.hash("123456", 10);
 
-    // Tạo tài khoản admin
+    // Tạo tài khoản admin với role TO_TRUONG (Tổ trưởng)
     const admin = await User.create({
       username: "admin",
       passwordHash: passwordHash,
-      role: "TO_TRUONG",
+      role: "TO_TRUONG", // Tổ trưởng - có quyền quản lý tất cả
       fullName: "Quản trị viên",
       email: "admin@qldc.vn",
       phone: "0123456789",

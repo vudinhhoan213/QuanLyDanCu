@@ -110,9 +110,8 @@ const RewardEventAdd = () => {
                     { required: true, message: "Vui lòng chọn loại sự kiện" },
                   ]}
                 >
-                  <Select size="large" placeholder="Chọn loại sự kiện">
+                  <Select size="large" placeholder="Chọn loại sự kiện" disabled>
                     <Option value="ANNUAL">Thường niên</Option>
-                    <Option value="SPECIAL">Đặc biệt</Option>
                   </Select>
                 </Form.Item>
               </Col>
@@ -122,11 +121,11 @@ const RewardEventAdd = () => {
               <Col span={24}>
                 <Form.Item
                   name="dateRange"
-                  label="Thời gian đăng ký"
+                  label="Thời gian phát quà"
                   rules={[
                     {
                       required: true,
-                      message: "Vui lòng chọn thời gian đăng ký",
+                      message: "Vui lòng chọn thời gian phát quà",
                     },
                   ]}
                 >
