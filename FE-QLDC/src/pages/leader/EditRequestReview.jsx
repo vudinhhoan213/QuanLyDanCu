@@ -59,6 +59,7 @@ const EditRequestReview = () => {
         citizenId: req.citizen?._id,
         household: req.citizen?.household?.code || "N/A",
         householdId: req.citizen?.household?._id,
+        requestType: req.requestType,
         type: req.title || "Chỉnh sửa thông tin",
         description: req.reason || req.description || "N/A",
         proposedChanges: req.proposedChanges,
@@ -82,6 +83,9 @@ const EditRequestReview = () => {
   useEffect(() => {
     fetchRequests();
   }, []);
+
+  const formatDate = (value) =>
+    value ? dayjs(value).format("DD/MM/YYYY") : "N/A";
 
   const statusConfig = {
     pending: {
@@ -394,6 +398,66 @@ const EditRequestReview = () => {
               <Descriptions.Item label="Loại yêu cầu" span={2}>
                 <Tag color="blue">{currentRequest.type}</Tag>
               </Descriptions.Item>
+
+              {currentRequest.requestType && (
+                <Descriptions.Item label="Phân loại" span={2}>
+                  <Tag color="blue">{currentRequest.requestType}</Tag>
+                </Descriptions.Item>
+              )}
+
+              {currentRequest.requestType === "TEMP_ABSENCE" && (
+                <Descriptions.Item label="Tạm vắng" span={2}>
+                  <div>
+                    <div>
+                      Từ ngày:{" "}
+                      {formatDate(
+                        currentRequest.proposedChanges?.temporaryAbsenceFrom ||
+                          currentRequest.temporaryAbsenceFrom
+                      )}{" "}
+                      Đến:{" "}
+                      {formatDate(
+                        currentRequest.proposedChanges?.temporaryAbsenceTo ||
+                          currentRequest.temporaryAbsenceTo
+                      )}
+                    </div>
+                    <div>
+                      Nơi vắng:{" "}
+                      {currentRequest.proposedChanges
+                        ?.temporaryAbsenceAddress ||
+                        currentRequest.temporaryAbsenceAddress ||
+                        "N/A"}
+                    </div>
+                  </div>
+                </Descriptions.Item>
+              )}
+
+              {currentRequest.requestType === "TEMP_RESIDENCE" && (
+                <Descriptions.Item label="Tạm trú" span={2}>
+                  <div>
+                    <div>
+                      Từ ngày:{" "}
+                      {formatDate(
+                        currentRequest.proposedChanges
+                          ?.temporaryResidenceFrom ||
+                          currentRequest.temporaryResidenceFrom
+                      )}{" "}
+                      - Đến:{" "}
+                      {formatDate(
+                        currentRequest.proposedChanges?.temporaryResidenceTo ||
+                          currentRequest.temporaryResidenceTo
+                      )}
+                    </div>
+                    <div>
+                      Địa chỉ:{" "}
+                      {currentRequest.proposedChanges
+                        ?.temporaryResidenceAddress ||
+                        currentRequest.temporaryResidenceAddress ||
+                        "N/A"}
+                    </div>
+                  </div>
+                </Descriptions.Item>
+              )}
+
               <Descriptions.Item label="Lý do" span={2}>
                 {currentRequest.description}
               </Descriptions.Item>

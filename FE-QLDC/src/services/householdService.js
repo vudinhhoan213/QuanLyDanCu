@@ -25,6 +25,12 @@ export const householdService = {
     return data;
   },
 
+  // Split household
+  split: async (id, splitData) => {
+    const { data } = await api.post(`/households/${id}/split`, splitData);
+    return data;
+  },
+
   // Delete household
   delete: async (id) => {
     const { data } = await api.delete(`/households/${id}`);

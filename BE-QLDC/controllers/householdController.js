@@ -40,6 +40,18 @@ module.exports = {
       next(err);
     }
   },
+  async split(req, res, next) {
+    try {
+      const result = await householdService.splitHousehold(
+        req.params.id,
+        req.body
+      );
+      if (!result) return res.status(404).json({ message: "Not found" });
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
   async delete(req, res, next) {
     try {
       const doc = await householdService.delete(req.params.id);

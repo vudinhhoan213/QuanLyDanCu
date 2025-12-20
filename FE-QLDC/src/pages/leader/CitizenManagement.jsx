@@ -38,6 +38,8 @@ import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const formatDate = (value) =>
+  value ? dayjs(value).format("DD/MM/YYYY") : "N/A";
 
 const CitizenManagement = () => {
   const navigate = useNavigate();
@@ -82,6 +84,11 @@ const CitizenManagement = () => {
           residenceStatus: c.residenceStatus || "THUONG_TRU",
           residenceStatusValue: c.residenceStatus || "THUONG_TRU",
           temporaryResidenceAddress: c.temporaryResidenceAddress,
+          temporaryResidenceFrom: c.temporaryResidenceFrom,
+          temporaryResidenceTo: c.temporaryResidenceTo,
+          temporaryAbsenceAddress: c.temporaryAbsenceAddress,
+          temporaryAbsenceFrom: c.temporaryAbsenceFrom,
+          temporaryAbsenceTo: c.temporaryAbsenceTo,
           movedOutDate: c.movedOutDate,
           deathDate: c.deathDate,
           note: c.note,
@@ -236,7 +243,7 @@ const CitizenManagement = () => {
             onClick={() => handleEdit(record)}
           />
           <Popconfirm
-            title="⚠️ Xóa vĩnh viễn nhân khẩu này?"
+            title="Xóa vĩnh viễn nhân khẩu này?"
             description="Dữ liệu sẽ bị xóa hoàn toàn khỏi hệ thống và không thể khôi phục!"
             onConfirm={() => handleDelete(record.key)}
             okText="Xóa vĩnh viễn"
@@ -636,6 +643,35 @@ const CitizenManagement = () => {
                   return <Tag color={statusInfo.color}>{statusInfo.label}</Tag>;
                 })()}
               </Descriptions.Item>
+
+              {viewingCitizen.residenceStatusValue === "TAM_TRU" && (
+                <>
+                  <Descriptions.Item label="Th???i h???n t???m trA?">
+                    {formatDate(viewingCitizen.temporaryResidenceFrom)} -
+                    {formatDate(viewingCitizen.temporaryResidenceTo)}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="????<a ch??% t???m trA?" span={2}>
+                    {viewingCitizen.temporaryResidenceAddress || (
+                      <Tag color="default">Ch??a cA3</Tag>
+                    )}
+                  </Descriptions.Item>
+                </>
+              )}
+
+              {viewingCitizen.residenceStatusValue === "TAM_VANG" && (
+                <>
+                  <Descriptions.Item label="Th???i h???n t???m v??_ng">
+                    {formatDate(viewingCitizen.temporaryAbsenceFrom)} -
+                    {formatDate(viewingCitizen.temporaryAbsenceTo)}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="N??i t???m v??_ng ?`???n" span={2}>
+                    {viewingCitizen.temporaryAbsenceAddress || (
+                      <Tag color="default">Ch??a cA3</Tag>
+                    )}
+                  </Descriptions.Item>
+                </>
+              )}
+
               <Descriptions.Item label="Trạng thái">
                 {(() => {
                   const statusMap = {
@@ -658,11 +694,12 @@ const CitizenManagement = () => {
                   {dayjs(viewingCitizen.deathDate).format("DD/MM/YYYY")}
                 </Descriptions.Item>
               )}
-              {viewingCitizen.temporaryResidenceAddress && (
-                <Descriptions.Item label="Nơi chuyển đến" span={2}>
-                  {viewingCitizen.temporaryResidenceAddress}
-                </Descriptions.Item>
-              )}
+              {viewingCitizen.temporaryResidenceAddress &&
+                viewingCitizen.status === "inactive" && (
+                  <Descriptions.Item label="N??i chuy???n ?`???n" span={2}>
+                    {viewingCitizen.temporaryResidenceAddress}
+                  </Descriptions.Item>
+                )}
               {viewingCitizen.note && (
                 <Descriptions.Item label="Ghi chú" span={2}>
                   {viewingCitizen.note}
