@@ -4,6 +4,7 @@ import {
   Form,
   Input,
   Select,
+  DatePicker,
   Button,
   Typography,
   Space,
@@ -35,13 +36,26 @@ const SubmitEditRequest = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [selectedType, setSelectedType] = useState(null);
 
   const requestTypes = [
     { value: "ADD_MEMBER", label: "Thêm nhân khẩu", icon: <EditOutlined /> },
-    { value: "EDIT_INFO", label: "Chỉnh sửa thông tin", icon: <EditOutlined /> },
+    {
+      value: "EDIT_INFO",
+      label: "Chỉnh sửa thông tin",
+      icon: <EditOutlined />,
+    },
     { value: "REMOVE_MEMBER", label: "Xóa nhân khẩu", icon: <EditOutlined /> },
-    { value: "TEMP_ABSENCE", label: "Đăng ký tạm vắng", icon: <EditOutlined /> },
-    { value: "TEMP_RESIDENCE", label: "Đăng ký tạm trú", icon: <EditOutlined /> },
+    {
+      value: "TEMP_ABSENCE",
+      label: "Đăng ký tạm vắng",
+      icon: <EditOutlined />,
+    },
+    {
+      value: "TEMP_RESIDENCE",
+      label: "Đăng ký tạm trú",
+      icon: <EditOutlined />,
+    },
     { value: "MOVE_OUT", label: "Chuyển đi", icon: <EditOutlined /> },
     { value: "MOVE_IN", label: "Chuyển đến", icon: <EditOutlined /> },
     { value: "OTHER", label: "Khác", icon: <InfoCircleOutlined /> },
@@ -50,15 +64,40 @@ const SubmitEditRequest = () => {
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
+      const proposedChanges = {
+        details: values.details,
+        temporaryAbsenceAddress: values.temporaryAbsenceAddress,
+        temporaryAbsenceFrom: values.temporaryAbsenceFrom
+          ? values.temporaryAbsenceFrom.format("YYYY-MM-DD")
+          : undefined,
+        temporaryAbsenceTo: values.temporaryAbsenceTo
+          ? values.temporaryAbsenceTo.format("YYYY-MM-DD")
+          : undefined,
+        temporaryResidenceAddress: values.temporaryResidenceAddress,
+        temporaryResidenceFrom: values.temporaryResidenceFrom
+          ? values.temporaryResidenceFrom.format("YYYY-MM-DD")
+          : undefined,
+        temporaryResidenceTo: values.temporaryResidenceTo
+          ? values.temporaryResidenceTo.format("YYYY-MM-DD")
+          : undefined,
+      };
+
+      Object.keys(proposedChanges).forEach((key) => {
+        if (proposedChanges[key] === undefined || proposedChanges[key] === "") {
+          delete proposedChanges[key];
+        }
+      });
+
       const requestData = {
         requestType: values.requestType,
         title: values.title,
         description: values.description,
-        proposedChanges: { details: values.details, ...values },
+        proposedChanges,
       };
       await editRequestService.create(requestData);
       message.success("✅ Gửi yêu cầu thành công!");
       form.resetFields();
+      setSelectedType(null);
       navigate("/citizen/my-requests");
     } catch (error) {
       console.error("Error submitting request:", error);
@@ -94,11 +133,13 @@ const SubmitEditRequest = () => {
           hoverable
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = "translateY(-4px)";
-            e.currentTarget.style.boxShadow = "0 8px 24px rgba(118, 75, 162, 0.4)";
+            e.currentTarget.style.boxShadow =
+              "0 8px 24px rgba(118, 75, 162, 0.4)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "0 4px 12px rgba(102, 126, 234, 0.3)";
+            e.currentTarget.style.boxShadow =
+              "0 4px 12px rgba(102, 126, 234, 0.3)";
           }}
         >
           <Row align="middle" justify="space-between">
@@ -125,7 +166,9 @@ const SubmitEditRequest = () => {
                   >
                     Gửi Yêu Cầu Chỉnh Sửa
                   </Title>
-                  <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}>
+                  <Text
+                    style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}
+                  >
                     Gửi yêu cầu chỉnh sửa thông tin hộ khẩu/nhân khẩu
                   </Text>
                 </div>
@@ -196,9 +239,25 @@ const SubmitEditRequest = () => {
                         </Text>
                       </Space>
                     }
-                    rules={[{ required: true, message: "Vui lòng chọn loại yêu cầu" }]}
+                    rules={[
+                      { required: true, message: "Vui lòng chọn loại yêu cầu" },
+                    ]}
                   >
-                    <Select placeholder="Chọn loại yêu cầu" style={{ borderRadius: "8px" }}>
+                    <Select
+                      placeholder="Chọn loại yêu cầu"
+                      style={{ borderRadius: "8px" }}
+                      onChange={(value) => {
+                        setSelectedType(value);
+                        form.setFieldsValue({
+                          temporaryAbsenceAddress: "",
+                          temporaryAbsenceFrom: null,
+                          temporaryAbsenceTo: null,
+                          temporaryResidenceAddress: "",
+                          temporaryResidenceFrom: null,
+                          temporaryResidenceTo: null,
+                        });
+                      }}
+                    >
                       {requestTypes.map((type) => (
                         <Option key={type.value} value={type.value}>
                           <Space>
@@ -225,7 +284,10 @@ const SubmitEditRequest = () => {
                       { min: 10, message: "Tiêu đề phải có ít nhất 10 ký tự" },
                     ]}
                   >
-                    <Input placeholder="Nhập tiêu đề" style={{ borderRadius: "8px" }} />
+                    <Input
+                      placeholder="Nhập tiêu đề"
+                      style={{ borderRadius: "8px" }}
+                    />
                   </Form.Item>
 
                   {/* --- MÔ TẢ --- */}
@@ -253,6 +315,136 @@ const SubmitEditRequest = () => {
                       style={{ borderRadius: "8px" }}
                     />
                   </Form.Item>
+
+                  {/* --- THONG TIN TAM TRU / TAM VANG --- */}
+                  {selectedType === "TEMP_ABSENCE" && (
+                    <div
+                      style={{
+                        padding: "16px",
+                        background: "#fff7e6",
+                        border: "1px solid #ffe7ba",
+                        borderRadius: "8px",
+                        marginBottom: 16,
+                      }}
+                    >
+                      <Space align="center" style={{ marginBottom: 12 }}>
+                        <InfoCircleOutlined style={{ color: "#fa8c16" }} />
+                        <Text strong>Thông tin đăng ký tạm vắng</Text>
+                      </Space>
+                      <Row gutter={[16, 16]}>
+                        <Col xs={24} md={12}>
+                          <Form.Item
+                            name="temporaryAbsenceFrom"
+                            label="Từ ngày"
+                            rules={[
+                              {
+                                required: true,
+                                message: "Vui lòng chọn ngày bắt đầu",
+                              },
+                            ]}
+                          >
+                            <DatePicker
+                              style={{ width: "100%" }}
+                              format="DD/MM/YYYY"
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={24} md={12}>
+                          <Form.Item
+                            name="temporaryAbsenceTo"
+                            label="Đến ngày"
+                            rules={[
+                              {
+                                required: true,
+                                message: "Vui lòng chọn ngày kết thúc",
+                              },
+                            ]}
+                          >
+                            <DatePicker
+                              style={{ width: "100%" }}
+                              format="DD/MM/YYYY"
+                            />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                      <Form.Item
+                        name="temporaryAbsenceAddress"
+                        label="Nơi tạm vắng"
+                        rules={[
+                          {
+                            required: true,
+                            message: "Vui lòng nhập nơi tạm vắng",
+                          },
+                        ]}
+                      >
+                        <Input placeholder="Nhập nơi tạm vắng" />
+                      </Form.Item>
+                    </div>
+                  )}
+                  {selectedType === "TEMP_RESIDENCE" && (
+                    <div
+                      style={{
+                        padding: "16px",
+                        background: "#e6f7ff",
+                        border: "1px solid #bae7ff",
+                        borderRadius: "8px",
+                        marginBottom: 16,
+                      }}
+                    >
+                      <Space align="center" style={{ marginBottom: 12 }}>
+                        <InfoCircleOutlined style={{ color: "#1890ff" }} />
+                        <Text strong>Thông tin đăng ký tạm trú</Text>
+                      </Space>
+                      <Row gutter={[16, 16]}>
+                        <Col xs={24} md={12}>
+                          <Form.Item
+                            name="temporaryResidenceFrom"
+                            label="Từ ngày"
+                            rules={[
+                              {
+                                required: true,
+                                message: "Vui lòng chọn ngày bắt đầ u",
+                              },
+                            ]}
+                          >
+                            <DatePicker
+                              style={{ width: "100%" }}
+                              format="DD/MM/YYYY"
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={24} md={12}>
+                          <Form.Item
+                            name="temporaryResidenceTo"
+                            label="Đến ngày"
+                            rules={[
+                              {
+                                required: true,
+                                message: "Vui lòng chọn ngày kết thúc",
+                              },
+                            ]}
+                          >
+                            <DatePicker
+                              style={{ width: "100%" }}
+                              format="DD/MM/YYYY"
+                            />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                      <Form.Item
+                        name="temporaryResidenceAddress"
+                        label="Nơi tạm trú"
+                        rules={[
+                          {
+                            required: true,
+                            message: "Vui lòng nhập nơi tạm trú",
+                          },
+                        ]}
+                      >
+                        <Input placeholder="Nhập nơi tạm trú" />
+                      </Form.Item>
+                    </div>
+                  )}
 
                   {/* --- NỘI DUNG CỤ THỂ --- */}
                   <Form.Item

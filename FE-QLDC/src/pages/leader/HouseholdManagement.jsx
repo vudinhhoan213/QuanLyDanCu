@@ -9,7 +9,11 @@ import {
   Typography,
   Modal,
   Form,
-  Select, 
+  Select,
+  Row,
+  Col,
+  Divider,
+  Alert,
   message,
   Popconfirm,
   Descriptions,
@@ -22,6 +26,7 @@ import {
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
+  ApartmentOutlined,
   TeamOutlined,
   UserOutlined,
   HomeOutlined,
@@ -43,9 +48,12 @@ const HouseholdManagement = () => {
   const [searchText, setSearchText] = useState("");
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
+  const [isSplitModalVisible, setIsSplitModalVisible] = useState(false);
   const [editingHousehold, setEditingHousehold] = useState(null);
   const [viewingHousehold, setViewingHousehold] = useState(null);
   const [form] = Form.useForm();
+  const [splitForm] = Form.useForm();
+  const [splitHousehold, setSplitHousehold] = useState(null);
   const [households, setHouseholds] = useState([]);
   const [citizens, setCitizens] = useState([]);
 
@@ -127,12 +135,11 @@ const HouseholdManagement = () => {
                   </>
                 )}
                 {record.email && (
-  <>
-    <span>•</span>
-    <span style={{ color: "#52c41a" }}>📧 {record.email}</span>
-  </>
-)}
-
+                  <>
+                    <span>•</span>
+                    <span style={{ color: "#52c41a" }}>📧 {record.email}</span>
+                  </>
+                )}
               </Space>
             </div>
           </Space>
@@ -212,6 +219,12 @@ const HouseholdManagement = () => {
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
           />
+          <Button
+            type="default"
+            size="small"
+            icon={<ApartmentOutlined />}
+            onClick={() => handleSplit(record)}
+          />
           <Popconfirm
             title="⚠️ Xóa vĩnh viễn hộ khẩu này?"
             description={
@@ -253,6 +266,115 @@ const HouseholdManagement = () => {
       console.error("Error fetching household details:", error);
       message.error("Không thể tải thông tin hộ khẩu");
     }
+  };
+
+  const handleSplit = async (record) => {
+    try {
+      const response = await householdService.getById(record.key);
+      setSplitHousehold({
+        ...record,
+        membersList: response.members || [],
+        headDetails: response.head,
+        addressObject: response.address,
+      });
+      splitForm.resetFields();
+      splitForm.setFieldsValue({
+        splits: [{ code: "", head: null, members: [] }],
+        newHeadForOriginal: undefined,
+      });
+      setIsSplitModalVisible(true);
+    } catch (error) {
+      console.error("Error fetching household for split:", error);
+      message.error("Không thể tải thông tin hộ khẩu để tách");
+    }
+  };
+
+  const handleSplitOk = async () => {
+    try {
+      const values = await splitForm.validateFields();
+      const splits = values.splits || [];
+      const members = splitHousehold?.membersList || [];
+      const allMemberIds = members.map((m) => m._id);
+      const selected = new Set();
+
+      if (!splits.length) {
+        message.error("Cần tạo ít nhất 1 hộ khẩu mới");
+        return;
+      }
+
+      const normalizedSplits = splits.map((split) => {
+        const head = split.head;
+        const membersList = Array.isArray(split.members) ? split.members : [];
+        if (!split.code || !head) {
+          throw new Error("Thiếu mã hộ khẩu hoặc chủ hộ");
+        }
+        const membersWithHead = Array.from(
+          new Set(
+            membersList.includes(head) ? membersList : [...membersList, head]
+          )
+        );
+
+        membersWithHead.forEach((memberId) => {
+          if (!allMemberIds.includes(memberId)) {
+            throw new Error("Thành viên không thuộc hộ khẩu gốc");
+          }
+          if (selected.has(memberId)) {
+            throw new Error("Thành viên bị trùng trong các hộ khẩu mới");
+          }
+          selected.add(memberId);
+        });
+
+        return {
+          code: split.code,
+          head,
+          members: membersWithHead,
+        };
+      });
+
+      const remainingMembers = allMemberIds.filter((id) => !selected.has(id));
+      if (remainingMembers.length === 0) {
+        message.error("Hộ khẩu gốc phải có ít nhất 1 thành viên");
+        return;
+      }
+
+      const originalHeadId = splitHousehold?.headId
+        ? splitHousehold.headId.toString()
+        : null;
+      const headMoved = originalHeadId && selected.has(originalHeadId);
+      if (headMoved && !values.newHeadForOriginal) {
+        message.error("Cần chọn chủ hộ mới cho hộ khẩu gốc");
+        return;
+      }
+      if (
+        values.newHeadForOriginal &&
+        !remainingMembers.includes(values.newHeadForOriginal)
+      ) {
+        message.error("Chủ hộ gốc phải là thành viên còn lại");
+        return;
+      }
+
+      await householdService.split(splitHousehold.key, {
+        splits: normalizedSplits,
+        newHeadForOriginal: values.newHeadForOriginal,
+      });
+
+      message.success("Tách hộ khẩu thành công");
+      setIsSplitModalVisible(false);
+      splitForm.resetFields();
+      setSplitHousehold(null);
+      fetchHouseholds();
+      fetchCitizens();
+    } catch (error) {
+      console.error("Error splitting household:", error);
+      const errorMsg = error.response?.data?.message || error.message;
+      message.error(errorMsg || "Không thể tách hộ khẩu. Vui lòng thử lại!");
+    }
+  };
+
+  const handleSplitCancel = () => {
+    setIsSplitModalVisible(false);
+    splitForm.resetFields();
+    setSplitHousehold(null);
   };
 
   const handleEdit = (record) => {
@@ -590,7 +712,8 @@ const HouseholdManagement = () => {
                 <Descriptions.Item label="Email">
                   <Space>
                     📧
-                    {viewingHousehold.email && viewingHousehold.email !== "Chưa có" ? (
+                    {viewingHousehold.email &&
+                    viewingHousehold.email !== "Chưa có" ? (
                       <Text>{viewingHousehold.email}</Text>
                     ) : (
                       <Tag color="default">Chưa có</Tag>
@@ -699,6 +822,218 @@ const HouseholdManagement = () => {
           )}
         </Modal>
 
+        {/* Split Modal */}
+        <Modal
+          title="Tách Hộ Khẩu"
+          open={isSplitModalVisible}
+          onOk={handleSplitOk}
+          onCancel={handleSplitCancel}
+          okText="Tách hộ khẩu"
+          cancelText="Hủy"
+          width={900}
+        >
+          {splitHousehold && (
+            <div>
+              <Alert
+                message="Chọn thành viên? Tách thành hộ mới"
+                description="Mỗi hộ mới cần có chủ hộ và thành viên. Hộ khẩu gốc phải có ít nhất 1 thành viên còn lại."
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Descriptions
+                bordered
+                size="small"
+                column={2}
+                style={{ marginBottom: 16 }}
+              >
+                <Descriptions.Item label="Mã hộ gốc">
+                  <Tag color="blue">{splitHousehold.id}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Chủ hộ gốc">
+                  {splitHousehold.headOfHousehold}
+                </Descriptions.Item>
+                <Descriptions.Item label="Số thành viên">
+                  {splitHousehold.membersList?.length || 0} người
+                </Descriptions.Item>
+                <Descriptions.Item label="Địa chỉ" span={2}>
+                  {splitHousehold.address}
+                </Descriptions.Item>
+              </Descriptions>
+
+              <Divider orientation="left">Hộ khẩu mới</Divider>
+
+              <Form form={splitForm} layout="vertical">
+                <Form.List name="splits">
+                  {(fields, { add, remove }) => (
+                    <div>
+                      {fields.map((field, index) => (
+                        <Card
+                          key={field.key}
+                          size="small"
+                          style={{ marginBottom: 16, borderRadius: 8 }}
+                          extra={
+                            fields.length > 1 ? (
+                              <Button
+                                type="link"
+                                danger
+                                onClick={() => remove(field.name)}
+                              >
+                                Xóa hộ khẩu
+                              </Button>
+                            ) : null
+                          }
+                        >
+                          <Row gutter={16}>
+                            <Col span={12}>
+                              <Form.Item
+                                name={[field.name, "code"]}
+                                label="Mã hộ khẩu mới"
+                                rules={[
+                                  {
+                                    required: true,
+                                    message: "Vui lòng nhập mã hộ khẩu mới",
+                                  },
+                                ]}
+                              >
+                                <Input placeholder="VD: HK-102" />
+                              </Form.Item>
+                            </Col>
+                            <Col span={12}>
+                              <Form.Item
+                                name={[field.name, "head"]}
+                                label="Chủ hộ mới"
+                                rules={[
+                                  {
+                                    required: true,
+                                    message: "Vui lòng chọn chủ hộ",
+                                  },
+                                ]}
+                              >
+                                <Select placeholder="Chọn chủ hộ">
+                                  {(splitHousehold.membersList || []).map(
+                                    (member) => (
+                                      <Option
+                                        key={member._id}
+                                        value={member._id}
+                                      >
+                                        {member.fullName} -{" "}
+                                        {member.nationalId || "Chưa có CCCD"}
+                                      </Option>
+                                    )
+                                  )}
+                                </Select>
+                              </Form.Item>
+                            </Col>
+                          </Row>
+                          <Form.Item
+                            name={[field.name, "members"]}
+                            label="Thành viên"
+                            rules={[
+                              {
+                                required: true,
+                                message: "Vui lòng chọn thành viên",
+                              },
+                            ]}
+                          >
+                            <Select
+                              mode="multiple"
+                              placeholder="Chọn thành viên (bao gồm chủ hộ)"
+                            >
+                              {(splitHousehold.membersList || []).map(
+                                (member) => (
+                                  <Option key={member._id} value={member._id}>
+                                    {member.fullName} -{" "}
+                                    {member.nationalId || "Chưa có CCCD"}
+                                  </Option>
+                                )
+                              )}
+                            </Select>
+                          </Form.Item>
+                        </Card>
+                      ))}
+                      <Button
+                        type="dashed"
+                        onClick={() =>
+                          add({ code: "", head: null, members: [] })
+                        }
+                        icon={<PlusOutlined />}
+                        style={{ width: "100%" }}
+                      >
+                        Thêm hộ khẩu mới
+                      </Button>
+                    </div>
+                  )}
+                </Form.List>
+
+                <Divider orientation="left">Hộ khẩu gốc cần giữ lại</Divider>
+
+                <Form.Item shouldUpdate noStyle>
+                  {() => {
+                    const splits = splitForm.getFieldValue("splits") || [];
+                    const selected = new Set();
+                    splits.forEach((split) => {
+                      (split.members || []).forEach((id) => selected.add(id));
+                      if (split.head) {
+                        selected.add(split.head);
+                      }
+                    });
+
+                    const remaining = (splitHousehold.membersList || []).filter(
+                      (member) => !selected.has(member._id)
+                    );
+
+                    const headMoved = splitHousehold.headId
+                      ? selected.has(splitHousehold.headId.toString())
+                      : false;
+
+                    return (
+                      <>
+                        {headMoved && (
+                          <Alert
+                            message="Chủ hộ gốc đã được chuyển vào hộ khẩu mới"
+                            description="Vui lòng chọn chủ hộ mới cho hộ khẩu gốc"
+                            type="warning"
+                            showIcon
+                            style={{ marginBottom: 12 }}
+                          />
+                        )}
+                        <Form.Item
+                          name="newHeadForOriginal"
+                          label="Chủ hộ cần giữ lại (hộ khẩu gốc)"
+                        >
+                          <Select
+                            allowClear
+                            placeholder="Chọn chủ hộ cho hộ khẩu gốc"
+                          >
+                            {remaining.map((member) => (
+                              <Option key={member._id} value={member._id}>
+                                {member.fullName} -{" "}
+                                {member.nationalId || "Chưa có CCCD"}
+                              </Option>
+                            ))}
+                          </Select>
+                        </Form.Item>
+                        {remaining.length > 0 && (
+                          <div style={{ marginBottom: 8 }}>
+                            <Text type="secondary">
+                              Thành viên còn lại trong hộ khẩu gốc:
+                            </Text>
+                            <Space wrap style={{ marginLeft: 8 }}>
+                              {remaining.map((member) => (
+                                <Tag key={member._id}>{member.fullName}</Tag>
+                              ))}
+                            </Space>
+                          </div>
+                        )}
+                      </>
+                    );
+                  }}
+                </Form.Item>
+              </Form>
+            </div>
+          )}
+        </Modal>
         {/* Add/Edit Modal */}
         <Modal
           title={editingHousehold ? "Chỉnh sửa hộ khẩu" : "Thêm hộ khẩu mới"}
@@ -733,14 +1068,16 @@ const HouseholdManagement = () => {
                   option.children.toLowerCase().includes(input.toLowerCase())
                 }
                 onChange={(headId) => {
-                  const selectedCitizen = citizens.find((c) => c._id === headId);
+                  const selectedCitizen = citizens.find(
+                    (c) => c._id === headId
+                  );
                   if (selectedCitizen) {
                     form.setFieldsValue({
                       phone: selectedCitizen.phone || "",
                       email: selectedCitizen.email || "",
                     });
                   }
-                }}        
+                }}
               >
                 {Array.isArray(citizens) &&
                   citizens.map((c) => (
@@ -799,11 +1136,13 @@ const HouseholdManagement = () => {
               name="email"
               label="Email chủ hộ"
               tooltip="Email được lấy tự động từ thông tin chủ hộ"
->              <Input
+            >
+              {" "}
+              <Input
                 placeholder="Email được lấy tự động từ chủ hộ"
                 disabled
                 style={{ color: "#000" }}
-              />  
+              />
             </Form.Item>
             <Form.Item
               name="status"

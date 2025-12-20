@@ -70,7 +70,45 @@ module.exports = {
     if (!citizen) throw new Error("Citizen not found");
 
     const before = citizen.toObject();
-    const updates = reqDoc.proposedChanges || {};
+    const updates = { ...(reqDoc.proposedChanges || {}) };
+    delete updates.details;
+    const requestType = reqDoc.requestType;
+
+    if (requestType === "TEMP_ABSENCE") {
+      if (!updates.temporaryAbsenceFrom || !updates.temporaryAbsenceTo) {
+        throw new Error("Missing temporary absence date range");
+      }
+      if (!updates.temporaryAbsenceAddress) {
+        throw new Error("Missing temporary absence address");
+      }
+      const fromDate = new Date(updates.temporaryAbsenceFrom);
+      const toDate = new Date(updates.temporaryAbsenceTo);
+      if (fromDate > toDate) {
+        throw new Error("Temporary absence date range is invalid");
+      }
+      updates.residenceStatus = "TAM_VANG";
+      updates.temporaryResidenceAddress = null;
+      updates.temporaryResidenceFrom = null;
+      updates.temporaryResidenceTo = null;
+    }
+
+    if (requestType === "TEMP_RESIDENCE") {
+      if (!updates.temporaryResidenceFrom || !updates.temporaryResidenceTo) {
+        throw new Error("Missing temporary residence date range");
+      }
+      if (!updates.temporaryResidenceAddress) {
+        throw new Error("Missing temporary residence address");
+      }
+      const fromDate = new Date(updates.temporaryResidenceFrom);
+      const toDate = new Date(updates.temporaryResidenceTo);
+      if (fromDate > toDate) {
+        throw new Error("Temporary residence date range is invalid");
+      }
+      updates.residenceStatus = "TAM_TRU";
+      updates.temporaryAbsenceAddress = null;
+      updates.temporaryAbsenceFrom = null;
+      updates.temporaryAbsenceTo = null;
+    }
     Object.entries(updates).forEach(([k, v]) => {
       citizen.set(k, v);
     });

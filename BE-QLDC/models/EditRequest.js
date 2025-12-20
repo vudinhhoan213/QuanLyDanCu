@@ -6,6 +6,10 @@ const editRequestSchema = new Schema(
     citizen: { type: Schema.Types.ObjectId, ref: "Citizen", required: true },
     requestedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
 
+    requestType: { type: String, trim: true }, // Loai yeu cau (TEMP_ABSENCE, TEMP_RESIDENCE, ...)
+    title: { type: String, trim: true },
+    description: { type: String, trim: true },
+
     // Các trường dự kiến thay đổi (object linh hoạt theo nhu cầu)
     proposedChanges: { type: Schema.Types.Mixed, required: true },
     targetFieldPaths: [{ type: String }], // ví dụ: ['occupation', 'phone']

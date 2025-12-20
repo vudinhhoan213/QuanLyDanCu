@@ -7,6 +7,7 @@ const router = express.Router();
 // Stats route must come before /:id
 router.get('/stats', authenticate, householdController.getStats);
 router.get('/', authenticate, householdController.getAll);
+router.post('/:id/split', authenticate, isLeader, householdController.split);
 router.get('/:id', authenticate, householdController.getById);
 router.post('/', authenticate, isLeader, householdController.create);
 router.patch('/:id', authenticate, isLeader, householdController.update);

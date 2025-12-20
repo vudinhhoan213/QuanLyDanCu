@@ -80,9 +80,10 @@ const MyRequests = () => {
         requestCategory: "REWARD",
       }));
 
-      const merged = [...formattedEditRequests, ...formattedRewardProposals].sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-      );
+      const merged = [
+        ...formattedEditRequests,
+        ...formattedRewardProposals,
+      ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
       setEditRequests(formattedEditRequests);
       setRewardProposals(formattedRewardProposals);
@@ -94,6 +95,9 @@ const MyRequests = () => {
       setLoading(false);
     }
   };
+
+  const formatDate = (value) =>
+    value ? dayjs(value).format("DD/MM/YYYY") : "N/A";
 
   const statusConfig = {
     PENDING: { color: "gold", text: "Chờ duyệt" },
@@ -168,7 +172,8 @@ const MyRequests = () => {
       dataIndex: "title",
       key: "title",
       render: (text, record) => {
-        const displayTitle = record.proposedChanges?.title || record.title || "N/A";
+        const displayTitle =
+          record.proposedChanges?.title || record.title || "N/A";
         return (
           <div
             style={{
@@ -190,7 +195,9 @@ const MyRequests = () => {
       width: 115,
       render: (date) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{dayjs(date).format("DD/MM/YYYY")}</div>
+          <div style={{ fontWeight: 500 }}>
+            {dayjs(date).format("DD/MM/YYYY")}
+          </div>
           <Text type="secondary" style={{ fontSize: "12px" }}>
             {dayjs(date).format("HH:mm")}
           </Text>
@@ -264,102 +271,100 @@ const MyRequests = () => {
     <Layout>
       <div>
         {/* Header gradient + 2 nút hành động */}
-<Card
-  bordered={false}
-  style={{
-    marginBottom: 24,
-    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-    border: "none",
-    borderRadius: "12px",
-    boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
-    transition: "transform 0.3s ease, box-shadow 0.3s ease",
-  }}
-  bodyStyle={{ padding: "32px" }}
-  className="hover-card"
->
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 16,
-    }}
-  >
-    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-      <div
-        style={{
-          width: 64,
-          height: 64,
-          borderRadius: "50%",
-          background: "rgba(255, 255, 255, 0.2)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backdropFilter: "blur(10px)",
-        }}
-      >
-        <FileTextOutlined style={{ fontSize: 32, color: "#fff" }} />
-      </div>
-
-      <div>
-        <Title
-          level={2}
+        <Card
+          bordered={false}
           style={{
-            color: "#fff",
-            margin: 0,
-            marginBottom: 8,
-            fontWeight: 700,
+            marginBottom: 24,
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            border: "none",
+            borderRadius: "12px",
+            boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
+            transition: "transform 0.3s ease, box-shadow 0.3s ease",
           }}
+          bodyStyle={{ padding: "32px" }}
+          className="hover-card"
         >
-          Yêu Cầu Của Tôi
-        </Title>
-        <Text
-          style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}
-        >
-          Quản lý tất cả yêu cầu chỉnh sửa và đề xuất khen thưởng
-        </Text>
-      </div>
-    </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "50%",
+                  background: "rgba(255, 255, 255, 0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backdropFilter: "blur(10px)",
+                }}
+              >
+                <FileTextOutlined style={{ fontSize: 32, color: "#fff" }} />
+              </div>
 
-    <div>
-      <Space>
-        <Button
-          icon={<EditOutlined />}
-          onClick={() => navigate("/citizen/submit-edit-request")}
-          style={{
-            background: "rgba(255,255,255,0.2)",
-            borderColor: "rgba(255,255,255,0.5)",
-            color: "#fff",
-            fontWeight: 500,
-            height: 40,
-            borderRadius: 8,
-            transition: "all 0.3s ease",
-          }}
-          className="hover-back"
-        >
-          Yêu cầu chỉnh sửa
-        </Button>
-        <Button
-          icon={<TrophyOutlined />}
-          onClick={() => navigate("/citizen/submit-reward-proposal")}
-          style={{
-            background: "#fff",
-            color: "#667eea",
-            fontWeight: 500,
-            height: 40,
-            borderRadius: 8,
-            transition: "all 0.3s ease",
-          }}
-          className="hover-back"
-        >
-          Đề xuất khen thưởng
-        </Button>
-      </Space>
-    </div>
-  </div>
+              <div>
+                <Title
+                  level={2}
+                  style={{
+                    color: "#fff",
+                    margin: 0,
+                    marginBottom: 8,
+                    fontWeight: 700,
+                  }}
+                >
+                  Yêu Cầu Của Tôi
+                </Title>
+                <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}>
+                  Quản lý tất cả yêu cầu chỉnh sửa và đề xuất khen thưởng
+                </Text>
+              </div>
+            </div>
 
-  {/* Hover effect */}
-  <style>{`
+            <div>
+              <Space>
+                <Button
+                  icon={<EditOutlined />}
+                  onClick={() => navigate("/citizen/submit-edit-request")}
+                  style={{
+                    background: "rgba(255,255,255,0.2)",
+                    borderColor: "rgba(255,255,255,0.5)",
+                    color: "#fff",
+                    fontWeight: 500,
+                    height: 40,
+                    borderRadius: 8,
+                    transition: "all 0.3s ease",
+                  }}
+                  className="hover-back"
+                >
+                  Yêu cầu chỉnh sửa
+                </Button>
+                <Button
+                  icon={<TrophyOutlined />}
+                  onClick={() => navigate("/citizen/submit-reward-proposal")}
+                  style={{
+                    background: "#fff",
+                    color: "#667eea",
+                    fontWeight: 500,
+                    height: 40,
+                    borderRadius: 8,
+                    transition: "all 0.3s ease",
+                  }}
+                  className="hover-back"
+                >
+                  Đề xuất khen thưởng
+                </Button>
+              </Space>
+            </div>
+          </div>
+
+          {/* Hover effect */}
+          <style>{`
     .hover-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 10px 25px rgba(102, 126, 234, 0.35);
@@ -369,9 +374,7 @@ const MyRequests = () => {
       box-shadow: 0 6px 16px rgba(0,0,0,0.15);
     }
   `}</style>
-</Card>
-
-
+        </Card>
 
         {/* Summary Cards */}
         <div
@@ -382,11 +385,35 @@ const MyRequests = () => {
             marginBottom: 24,
           }}
         >
-          {[ 
-            { bg: "#f0f5ff", icon: <FileTextOutlined />, text: "Tổng số yêu cầu", color: "#1890ff", count: allRequests.length },
-            { bg: "#fffbe6", icon: <ClockCircleOutlined />, text: "Chờ duyệt", color: "#faad14", count: allRequests.filter((r) => r.status === "PENDING").length },
-            { bg: "#f6ffed", icon: <CheckCircleOutlined />, text: "Đã duyệt", color: "#52c41a", count: allRequests.filter((r) => r.status === "APPROVED").length },
-            { bg: "#fff1f0", icon: <CloseCircleOutlined />, text: "Từ chối", color: "#ff4d4f", count: allRequests.filter((r) => r.status === "REJECTED").length },
+          {[
+            {
+              bg: "#f0f5ff",
+              icon: <FileTextOutlined />,
+              text: "Tổng số yêu cầu",
+              color: "#1890ff",
+              count: allRequests.length,
+            },
+            {
+              bg: "#fffbe6",
+              icon: <ClockCircleOutlined />,
+              text: "Chờ duyệt",
+              color: "#faad14",
+              count: allRequests.filter((r) => r.status === "PENDING").length,
+            },
+            {
+              bg: "#f6ffed",
+              icon: <CheckCircleOutlined />,
+              text: "Đã duyệt",
+              color: "#52c41a",
+              count: allRequests.filter((r) => r.status === "APPROVED").length,
+            },
+            {
+              bg: "#fff1f0",
+              icon: <CloseCircleOutlined />,
+              text: "Từ chối",
+              color: "#ff4d4f",
+              count: allRequests.filter((r) => r.status === "REJECTED").length,
+            },
           ].map((item, i) => (
             <Card
               key={i}
@@ -419,59 +446,64 @@ const MyRequests = () => {
           ))}
         </div>
 
-       {/* Wrap Tabs + Table */}
-<div style={{ marginBottom: 24 }}>
-  {/* Tabs + Table */}
-  <div>
-    <Card
-      bordered={false}
-      style={{
-        borderRadius: 12,
-        transition: "all 0.3s ease",
-        cursor: "pointer",
-        marginBottom: 16,
-      }}
-      className="hover-table-card"
-    >
-      <div className="hover-tabs-wrapper">
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          items={[
-            { key: "all", label: `Tất cả (${allRequests.length})` },
-            { key: "edit", label: `Chỉnh sửa (${editRequests.length})` },
-            { key: "reward", label: `Khen thưởng (${rewardProposals.length})` },
-          ]}
-        />
-      </div>
+        {/* Wrap Tabs + Table */}
+        <div style={{ marginBottom: 24 }}>
+          {/* Tabs + Table */}
+          <div>
+            <Card
+              bordered={false}
+              style={{
+                borderRadius: 12,
+                transition: "all 0.3s ease",
+                cursor: "pointer",
+                marginBottom: 16,
+              }}
+              className="hover-table-card"
+            >
+              <div className="hover-tabs-wrapper">
+                <Tabs
+                  activeKey={activeTab}
+                  onChange={setActiveTab}
+                  items={[
+                    { key: "all", label: `Tất cả (${allRequests.length})` },
+                    {
+                      key: "edit",
+                      label: `Chỉnh sửa (${editRequests.length})`,
+                    },
+                    {
+                      key: "reward",
+                      label: `Khen thưởng (${rewardProposals.length})`,
+                    },
+                  ]}
+                />
+              </div>
 
-      {filteredRequests.length === 0 ? (
-        <Empty
-          description="Chưa có yêu cầu nào"
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          style={{ padding: "60px 0" }}
-        />
-      ) : (
-        <Table
-          columns={columns}
-          dataSource={filteredRequests}
-          rowKey="_id"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Tổng ${total} yêu cầu`,
-          }}
-          rowClassName={() => "hoverable-row"}
-        />
-      )}
-    </Card>
-  </div>
-</div>
+              {filteredRequests.length === 0 ? (
+                <Empty
+                  description="Chưa có yêu cầu nào"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  style={{ padding: "60px 0" }}
+                />
+              ) : (
+                <Table
+                  columns={columns}
+                  dataSource={filteredRequests}
+                  rowKey="_id"
+                  pagination={{
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    showTotal: (total) => `Tổng ${total} yêu cầu`,
+                  }}
+                  rowClassName={() => "hoverable-row"}
+                />
+              )}
+            </Card>
+          </div>
+        </div>
 
-
-{/* CSS hover / hiệu ứng nổi */}
-<style>
-  {`
+        {/* CSS hover / hiệu ứng nổi */}
+        <style>
+          {`
     /* Card bảng nổi */
     .hover-table-card:hover {
       transform: translateY(-4px);
@@ -501,8 +533,7 @@ const MyRequests = () => {
     }
 
   `}
-</style>
-
+        </style>
 
         {/* Modal xem chi tiết */}
         <Modal
@@ -545,14 +576,17 @@ const MyRequests = () => {
                   {requestCategoryConfig[currentRequest.requestCategory] && (
                     <Tag
                       color={
-                        requestCategoryConfig[currentRequest.requestCategory].color
+                        requestCategoryConfig[currentRequest.requestCategory]
+                          .color
                       }
                       icon={
-                        requestCategoryConfig[currentRequest.requestCategory].icon
+                        requestCategoryConfig[currentRequest.requestCategory]
+                          .icon
                       }
                     >
                       {
-                        requestCategoryConfig[currentRequest.requestCategory].text
+                        requestCategoryConfig[currentRequest.requestCategory]
+                          .text
                       }
                     </Tag>
                   )}
@@ -564,29 +598,62 @@ const MyRequests = () => {
                       <Tag color="blue">{currentRequest.requestType}</Tag>
                     </Descriptions.Item>
                   )}
-
-                {currentRequest.requestCategory === "REWARD" && (
-                  <>
-                    <Descriptions.Item label="Người được đề xuất">
-                      {currentRequest.citizen?.fullName || "N/A"}
+                {currentRequest.requestCategory === "EDIT" &&
+                  currentRequest.requestType === "TEMP_ABSENCE" && (
+                    <Descriptions.Item label="Tạm vắng">
+                      <div>
+                        <div>
+                          Từ:{" "}
+                          {formatDate(
+                            currentRequest.proposedChanges
+                              ?.temporaryAbsenceFrom ||
+                              currentRequest.temporaryAbsenceFrom
+                          )}{" "}
+                          - Đến:{" "}
+                          {formatDate(
+                            currentRequest.proposedChanges
+                              ?.temporaryAbsenceTo ||
+                              currentRequest.temporaryAbsenceTo
+                          )}
+                        </div>
+                        <div>
+                          Nơi vắng:{" "}
+                          {currentRequest.proposedChanges
+                            ?.temporaryAbsenceAddress ||
+                            currentRequest.temporaryAbsenceAddress ||
+                            "N/A"}
+                        </div>
+                      </div>
                     </Descriptions.Item>
-                    <Descriptions.Item label="Tiêu chí">
-                      {currentRequest.criteria || "Không có"}
+                  )}
+                {currentRequest.requestCategory === "EDIT" &&
+                  currentRequest.requestType === "TEMP_RESIDENCE" && (
+                    <Descriptions.Item label="Tạm trú">
+                      <div>
+                        <div>
+                          Từ:{" "}
+                          {formatDate(
+                            currentRequest.proposedChanges
+                              ?.temporaryResidenceFrom ||
+                              currentRequest.temporaryResidenceFrom
+                          )}{" "}
+                          - Đến:{" "}
+                          {formatDate(
+                            currentRequest.proposedChanges
+                              ?.temporaryResidenceTo ||
+                              currentRequest.temporaryResidenceTo
+                          )}
+                        </div>
+                        <div>
+                          Địa chỉ:{" "}
+                          {currentRequest.proposedChanges
+                            ?.temporaryResidenceAddress ||
+                            currentRequest.temporaryResidenceAddress ||
+                            "N/A"}
+                        </div>
+                      </div>
                     </Descriptions.Item>
-                  </>
-                )}
-
-                <Descriptions.Item label="Tiêu đề">
-                  {currentRequest.title ||
-                    currentRequest.proposedChanges?.title ||
-                    "N/A"}
-                </Descriptions.Item>
-
-                <Descriptions.Item label="Mô tả chi tiết">
-                  {currentRequest.description ||
-                    currentRequest.proposedChanges?.description ||
-                    "Không có mô tả"}
-                </Descriptions.Item>
+                  )}
 
                 {currentRequest.proposedChanges?.details && (
                   <Descriptions.Item label="Thông tin bổ sung">
@@ -616,7 +683,9 @@ const MyRequests = () => {
                 {currentRequest.reviewedAt && (
                   <>
                     <Descriptions.Item label="Ngày duyệt">
-                      {dayjs(currentRequest.reviewedAt).format("DD/MM/YYYY HH:mm")}
+                      {dayjs(currentRequest.reviewedAt).format(
+                        "DD/MM/YYYY HH:mm"
+                      )}
                     </Descriptions.Item>
                     <Descriptions.Item label="Người duyệt">
                       {currentRequest.reviewedBy?.fullName || "N/A"}
@@ -706,7 +775,7 @@ const MyRequests = () => {
         `}
       </style>
       <style>
-  {`
+        {`
     .hoverable-row:hover {
       background-color: #fafafa !important;
       transition: background 0.2s ease;
@@ -730,7 +799,7 @@ const MyRequests = () => {
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
     }
   `}
-</style>
+      </style>
     </Layout>
   );
 };
