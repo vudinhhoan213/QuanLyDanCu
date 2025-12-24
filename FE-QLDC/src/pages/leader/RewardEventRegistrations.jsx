@@ -31,7 +31,12 @@ import {
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import Layout from "../../components/Layout";
-import { rewardService, editRequestService, notificationService, householdService } from "../../services";
+import {
+  rewardService,
+  editRequestService,
+  notificationService,
+  householdService,
+} from "../../services";
 import { exportRegistrationsToExcel } from "../../utils/exportExcel";
 import dayjs from "dayjs";
 
@@ -92,95 +97,123 @@ const RewardEventRegistrations = () => {
   const generateMockData = () => {
     const mockCitizens = [];
     const names = [
-      "Nguyễn Văn An", "Trần Thị Bình", "Lê Văn Cường", "Phạm Thị Dung",
-      "Hoàng Văn Em", "Vũ Thị Phương", "Đặng Văn Giang", "Bùi Thị Hoa",
-      "Đỗ Văn Hùng", "Ngô Thị Lan", "Lý Văn Minh", "Võ Thị Nga",
-      "Phan Văn Oanh", "Trương Thị Phượng", "Đinh Văn Quang", "Lương Thị Quyên",
-      "Nguyễn Thị Mai", "Trần Văn Nam", "Lê Thị Hương", "Phạm Văn Đức"
+      "Nguyễn Văn An",
+      "Trần Thị Bình",
+      "Lê Văn Cường",
+      "Phạm Thị Dung",
+      "Hoàng Văn Em",
+      "Vũ Thị Phương",
+      "Đặng Văn Giang",
+      "Bùi Thị Hoa",
+      "Đỗ Văn Hùng",
+      "Ngô Thị Lan",
+      "Lý Văn Minh",
+      "Võ Thị Nga",
+      "Phan Văn Oanh",
+      "Trương Thị Phượng",
+      "Đinh Văn Quang",
+      "Lương Thị Quyên",
+      "Nguyễn Thị Mai",
+      "Trần Văn Nam",
+      "Lê Thị Hương",
+      "Phạm Văn Đức",
     ];
-    
+
     const eventName = event?.name?.toLowerCase() || "";
     const currentYear = new Date().getFullYear();
-    
+
     // Xác định độ tuổi dựa trên tên sự kiện
     let targetAge = null;
     let targetGender = null;
-    
+
     if (eventName.includes("trung thu")) {
       targetAge = { min: 0, max: 18 };
-    } else if (eventName.includes("thiếu nhi") || eventName.includes("quốc tế thiếu nhi")) {
+    } else if (
+      eventName.includes("thiếu nhi") ||
+      eventName.includes("quốc tế thiếu nhi")
+    ) {
       targetAge = { min: 0, max: 14 };
     } else if (eventName.includes("phụ nữ") || eventName.includes("20/10")) {
       targetGender = "FEMALE";
     }
-    
+
     for (let i = 0; i < 20; i++) {
       const isReceived = i < 12; // 12 người đã nhận, 8 người chưa nhận
-      
+
       // Tính năm sinh dựa trên targetAge
       let birthYear;
       if (targetAge) {
-        const age = targetAge.min + Math.floor(Math.random() * (targetAge.max - targetAge.min + 1));
+        const age =
+          targetAge.min +
+          Math.floor(Math.random() * (targetAge.max - targetAge.min + 1));
         birthYear = currentYear - age;
       } else {
         birthYear = 1970 + Math.floor(Math.random() * 50); // 1970-2020
       }
-      
+
       const birthMonth = Math.floor(Math.random() * 12) + 1;
       const birthDay = Math.floor(Math.random() * 28) + 1;
-      
+
       // Xác định giới tính
       const gender = targetGender || (Math.random() > 0.5 ? "MALE" : "FEMALE");
-      const fullName = gender === "FEMALE" 
-        ? names[i % names.length].replace("Văn", "Thị").replace("Văn", "Thị") + ` ${i + 1}`
-        : names[i % names.length] + ` ${i + 1}`;
-      
+      const fullName =
+        gender === "FEMALE"
+          ? names[i % names.length]
+              .replace("Văn", "Thị")
+              .replace("Văn", "Thị") + ` ${i + 1}`
+          : names[i % names.length] + ` ${i + 1}`;
+
       mockCitizens.push({
         _id: `mock_${i}`,
         key: `mock_${i}`,
         fullName,
-        nationalId: `2023${String(i).padStart(6, '0')}`,
+        nationalId: `2023${String(i).padStart(6, "0")}`,
         dateOfBirth: new Date(birthYear, birthMonth - 1, birthDay),
         gender,
         household: {
           _id: `household_${i}`,
-          code: `HK${String(i + 1).padStart(4, '0')}`,
+          code: `HK${String(i + 1).padStart(4, "0")}`,
         },
         status: isReceived ? "DISTRIBUTED" : "NOT_RECEIVED",
-        distributedAt: isReceived ? new Date(2025, 10, 17, 19 + (i % 3), 20 + (i % 40)) : null,
+        distributedAt: isReceived
+          ? new Date(2025, 10, 17, 19 + (i % 3), 20 + (i % 40))
+          : null,
         quantity: 1,
         totalValue: event?.budget || 50000,
         distributionId: isReceived ? `dist_${i}` : null,
       });
     }
-    
+
     return mockCitizens;
   };
 
   const fetchEligibleCitizens = async () => {
     try {
       setLoading(true);
-      
+
       // Nếu dùng dữ liệu ảo
       if (useMockData) {
         const mockCitizens = generateMockData();
-        const filtered = statusFilter === "ALL" 
-          ? mockCitizens 
-          : statusFilter === "DISTRIBUTED"
-          ? mockCitizens.filter(c => c.status === "DISTRIBUTED")
-          : mockCitizens.filter(c => c.status !== "DISTRIBUTED");
-        
+        const filtered =
+          statusFilter === "ALL"
+            ? mockCitizens
+            : statusFilter === "DISTRIBUTED"
+            ? mockCitizens.filter((c) => c.status === "DISTRIBUTED")
+            : mockCitizens.filter((c) => c.status !== "DISTRIBUTED");
+
         const start = (pagination.current - 1) * pagination.pageSize;
         const end = start + pagination.pageSize;
         const paginated = filtered.slice(start, end);
-        
+
         setEligibleCitizens(paginated);
         setPagination({
           ...pagination,
           total: filtered.length,
         });
-        
-        const received = mockCitizens.filter(c => c.status === "DISTRIBUTED").length;
+
+        const received = mockCitizens.filter(
+          (c) => c.status === "DISTRIBUTED"
+        ).length;
         setStats({
           total: mockCitizens.length,
           received,
@@ -189,25 +222,27 @@ const RewardEventRegistrations = () => {
         setLoading(false);
         return;
       }
-      
+
       // Kiểm tra xem event có distributions (danh sách phân phối) chưa
       // Nếu có thì lấy từ distributions, nếu chưa thì lấy từ eligible citizens
       let hasDistributions = false;
       let allDistributions = [];
-      
+
       try {
-        const checkDistributionsResponse = await rewardService.distributions.getAll({
-          event: id,
-          limit: 1, // Chỉ cần kiểm tra xem có hay không
-        });
+        const checkDistributionsResponse =
+          await rewardService.distributions.getAll({
+            event: id,
+            limit: 1, // Chỉ cần kiểm tra xem có hay không
+          });
         hasDistributions = (checkDistributionsResponse.docs || []).length > 0;
-        
+
         if (hasDistributions) {
           // Lấy tất cả distributions để tính thống kê
-          const allDistributionsResponse = await rewardService.distributions.getAll({
-            event: id,
-            limit: 1000,
-          });
+          const allDistributionsResponse =
+            await rewardService.distributions.getAll({
+              event: id,
+              limit: 1000,
+            });
           allDistributions = allDistributionsResponse.docs || [];
         }
       } catch (checkError) {
@@ -250,7 +285,8 @@ const RewardEventRegistrations = () => {
           }
 
           // Lấy danh sách phân phối (distributions) cho event này
-          const distributionsResponse = await rewardService.distributions.getAll(distributionsParams);
+          const distributionsResponse =
+            await rewardService.distributions.getAll(distributionsParams);
           let distributions = distributionsResponse.docs || [];
           let totalDistributions = distributionsResponse.total || 0;
 
@@ -261,7 +297,7 @@ const RewardEventRegistrations = () => {
               (dist) => dist.status !== "DISTRIBUTED"
             );
             totalDistributions = distributions.length;
-            
+
             // Paginate sau khi filter
             const start = (pagination.current - 1) * pagination.pageSize;
             const end = start + pagination.pageSize;
@@ -306,16 +342,20 @@ const RewardEventRegistrations = () => {
           limit: pagination.pageSize,
         };
 
-        const response = await rewardService.events.getEligibleCitizens(id, params);
+        const response = await rewardService.events.getEligibleCitizens(
+          id,
+          params
+        );
         let citizens = response.docs || [];
 
         // Lấy distributions để kiểm tra trạng thái nhận quà (nếu có)
         let distributionMap = {};
         try {
-          const distributionsResponse = await rewardService.distributions.getAll({
-            event: id,
-            limit: 1000,
-          });
+          const distributionsResponse =
+            await rewardService.distributions.getAll({
+              event: id,
+              limit: 1000,
+            });
           const distributions = distributionsResponse.docs || [];
           distributions.forEach((dist) => {
             if (dist.citizen) {
@@ -324,7 +364,10 @@ const RewardEventRegistrations = () => {
             }
           });
         } catch (distError) {
-          console.error("Error fetching distributions for status check:", distError);
+          console.error(
+            "Error fetching distributions for status check:",
+            distError
+          );
         }
 
         // Map citizens với thông tin từ distributions nếu có
@@ -336,7 +379,8 @@ const RewardEventRegistrations = () => {
             distributionId: distribution?._id || null,
             status: distribution?.status || "NOT_RECEIVED",
             distributedAt: distribution?.distributedAt || null,
-            distributionNote: distribution?.note || distribution?.distributionNote || null,
+            distributionNote:
+              distribution?.note || distribution?.distributionNote || null,
             quantity: distribution?.quantity || 1,
             totalValue: distribution?.totalValue || 0,
             unitValue: distribution?.unitValue || 0,
@@ -346,9 +390,9 @@ const RewardEventRegistrations = () => {
         // Lọc theo status nếu có filter
         if (statusFilter !== "ALL") {
           if (statusFilter === "DISTRIBUTED") {
-            citizens = citizens.filter(c => c.status === "DISTRIBUTED");
+            citizens = citizens.filter((c) => c.status === "DISTRIBUTED");
           } else if (statusFilter === "NOT_RECEIVED") {
-            citizens = citizens.filter(c => c.status !== "DISTRIBUTED");
+            citizens = citizens.filter((c) => c.status !== "DISTRIBUTED");
           }
         }
 
@@ -360,21 +404,25 @@ const RewardEventRegistrations = () => {
 
         // Tính thống kê từ tất cả eligible citizens
         const allParams = { limit: 1000 };
-        const allResponse = await rewardService.events.getEligibleCitizens(id, allParams);
+        const allResponse = await rewardService.events.getEligibleCitizens(
+          id,
+          allParams
+        );
         const allCitizens = allResponse.docs || [];
-        
+
         // Lấy tất cả distributions để tính thống kê chính xác
         let allDistributionsForStats = [];
         try {
-          const allDistributionsResponse = await rewardService.distributions.getAll({
-            event: id,
-            limit: 1000,
-          });
+          const allDistributionsResponse =
+            await rewardService.distributions.getAll({
+              event: id,
+              limit: 1000,
+            });
           allDistributionsForStats = allDistributionsResponse.docs || [];
         } catch (err) {
           console.error("Error fetching all distributions for stats:", err);
         }
-        
+
         const allDistributionMap = {};
         allDistributionsForStats.forEach((dist) => {
           if (dist.citizen) {
@@ -455,11 +503,12 @@ const RewardEventRegistrations = () => {
         } else {
           // Kiểm tra xem đã có distribution cho citizen và event này chưa (tránh duplicate)
           const existingDist = allDistributions.find(
-            (d) => 
-              (d.citizen?._id || d.citizen)?.toString() === citizenId.toString() &&
+            (d) =>
+              (d.citizen?._id || d.citizen)?.toString() ===
+                citizenId.toString() &&
               (d.event?._id || d.event)?.toString() === id.toString()
           );
-          
+
           if (existingDist) {
             // Nếu đã có nhưng chưa được đánh dấu là DISTRIBUTED, thêm vào danh sách update
             if (existingDist.status !== "DISTRIBUTED") {
@@ -471,7 +520,9 @@ const RewardEventRegistrations = () => {
 
           const householdId = citizen.household?._id || citizen.household;
           if (!householdId) {
-            console.error(`Citizen ${citizen.fullName} (${citizenId}) chưa có hộ khẩu`);
+            console.error(
+              `Citizen ${citizen.fullName} (${citizenId}) chưa có hộ khẩu`
+            );
             citizensWithoutHousehold.push({
               id: citizenId,
               name: citizen.fullName || `ID: ${citizenId}`,
@@ -499,8 +550,8 @@ const RewardEventRegistrations = () => {
         } catch (updateError) {
           console.error("Error updating distributions:", updateError);
           throw new Error(
-            updateError.response?.data?.message || 
-            `Không thể cập nhật ${citizensToUpdate.length} phân phối quà`
+            updateError.response?.data?.message ||
+              `Không thể cập nhật ${citizensToUpdate.length} phân phối quà`
           );
         }
       }
@@ -509,13 +560,15 @@ const RewardEventRegistrations = () => {
       if (citizensToCreate.length > 0) {
         try {
           await Promise.all(
-            citizensToCreate.map((data) => rewardService.distributions.create(data))
+            citizensToCreate.map((data) =>
+              rewardService.distributions.create(data)
+            )
           );
         } catch (createError) {
           console.error("Error creating distributions:", createError);
           throw new Error(
-            createError.response?.data?.message || 
-            `Không thể tạo ${citizensToCreate.length} phân phối quà`
+            createError.response?.data?.message ||
+              `Không thể tạo ${citizensToCreate.length} phân phối quà`
           );
         }
       }
@@ -538,18 +591,22 @@ const RewardEventRegistrations = () => {
           );
 
           await Promise.all(requestPromises);
-          
-          const namesList = citizensWithoutHousehold.map((c) => c.name).join(", ");
-          const successMessage = 
+
+          const namesList = citizensWithoutHousehold
+            .map((c) => c.name)
+            .join(", ");
+          const successMessage =
             citizensWithoutHousehold.length === 1
               ? `Đã tạo yêu cầu nhập hộ khẩu cho công dân "${namesList}". Yêu cầu đã được gửi đến công dân.`
               : `Đã tạo ${citizensWithoutHousehold.length} yêu cầu nhập hộ khẩu cho các công dân: ${namesList}. Yêu cầu đã được gửi đến các công dân.`;
-          
+
           message.warning(successMessage, 10); // Hiển thị trong 10 giây
         } catch (requestError) {
           console.error("Error creating edit requests:", requestError);
-          const namesList = citizensWithoutHousehold.map((c) => c.name).join(", ");
-          const errorMessage = 
+          const namesList = citizensWithoutHousehold
+            .map((c) => c.name)
+            .join(", ");
+          const errorMessage =
             citizensWithoutHousehold.length === 1
               ? `Công dân "${namesList}" chưa có hộ khẩu. Không thể tạo yêu cầu tự động. Vui lòng thử lại.`
               : `${citizensWithoutHousehold.length} công dân chưa có hộ khẩu: ${namesList}. Không thể tạo yêu cầu tự động. Vui lòng thử lại.`;
@@ -561,34 +618,42 @@ const RewardEventRegistrations = () => {
       if (totalProcessed > 0) {
         // Gửi thông báo cho chủ hộ của các công dân đã nhận quà
         try {
-          const processedCitizens = eligibleCitizens.filter((c) => 
+          const processedCitizens = eligibleCitizens.filter((c) =>
             citizenIds.includes(c._id)
           );
-          
+
           // Lấy danh sách household IDs duy nhất
-          const householdIds = [...new Set(
-            processedCitizens
-              .map((c) => c.household?._id || c.household)
-              .filter(Boolean)
-          )];
+          const householdIds = [
+            ...new Set(
+              processedCitizens
+                .map((c) => c.household?._id || c.household)
+                .filter(Boolean)
+            ),
+          ];
 
           // Gửi thông báo cho từng chủ hộ
           const notificationPromises = householdIds.map(async (householdId) => {
             try {
               const household = await householdService.getById(householdId);
               const head = household?.head;
-              
+
               if (head && head.user) {
                 const headUserId = head.user._id || head.user;
                 const citizenNames = processedCitizens
-                  .filter((c) => (c.household?._id || c.household)?.toString() === householdId.toString())
+                  .filter(
+                    (c) =>
+                      (c.household?._id || c.household)?.toString() ===
+                      householdId.toString()
+                  )
                   .map((c) => c.fullName)
                   .join(", ");
-                
+
                 await notificationService.create({
                   toUser: headUserId,
                   title: "Thành viên trong hộ đã nhận quà",
-                  message: `${citizenNames} trong hộ khẩu ${household?.code || ""} đã nhận quà từ sự kiện "${event?.name || ""}".`,
+                  message: `${citizenNames} trong hộ khẩu ${
+                    household?.code || ""
+                  } đã nhận quà từ sự kiện "${event?.name || ""}".`,
                   type: "REWARD",
                   entityType: "RewardDistribution",
                   entityId: id,
@@ -596,14 +661,20 @@ const RewardEventRegistrations = () => {
                 });
               }
             } catch (notifError) {
-              console.error(`Error sending notification to household ${householdId}:`, notifError);
+              console.error(
+                `Error sending notification to household ${householdId}:`,
+                notifError
+              );
               // Không throw error, chỉ log để không ảnh hưởng đến quá trình đánh dấu
             }
           });
 
           await Promise.all(notificationPromises);
         } catch (notifError) {
-          console.error("Error sending notifications to household heads:", notifError);
+          console.error(
+            "Error sending notifications to household heads:",
+            notifError
+          );
           // Không throw error, chỉ log để không ảnh hưởng đến quá trình đánh dấu
         }
 
@@ -620,9 +691,9 @@ const RewardEventRegistrations = () => {
         response: error.response?.data,
         status: error.response?.status,
       });
-      const errorMsg = 
-        error.response?.data?.message || 
-        error.message || 
+      const errorMsg =
+        error.response?.data?.message ||
+        error.message ||
         "Không thể đánh dấu đã nhận quà. Vui lòng thử lại!";
       message.error(errorMsg);
     } finally {
@@ -650,7 +721,7 @@ const RewardEventRegistrations = () => {
 
     try {
       setDistributing(true);
-      
+
       // Cập nhật status từ DISTRIBUTED về REGISTERED
       await rewardService.distributions.update(distributionId, {
         status: "REGISTERED",
@@ -663,9 +734,9 @@ const RewardEventRegistrations = () => {
       fetchEligibleCitizens();
     } catch (error) {
       console.error("Error undoing received status:", error);
-      const errorMsg = 
-        error.response?.data?.message || 
-        error.message || 
+      const errorMsg =
+        error.response?.data?.message ||
+        error.message ||
         "Không thể hoàn tác trạng thái. Vui lòng thử lại!";
       message.error(errorMsg);
     } finally {
@@ -709,7 +780,8 @@ const RewardEventRegistrations = () => {
       fetchEligibleCitizens();
     } catch (error) {
       console.error("Error generating distributions:", error);
-      const errorMsg = error.response?.data?.message || "Không thể tạo danh sách phân phối";
+      const errorMsg =
+        error.response?.data?.message || "Không thể tạo danh sách phân phối";
       message.error(errorMsg);
     } finally {
       setGenerating(false);
@@ -751,7 +823,9 @@ const RewardEventRegistrations = () => {
     const matchesSearch =
       !searchText ||
       citizen.fullName?.toLowerCase().includes(searchText.toLowerCase()) ||
-      citizen.household?.code?.toLowerCase().includes(searchText.toLowerCase()) ||
+      citizen.household?.code
+        ?.toLowerCase()
+        .includes(searchText.toLowerCase()) ||
       citizen.nationalId?.includes(searchText);
 
     const matchesStatus =
@@ -822,9 +896,7 @@ const RewardEventRegistrations = () => {
       title: "CMND/CCCD",
       key: "nationalId",
       width: 140,
-      render: (_, record) => (
-        <Text>{record.nationalId || "N/A"}</Text>
-      ),
+      render: (_, record) => <Text>{record.nationalId || "N/A"}</Text>,
     },
     {
       title: "Hộ khẩu",
@@ -841,7 +913,9 @@ const RewardEventRegistrations = () => {
       align: "center",
       render: (_, record) => (
         <Text>
-          {record.dateOfBirth ? dayjs(record.dateOfBirth).format("DD/MM/YYYY") : "N/A"}
+          {record.dateOfBirth
+            ? dayjs(record.dateOfBirth).format("DD/MM/YYYY")
+            : "N/A"}
         </Text>
       ),
     },
@@ -921,7 +995,10 @@ const RewardEventRegistrations = () => {
             placeholder="Ví dụ: 2023-2024"
             value={generateConfig.schoolYear}
             onChange={(e) =>
-              setGenerateConfig({ ...generateConfig, schoolYear: e.target.value })
+              setGenerateConfig({
+                ...generateConfig,
+                schoolYear: e.target.value,
+              })
             }
             style={{ marginTop: 8 }}
           />
@@ -938,7 +1015,10 @@ const RewardEventRegistrations = () => {
                 type="number"
                 value={generateConfig.minAge}
                 onChange={(e) =>
-                  setGenerateConfig({ ...generateConfig, minAge: parseInt(e.target.value) || 0 })
+                  setGenerateConfig({
+                    ...generateConfig,
+                    minAge: parseInt(e.target.value) || 0,
+                  })
                 }
               />
             </Col>
@@ -948,7 +1028,10 @@ const RewardEventRegistrations = () => {
                 type="number"
                 value={generateConfig.maxAge}
                 onChange={(e) =>
-                  setGenerateConfig({ ...generateConfig, maxAge: parseInt(e.target.value) || 18 })
+                  setGenerateConfig({
+                    ...generateConfig,
+                    maxAge: parseInt(e.target.value) || 18,
+                  })
                 }
               />
             </Col>
@@ -966,7 +1049,8 @@ const RewardEventRegistrations = () => {
           bordered={false}
           style={{
             marginBottom: 24,
-            background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+            background:
+              "linear-gradient(90deg,rgba(165, 202, 210, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(0, 212, 255, 1) 100%)",
             border: "none",
             borderRadius: "12px",
             boxShadow: "0 4px 12px rgba(24, 144, 255, 0.3)",
@@ -1011,9 +1095,7 @@ const RewardEventRegistrations = () => {
                 >
                   Danh sách Nhận quà
                 </Title>
-                <Text
-                  style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}
-                >
+                <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}>
                   {event ? event.name : "Quản lý danh sách nhận quà"}
                 </Text>
               </div>
@@ -1081,87 +1163,90 @@ const RewardEventRegistrations = () => {
           className="hover-table-card"
         >
           <Space direction="vertical" size="large" style={{ width: "100%" }}>
+            {/* Thống kê */}
+            <Row gutter={16} style={{ marginBottom: 16 }}>
+              <Col span={6}>
+                <Card>
+                  <Statistic
+                    title="Tổng số đủ điều kiện"
+                    value={stats.total}
+                    prefix={<UserOutlined />}
+                  />
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card>
+                  <Statistic
+                    title="Đã nhận quà"
+                    value={stats.received}
+                    valueStyle={{ color: "#3f8600" }}
+                    prefix={<CheckCircleOutlined />}
+                  />
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card>
+                  <Statistic
+                    title="Chưa nhận quà"
+                    value={stats.notReceived}
+                    valueStyle={{ color: "#cf1322" }}
+                  />
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card>
+                  <Statistic
+                    title="Tỷ lệ nhận quà"
+                    value={
+                      stats.total > 0
+                        ? ((stats.received / stats.total) * 100).toFixed(1)
+                        : 0
+                    }
+                    suffix="%"
+                    valueStyle={{ color: "#1890ff" }}
+                  />
+                </Card>
+              </Col>
+            </Row>
 
-          {/* Thống kê */}
-          <Row gutter={16} style={{ marginBottom: 16 }}>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="Tổng số đủ điều kiện"
-                  value={stats.total}
-                  prefix={<UserOutlined />}
+            <Row gutter={16}>
+              <Col span={8}>
+                <Input
+                  placeholder="Tìm kiếm theo tên/CMND/hộ khẩu..."
+                  prefix={<SearchOutlined />}
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  allowClear
                 />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="Đã nhận quà"
-                  value={stats.received}
-                  valueStyle={{ color: "#3f8600" }}
-                  prefix={<CheckCircleOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="Chưa nhận quà"
-                  value={stats.notReceived}
-                  valueStyle={{ color: "#cf1322" }}
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="Tỷ lệ nhận quà"
-                  value={stats.total > 0 ? ((stats.received / stats.total) * 100).toFixed(1) : 0}
-                  suffix="%"
-                  valueStyle={{ color: "#1890ff" }}
-                />
-              </Card>
-            </Col>
-          </Row>
+              </Col>
+              <Col span={6}>
+                <Select
+                  placeholder="Lọc theo trạng thái"
+                  style={{ width: "100%" }}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                >
+                  <Option value="ALL">Tất cả</Option>
+                  <Option value="NOT_RECEIVED">Chưa nhận quà</Option>
+                  <Option value="DISTRIBUTED">Đã nhận quà</Option>
+                </Select>
+              </Col>
+            </Row>
 
-          <Row gutter={16}>
-            <Col span={8}>
-              <Input
-                placeholder="Tìm kiếm theo tên/CMND/hộ khẩu..."
-                prefix={<SearchOutlined />}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                allowClear
-              />
-            </Col>
-            <Col span={6}>
-              <Select
-                placeholder="Lọc theo trạng thái"
-                style={{ width: "100%" }}
-                value={statusFilter}
-                onChange={setStatusFilter}
-              >
-                <Option value="ALL">Tất cả</Option>
-                <Option value="NOT_RECEIVED">Chưa nhận quà</Option>
-                <Option value="DISTRIBUTED">Đã nhận quà</Option>
-              </Select>
-            </Col>
-          </Row>
-
-          <Table
-            columns={columns}
-            dataSource={filteredCitizens}
-            loading={loading}
-            pagination={{
-              ...pagination,
-              showSizeChanger: true,
-              showTotal: (total) => `Tổng ${total} công dân đủ điều kiện`,
-              onChange: (page, pageSize) => {
-                setPagination({ ...pagination, current: page, pageSize });
-              },
-            }}
-            rowClassName={() => "hoverable-row"}
-          />
+            <Table
+              columns={columns}
+              dataSource={filteredCitizens}
+              loading={loading}
+              pagination={{
+                ...pagination,
+                showSizeChanger: true,
+                showTotal: (total) => `Tổng ${total} công dân đủ điều kiện`,
+                onChange: (page, pageSize) => {
+                  setPagination({ ...pagination, current: page, pageSize });
+                },
+              }}
+              rowClassName={() => "hoverable-row"}
+            />
           </Space>
         </Card>
 
@@ -1262,7 +1347,9 @@ const RewardEventRegistrations = () => {
                 : "N/A"}
             </Descriptions.Item>
             <Descriptions.Item label="Hộ khẩu">
-              {viewingCitizen.household?.code || viewingCitizen.household || "N/A"}
+              {viewingCitizen.household?.code ||
+                viewingCitizen.household ||
+                "N/A"}
             </Descriptions.Item>
             <Descriptions.Item label="Trạng thái nhận quà">
               {viewingCitizen.status === "DISTRIBUTED" ? (
@@ -1301,10 +1388,13 @@ const RewardEventRegistrations = () => {
           setHouseholdStats([]);
         }}
         footer={[
-          <Button key="close" onClick={() => {
-            setIsHouseholdStatsVisible(false);
-            setHouseholdStats([]);
-          }}>
+          <Button
+            key="close"
+            onClick={() => {
+              setIsHouseholdStatsVisible(false);
+              setHouseholdStats([]);
+            }}
+          >
             Đóng
           </Button>,
         ]}
@@ -1354,17 +1444,23 @@ const RewardEventRegistrations = () => {
               width: 200,
               align: "right",
               render: (value, record) => {
-                const unitValue = record.totalQuantity > 0 
-                  ? (record.totalValue || 0) / record.totalQuantity 
-                  : 0;
+                const unitValue =
+                  record.totalQuantity > 0
+                    ? (record.totalValue || 0) / record.totalQuantity
+                    : 0;
                 return (
-                  <Space direction="vertical" size={2} style={{ textAlign: "right" }}>
+                  <Space
+                    direction="vertical"
+                    size={2}
+                    style={{ textAlign: "right" }}
+                  >
                     <Text strong style={{ color: "#52c41a" }}>
                       {value ? `${value.toLocaleString("vi-VN")} VNĐ` : "0 VNĐ"}
                     </Text>
                     {unitValue > 0 && (
                       <Text type="secondary" style={{ fontSize: "11px" }}>
-                        ({Math.round(unitValue).toLocaleString("vi-VN")} VNĐ/phần quà)
+                        ({Math.round(unitValue).toLocaleString("vi-VN")}{" "}
+                        VNĐ/phần quà)
                       </Text>
                     )}
                   </Space>
@@ -1381,11 +1477,21 @@ const RewardEventRegistrations = () => {
           }}
           scroll={{ x: 700 }}
           summary={(pageData) => {
-            const totalQuantity = householdStats.reduce((sum, h) => sum + (h.totalQuantity || 0), 0);
-            const totalValue = householdStats.reduce((sum, h) => sum + (h.totalValue || 0), 0);
-            const totalRecipients = householdStats.reduce((sum, h) => sum + (h.recipientCount || 0), 0);
-            const avgUnitValue = totalQuantity > 0 ? totalValue / totalQuantity : 0;
-            
+            const totalQuantity = householdStats.reduce(
+              (sum, h) => sum + (h.totalQuantity || 0),
+              0
+            );
+            const totalValue = householdStats.reduce(
+              (sum, h) => sum + (h.totalValue || 0),
+              0
+            );
+            const totalRecipients = householdStats.reduce(
+              (sum, h) => sum + (h.recipientCount || 0),
+              0
+            );
+            const avgUnitValue =
+              totalQuantity > 0 ? totalValue / totalQuantity : 0;
+
             return (
               <Table.Summary>
                 {householdStats.length > 0 && (
@@ -1400,13 +1506,18 @@ const RewardEventRegistrations = () => {
                       <Text strong>{totalQuantity}</Text>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell index={3} align="right">
-                      <Space direction="vertical" size={2} style={{ textAlign: "right" }}>
+                      <Space
+                        direction="vertical"
+                        size={2}
+                        style={{ textAlign: "right" }}
+                      >
                         <Text strong style={{ color: "#52c41a" }}>
                           {totalValue.toLocaleString("vi-VN")} VNĐ
                         </Text>
                         {avgUnitValue > 0 && (
                           <Text type="secondary" style={{ fontSize: "11px" }}>
-                            ({Math.round(avgUnitValue).toLocaleString("vi-VN")} VNĐ/phần quà)
+                            ({Math.round(avgUnitValue).toLocaleString("vi-VN")}{" "}
+                            VNĐ/phần quà)
                           </Text>
                         )}
                       </Space>

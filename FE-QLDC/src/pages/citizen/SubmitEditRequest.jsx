@@ -124,7 +124,8 @@ const SubmitEditRequest = () => {
           bordered={false}
           style={{
             marginBottom: 24,
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            background:
+              "linear-gradient(110deg, #1d5e9cff 0%, #92d0ff 32%, #2c6fbf 56%, #0092ff 82%, #00d7a8 100%)",
             borderRadius: "12px",
             boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
             transition: "transform 0.3s ease, box-shadow 0.3s ease",

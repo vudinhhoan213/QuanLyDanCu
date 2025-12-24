@@ -275,7 +275,8 @@ const MyRequests = () => {
           bordered={false}
           style={{
             marginBottom: 24,
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            background:
+              "linear-gradient(115deg, #6c9bcdff 0%, #a4d2ff 30%, #2d73c8 56%, #0086ff 80%, #00b7c4 100%)",
             border: "none",
             borderRadius: "12px",
             boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",

@@ -91,11 +91,7 @@ const MyRewards = () => {
       align: "center",
       render: (_, __, index) => {
         const stt = (pagination.current - 1) * pagination.pageSize + index + 1;
-        return (
-          <Text strong>
-            #{stt}
-          </Text>
-        );
+        return <Text strong>#{stt}</Text>;
       },
     },
     {
@@ -105,11 +101,7 @@ const MyRewards = () => {
       ellipsis: {
         showTitle: false,
       },
-      render: (text) => (
-        <Text strong>
-          {text || "Đề xuất khen thưởng"}
-        </Text>
-      ),
+      render: (text) => <Text strong>{text || "Đề xuất khen thưởng"}</Text>,
     },
     {
       title: "Người được đề xuất",
@@ -205,7 +197,8 @@ const MyRewards = () => {
           bordered={false}
           style={{
             marginBottom: 24,
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            background:
+              "linear-gradient(125deg, #3d4042ff 0%, #c2e8ff 34%, #4e9ef1 60%, #0094ff 82%, #00d6c6 100%)",
             border: "none",
             borderRadius: "12px",
             boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
@@ -250,9 +243,7 @@ const MyRewards = () => {
                 >
                   Đề Xuất Khen Thưởng
                 </Title>
-                <Text
-                  style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}
-                >
+                <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}>
                   Quản lý và theo dõi các đề xuất khen thưởng của bạn
                 </Text>
               </div>
@@ -300,7 +291,6 @@ const MyRewards = () => {
           }}
           className="hover-table-card"
         >
-
           {proposals.length === 0 && !loading ? (
             <Empty
               description="Chưa có đề xuất nào"
@@ -362,192 +352,185 @@ const MyRewards = () => {
         </style>
       </div>
 
-        {/* View Modal */}
-        <Modal
-          title="Chi tiết đề xuất khen thưởng"
-          open={viewModalVisible}
-          onCancel={() => setViewModalVisible(false)}
-          footer={[
-            <Button
-              key="close"
-              onClick={() => setViewModalVisible(false)}
+      {/* View Modal */}
+      <Modal
+        title="Chi tiết đề xuất khen thưởng"
+        open={viewModalVisible}
+        onCancel={() => setViewModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setViewModalVisible(false)}>
+            Đóng
+          </Button>,
+        ]}
+        width={900}
+        centered
+      >
+        {currentReward && (
+          <div style={{ marginTop: 16 }}>
+            <Descriptions
+              bordered
+              column={2}
+              size="default"
+              labelStyle={{
+                fontWeight: 600,
+                background: "#fafafa",
+                width: "180px",
+              }}
+              contentStyle={{ background: "#fff" }}
             >
-              Đóng
-            </Button>,
-          ]}
-          width={900}
-          centered
-        >
-          {currentReward && (
-            <div style={{ marginTop: 16 }}>
-              <Descriptions
-                bordered
-                column={2}
-                size="default"
-                labelStyle={{
-                  fontWeight: 600,
-                  background: "#fafafa",
-                  width: "180px",
-                }}
-                contentStyle={{ background: "#fff" }}
-              >
-                <Descriptions.Item label="Mã đề xuất" span={2}>
-                  <Space>
-                    <IdcardOutlined style={{ color: "#1890ff" }} />
-                    <Text
-                      strong
-                      style={{
-                        fontSize: 13,
-                        fontFamily: "monospace",
-                        color: "#595959",
-                      }}
-                    >
-                      {currentReward._id}
-                    </Text>
-                  </Space>
-                </Descriptions.Item>
-
-                {currentReward.title && (
-                  <Descriptions.Item label="Loại thành tích" span={2}>
-                    <Text strong style={{ fontSize: 15, color: "#262626" }}>
-                      {currentReward.title}
-                    </Text>
-                  </Descriptions.Item>
-                )}
-
-                <Descriptions.Item label="Người được đề xuất" span={2}>
-                  <Space>
-                    <UserOutlined style={{ color: "#8c8c8c" }} />
-                    <Text>{currentReward.citizen?.fullName || "N/A"}</Text>
-                  </Space>
-                </Descriptions.Item>
-
-                <Descriptions.Item label="Mô tả" span={2}>
-                  <Paragraph
+              <Descriptions.Item label="Mã đề xuất" span={2}>
+                <Space>
+                  <IdcardOutlined style={{ color: "#1890ff" }} />
+                  <Text
+                    strong
                     style={{
-                      margin: 0,
-                      whiteSpace: "pre-wrap",
+                      fontSize: 13,
+                      fontFamily: "monospace",
                       color: "#595959",
                     }}
                   >
-                    {currentReward.description || "Không có mô tả"}
-                  </Paragraph>
-                </Descriptions.Item>
+                    {currentReward._id}
+                  </Text>
+                </Space>
+              </Descriptions.Item>
 
-                <Descriptions.Item label="Ngày gửi">
-                  <Space>
-                    <CalendarOutlined style={{ color: "#8c8c8c" }} />
-                    <Text>
-                      {dayjs(currentReward.createdAt).format(
-                        "DD/MM/YYYY HH:mm"
-                      )}
-                    </Text>
-                  </Space>
+              {currentReward.title && (
+                <Descriptions.Item label="Loại thành tích" span={2}>
+                  <Text strong style={{ fontSize: 15, color: "#262626" }}>
+                    {currentReward.title}
+                  </Text>
                 </Descriptions.Item>
+              )}
 
-                <Descriptions.Item label="Trạng thái">
-                  {statusConfig[currentReward.status] && (
-                    <Tag
-                      color={statusConfig[currentReward.status].color}
-                      icon={statusConfig[currentReward.status].icon}
-                    >
-                      {statusConfig[currentReward.status].text}
-                    </Tag>
+              <Descriptions.Item label="Người được đề xuất" span={2}>
+                <Space>
+                  <UserOutlined style={{ color: "#8c8c8c" }} />
+                  <Text>{currentReward.citizen?.fullName || "N/A"}</Text>
+                </Space>
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Mô tả" span={2}>
+                <Paragraph
+                  style={{
+                    margin: 0,
+                    whiteSpace: "pre-wrap",
+                    color: "#595959",
+                  }}
+                >
+                  {currentReward.description || "Không có mô tả"}
+                </Paragraph>
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Ngày gửi">
+                <Space>
+                  <CalendarOutlined style={{ color: "#8c8c8c" }} />
+                  <Text>
+                    {dayjs(currentReward.createdAt).format("DD/MM/YYYY HH:mm")}
+                  </Text>
+                </Space>
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Trạng thái">
+                {statusConfig[currentReward.status] && (
+                  <Tag
+                    color={statusConfig[currentReward.status].color}
+                    icon={statusConfig[currentReward.status].icon}
+                  >
+                    {statusConfig[currentReward.status].text}
+                  </Tag>
+                )}
+              </Descriptions.Item>
+
+              {currentReward.reviewedAt && (
+                <>
+                  <Descriptions.Item label="Ngày duyệt">
+                    <Space>
+                      <CalendarOutlined style={{ color: "#8c8c8c" }} />
+                      <Text>
+                        {dayjs(currentReward.reviewedAt).format(
+                          "DD/MM/YYYY HH:mm"
+                        )}
+                      </Text>
+                    </Space>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Người duyệt">
+                    <Space>
+                      <UserOutlined style={{ color: "#8c8c8c" }} />
+                      <Text>{currentReward.reviewedBy?.fullName || "N/A"}</Text>
+                    </Space>
+                  </Descriptions.Item>
+                  {currentReward.rejectionReason && (
+                    <Descriptions.Item label="Lý do từ chối" span={2}>
+                      <div
+                        style={{
+                          padding: "12px",
+                          background: "#fff1f0",
+                          borderRadius: "6px",
+                          border: "1px solid #ffccc7",
+                        }}
+                      >
+                        <Text type="danger" style={{ fontSize: 14 }}>
+                          {currentReward.rejectionReason}
+                        </Text>
+                      </div>
+                    </Descriptions.Item>
                   )}
-                </Descriptions.Item>
+                </>
+              )}
+            </Descriptions>
 
-                {currentReward.reviewedAt && (
-                  <>
-                    <Descriptions.Item label="Ngày duyệt">
-                      <Space>
-                        <CalendarOutlined style={{ color: "#8c8c8c" }} />
-                        <Text>
-                          {dayjs(currentReward.reviewedAt).format(
-                            "DD/MM/YYYY HH:mm"
-                          )}
-                        </Text>
-                      </Space>
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Người duyệt">
-                      <Space>
-                        <UserOutlined style={{ color: "#8c8c8c" }} />
-                        <Text>
-                          {currentReward.reviewedBy?.fullName || "N/A"}
-                        </Text>
-                      </Space>
-                    </Descriptions.Item>
-                    {currentReward.rejectionReason && (
-                      <Descriptions.Item label="Lý do từ chối" span={2}>
-                        <div
+            {/* Evidence Images */}
+            {currentReward.evidenceImages &&
+              currentReward.evidenceImages.length > 0 && (
+                <div style={{ marginTop: 24 }}>
+                  <Divider orientation="left">
+                    <Space>
+                      <FileImageOutlined style={{ color: "#1890ff" }} />
+                      <Text strong style={{ fontSize: 16 }}>
+                        Hình ảnh minh chứng
+                      </Text>
+                    </Space>
+                  </Divider>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 12,
+                      flexWrap: "wrap",
+                      marginTop: 16,
+                    }}
+                  >
+                    <Image.PreviewGroup>
+                      {currentReward.evidenceImages.map((img, idx) => (
+                        <Image
+                          key={idx}
+                          src={img}
+                          width={120}
+                          height={120}
                           style={{
-                            padding: "12px",
-                            background: "#fff1f0",
-                            borderRadius: "6px",
-                            border: "1px solid #ffccc7",
+                            objectFit: "cover",
+                            borderRadius: "8px",
+                            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                            cursor: "pointer",
+                            transition: "all 0.3s ease",
                           }}
-                        >
-                          <Text type="danger" style={{ fontSize: 14 }}>
-                            {currentReward.rejectionReason}
-                          </Text>
-                        </div>
-                      </Descriptions.Item>
-                    )}
-                  </>
-                )}
-              </Descriptions>
-
-              {/* Evidence Images */}
-              {currentReward.evidenceImages &&
-                currentReward.evidenceImages.length > 0 && (
-                  <div style={{ marginTop: 24 }}>
-                    <Divider orientation="left">
-                      <Space>
-                        <FileImageOutlined style={{ color: "#1890ff" }} />
-                        <Text strong style={{ fontSize: 16 }}>
-                          Hình ảnh minh chứng
-                        </Text>
-                      </Space>
-                    </Divider>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 12,
-                        flexWrap: "wrap",
-                        marginTop: 16,
-                      }}
-                    >
-                      <Image.PreviewGroup>
-                        {currentReward.evidenceImages.map((img, idx) => (
-                          <Image
-                            key={idx}
-                            src={img}
-                            width={120}
-                            height={120}
-                            style={{
-                              objectFit: "cover",
-                              borderRadius: "8px",
-                              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                              cursor: "pointer",
-                              transition: "all 0.3s ease",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = "scale(1.05)";
-                              e.currentTarget.style.boxShadow =
-                                "0 4px 12px rgba(0, 0, 0, 0.2)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = "scale(1)";
-                              e.currentTarget.style.boxShadow =
-                                "0 2px 8px rgba(0, 0, 0, 0.1)";
-                            }}
-                          />
-                        ))}
-                      </Image.PreviewGroup>
-                    </div>
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = "scale(1.05)";
+                            e.currentTarget.style.boxShadow =
+                              "0 4px 12px rgba(0, 0, 0, 0.2)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = "scale(1)";
+                            e.currentTarget.style.boxShadow =
+                              "0 2px 8px rgba(0, 0, 0, 0.1)";
+                          }}
+                        />
+                      ))}
+                    </Image.PreviewGroup>
                   </div>
-                )}
-            </div>
-          )}
+                </div>
+              )}
+          </div>
+        )}
       </Modal>
     </Layout>
   );

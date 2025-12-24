@@ -531,7 +531,8 @@ const MyRegistrations = () => {
           bordered={false}
           style={{
             marginBottom: 24,
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            background:
+              "linear-gradient(105deg, #0f171bff 0%, #b1e4ff 32%, #3f91e6 58%, #007de0 82%, #00c0a8 100%)",
             border: "none",
             borderRadius: "12px",
             boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
@@ -576,9 +577,7 @@ const MyRegistrations = () => {
                 >
                   Danh Sách Quà
                 </Title>
-                <Text
-                  style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}
-                >
+                <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}>
                   Quản lý và theo dõi các đăng ký nhận quà của bạn
                 </Text>
               </div>
@@ -704,9 +703,9 @@ const MyRegistrations = () => {
         ]}
         width={600}
         centered
-        bodyStyle={{ 
-          maxHeight: "70vh", 
-          overflow: "auto", 
+        bodyStyle={{
+          maxHeight: "70vh",
+          overflow: "auto",
           padding: "24px",
           scrollbarWidth: "none", // Firefox
           msOverflowStyle: "none", // IE and Edge
@@ -716,7 +715,11 @@ const MyRegistrations = () => {
         }}
       >
         {viewingRegistration && (
-          <Descriptions bordered column={1} labelStyle={{ textAlign: "center" }}>
+          <Descriptions
+            bordered
+            column={1}
+            labelStyle={{ textAlign: "center" }}
+          >
             <Descriptions.Item label="Sự kiện">
               {viewingRegistration.event?.name || "N/A"}
             </Descriptions.Item>

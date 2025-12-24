@@ -266,7 +266,7 @@ const EditRequestReview = () => {
         <div
           style={{
             background:
-              "linear-gradient(352deg,rgba(131, 58, 180, 1) 0%, rgba(253, 29, 29, 1) 59%, rgba(252, 176, 69, 1) 100%)",
+              "linear-gradient(90deg,rgba(255, 123, 137, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(0, 212, 255, 1) 100%)",
             borderRadius: "12px",
             padding: "24px 32px",
             marginBottom: 24,

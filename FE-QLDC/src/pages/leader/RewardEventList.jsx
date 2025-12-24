@@ -80,48 +80,57 @@ const RewardEventList = () => {
           try {
             let totalCount = 0; // Tổng số người
             let distributedCount = 0; // Số người đã nhận quà
-            
+
             // Kiểm tra xem có distributions không
             let hasDistributions = false;
             try {
-              const checkDistributionsResponse = await rewardService.distributions.getAll({
-                event: event._id,
-                limit: 1,
-              });
-              hasDistributions = (checkDistributionsResponse.docs || []).length > 0;
+              const checkDistributionsResponse =
+                await rewardService.distributions.getAll({
+                  event: event._id,
+                  limit: 1,
+                });
+              hasDistributions =
+                (checkDistributionsResponse.docs || []).length > 0;
             } catch (checkErr) {
               hasDistributions = false;
             }
-            
+
             if (hasDistributions) {
               // Có distributions → Lấy từ danh sách phân phối
               try {
-                const distributionsResponse = await rewardService.distributions.getAll({
-                  event: event._id,
-                  limit: 1000,
-                });
+                const distributionsResponse =
+                  await rewardService.distributions.getAll({
+                    event: event._id,
+                    limit: 1000,
+                  });
                 const distributions = distributionsResponse.docs || [];
                 totalCount = distributions.length;
-                
+
                 // Đếm số distributions có status = "DISTRIBUTED"
                 distributedCount = distributions.filter(
                   (dist) => dist.status === "DISTRIBUTED"
                 ).length;
               } catch (err) {
-                console.error(`Error fetching distributions for event ${event._id}:`, err);
+                console.error(
+                  `Error fetching distributions for event ${event._id}:`,
+                  err
+                );
               }
             } else {
               // Chưa có distributions → Lấy từ eligible citizens
               try {
-                const summary = await rewardService.events.getSummary(event._id);
+                const summary = await rewardService.events.getSummary(
+                  event._id
+                );
                 totalCount = summary.eligibleCount || 0;
-                
+
                 // Vẫn kiểm tra distributions để đếm số người đã nhận quà
                 try {
-                  const distributionsResponse = await rewardService.distributions.getAll({
-                    event: event._id,
-                    limit: 1000,
-                  });
+                  const distributionsResponse =
+                    await rewardService.distributions.getAll({
+                      event: event._id,
+                      limit: 1000,
+                    });
                   const distributions = distributionsResponse.docs || [];
                   distributedCount = distributions.filter(
                     (dist) => dist.status === "DISTRIBUTED"
@@ -131,10 +140,13 @@ const RewardEventList = () => {
                   distributedCount = 0;
                 }
               } catch (summaryErr) {
-                console.error(`Error fetching summary for event ${event._id}:`, summaryErr);
+                console.error(
+                  `Error fetching summary for event ${event._id}:`,
+                  summaryErr
+                );
               }
             }
-            
+
             return {
               key: event._id,
               ...event,
@@ -142,7 +154,10 @@ const RewardEventList = () => {
               distributedCount,
             };
           } catch (error) {
-            console.error(`Error fetching stats for event ${event._id}:`, error);
+            console.error(
+              `Error fetching stats for event ${event._id}:`,
+              error
+            );
             return {
               key: event._id,
               ...event,
@@ -207,7 +222,8 @@ const RewardEventList = () => {
       fetchEvents();
     } catch (error) {
       console.error("Error bulk deleting events:", error);
-      const errorMsg = error.response?.data?.message || "Không thể xóa một số sự kiện";
+      const errorMsg =
+        error.response?.data?.message || "Không thể xóa một số sự kiện";
       message.error(errorMsg);
     }
   };
@@ -219,20 +235,23 @@ const RewardEventList = () => {
       // Kiểm tra xem có distributions không
       let registeredCount = 0;
       let distributedCount = 0;
-      
+
       try {
-        const checkDistributionsResponse = await rewardService.distributions.getAll({
-          event: eventId,
-          limit: 1,
-        });
-        const hasDistributions = (checkDistributionsResponse.docs || []).length > 0;
-        
+        const checkDistributionsResponse =
+          await rewardService.distributions.getAll({
+            event: eventId,
+            limit: 1,
+          });
+        const hasDistributions =
+          (checkDistributionsResponse.docs || []).length > 0;
+
         if (hasDistributions) {
           // Có distributions → Lấy từ danh sách phân phối
-          const distributionsResponse = await rewardService.distributions.getAll({
-            event: eventId,
-            limit: 1000,
-          });
+          const distributionsResponse =
+            await rewardService.distributions.getAll({
+              event: eventId,
+              limit: 1000,
+            });
           const distributions = distributionsResponse.docs || [];
           registeredCount = distributions.length; // Tổng số người trong danh sách khen thưởng
           distributedCount = distributions.filter(
@@ -242,13 +261,14 @@ const RewardEventList = () => {
           // Chưa có distributions → Lấy từ eligible citizens
           const summary = await rewardService.events.getSummary(eventId);
           registeredCount = summary.eligibleCount || 0;
-          
+
           // Vẫn kiểm tra distributions để đếm số người đã nhận quà
           try {
-            const distributionsResponse = await rewardService.distributions.getAll({
-              event: eventId,
-              limit: 1000,
-            });
+            const distributionsResponse =
+              await rewardService.distributions.getAll({
+                event: eventId,
+                limit: 1000,
+              });
             const distributions = distributionsResponse.docs || [];
             distributedCount = distributions.filter(
               (dist) => dist.status === "DISTRIBUTED"
@@ -267,9 +287,9 @@ const RewardEventList = () => {
           registeredCount = 0;
         }
       }
-      
-      setViewingEvent({ 
-        ...event, 
+
+      setViewingEvent({
+        ...event,
         registeredCount,
         distributedCount,
       });
@@ -348,7 +368,12 @@ const RewardEventList = () => {
       render: (text, record) => (
         <Button
           type="link"
-          style={{ padding: 0, height: "auto", fontWeight: 600, textAlign: "left" }}
+          style={{
+            padding: 0,
+            height: "auto",
+            fontWeight: 600,
+            textAlign: "left",
+          }}
           onClick={() => handleViewDetails(record._id)}
         >
           {text}
@@ -367,10 +392,13 @@ const RewardEventList = () => {
           </div>
           {record.startDate && record.endDate ? (
             <Text type="secondary">
-              {dayjs(record.startDate).format("DD/MM/YYYY")} - {dayjs(record.endDate).format("DD/MM/YYYY")}
+              {dayjs(record.startDate).format("DD/MM/YYYY")} -{" "}
+              {dayjs(record.endDate).format("DD/MM/YYYY")}
             </Text>
           ) : record.date ? (
-            <Text type="secondary">{dayjs(record.date).format("DD/MM/YYYY")}</Text>
+            <Text type="secondary">
+              {dayjs(record.date).format("DD/MM/YYYY")}
+            </Text>
           ) : null}
         </Space>
       ),
@@ -383,16 +411,22 @@ const RewardEventList = () => {
       render: (_, record) => {
         const eligible = record.eligibleCount || 0;
         const distributed = record.distributedCount || 0;
-        const ratio = eligible > 0 ? ((distributed / eligible) * 100).toFixed(1) : 0;
+        const ratio =
+          eligible > 0 ? ((distributed / eligible) * 100).toFixed(1) : 0;
         return (
           <Space direction="vertical" size={0} style={{ fontSize: "12px" }}>
             <Text strong style={{ fontSize: "14px" }}>
               {eligible} người
             </Text>
             <Text type="secondary">
-              Đã nhận: <Text strong style={{ color: distributed > 0 ? "#52c41a" : "#999" }}>
+              Đã nhận:{" "}
+              <Text
+                strong
+                style={{ color: distributed > 0 ? "#52c41a" : "#999" }}
+              >
                 {distributed}
-              </Text> ({ratio}%)
+              </Text>{" "}
+              ({ratio}%)
             </Text>
           </Space>
         );
@@ -438,7 +472,8 @@ const RewardEventList = () => {
           bordered={false}
           style={{
             marginBottom: 24,
-            background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+            background:
+              "linear-gradient(90deg,rgba(117, 142, 183, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(0, 212, 255, 1) 100%)",
             border: "none",
             borderRadius: "12px",
             boxShadow: "0 4px 12px rgba(24, 144, 255, 0.3)",
@@ -483,9 +518,7 @@ const RewardEventList = () => {
                 >
                   Quản lý Sự kiện Phát quà
                 </Title>
-                <Text
-                  style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}
-                >
+                <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}>
                   Quản lý và theo dõi các sự kiện phát quà trong hệ thống
                 </Text>
               </div>
@@ -570,68 +603,70 @@ const RewardEventList = () => {
           }}
           className="hover-table-card"
         >
+          <Space
+            style={{ marginBottom: 16, width: "100%" }}
+            direction="vertical"
+          >
+            <Row gutter={16}>
+              <Col span={8}>
+                <Input
+                  placeholder="Tìm kiếm theo tên/loại..."
+                  prefix={<SearchOutlined />}
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  allowClear
+                />
+              </Col>
+              <Col span={6}>
+                <Select
+                  placeholder="Lọc theo trạng thái"
+                  style={{ width: "100%" }}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  allowClear
+                >
+                  <Option value="OPEN">Mở</Option>
+                  <Option value="CLOSED">Đóng</Option>
+                  <Option value="EXPIRED">Hết hạn</Option>
+                  <Option value="ENDED">Đã kết thúc</Option>
+                </Select>
+              </Col>
+              <Col span={6}>
+                <Select
+                  placeholder="Lọc theo loại"
+                  style={{ width: "100%" }}
+                  value={typeFilter}
+                  onChange={setTypeFilter}
+                  disabled
+                >
+                  <Option value="ANNUAL">Thường niên</Option>
+                </Select>
+              </Col>
+            </Row>
+          </Space>
 
-        <Space style={{ marginBottom: 16, width: "100%" }} direction="vertical">
-          <Row gutter={16}>
-            <Col span={8}>
-              <Input
-                placeholder="Tìm kiếm theo tên/loại..."
-                prefix={<SearchOutlined />}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                allowClear
-              />
-            </Col>
-            <Col span={6}>
-              <Select
-                placeholder="Lọc theo trạng thái"
-                style={{ width: "100%" }}
-                value={statusFilter}
-                onChange={setStatusFilter}
-                allowClear
-              >
-                <Option value="OPEN">Mở</Option>
-                <Option value="CLOSED">Đóng</Option>
-                <Option value="EXPIRED">Hết hạn</Option>
-                <Option value="ENDED">Đã kết thúc</Option>
-              </Select>
-            </Col>
-            <Col span={6}>
-              <Select
-                placeholder="Lọc theo loại"
-                style={{ width: "100%" }}
-                value={typeFilter}
-                onChange={setTypeFilter}
-                disabled
-              >
-                <Option value="ANNUAL">Thường niên</Option>
-              </Select>
-            </Col>
-          </Row>
-        </Space>
-
-        <Table
-          rowSelection={{
-            selectedRowKeys,
-            onChange: (selectedKeys) => {
-              setSelectedRowKeys(selectedKeys);
-            },
-          }}
-          columns={columns}
-          dataSource={filteredEvents}
-          loading={loading}
-          rowKey="_id"
-          pagination={{
-            ...pagination,
-            showSizeChanger: true,
-            showTotal: (total) => `Tổng ${total} sự kiện`,
-            onChange: (page, pageSize) => {
-              setPagination({ ...pagination, current: page, pageSize });
-            },
-          }}
-          scroll={{ x: 700 }}
-          rowClassName={() => "hoverable-row"}
-        />
+          <Table
+            rowSelection={{
+              selectedRowKeys,
+              onChange: (selectedKeys) => {
+                setSelectedRowKeys(selectedKeys);
+              },
+            }}
+            columns={columns}
+            dataSource={filteredEvents}
+            loading={loading}
+            rowKey="_id"
+            pagination={{
+              ...pagination,
+              showSizeChanger: true,
+              showTotal: (total) => `Tổng ${total} sự kiện`,
+              onChange: (page, pageSize) => {
+                setPagination({ ...pagination, current: page, pageSize });
+              },
+            }}
+            scroll={{ x: 700 }}
+            rowClassName={() => "hoverable-row"}
+          />
         </Card>
 
         {/* CSS hover effects */}
@@ -700,9 +735,9 @@ const RewardEventList = () => {
         ]}
         width={700}
         centered
-        bodyStyle={{ 
-          maxHeight: "70vh", 
-          overflow: "auto", 
+        bodyStyle={{
+          maxHeight: "70vh",
+          overflow: "auto",
           padding: "24px",
           scrollbarWidth: "none",
           msOverflowStyle: "none",
@@ -762,7 +797,8 @@ const RewardEventList = () => {
             </Descriptions.Item>
             <Descriptions.Item label="Tỷ lệ nhận quà">
               <Text strong>
-                {viewingEvent.distributedCount || 0} / {viewingEvent.registeredCount || 0}
+                {viewingEvent.distributedCount || 0} /{" "}
+                {viewingEvent.registeredCount || 0}
               </Text>
             </Descriptions.Item>
             {viewingEvent.rewardDescription && (

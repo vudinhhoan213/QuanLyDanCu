@@ -46,11 +46,11 @@ const MyHousehold = () => {
       setError(null);
 
       const response = await citizenService.getMyHousehold();
-      
+
       // Handle both response formats
       const householdData = response.household || response;
       const membersData = response.members || response.members || [];
-      
+
       setHousehold({
         ...householdData,
         members: membersData,
@@ -161,7 +161,8 @@ const MyHousehold = () => {
         bordered={false}
         style={{
           marginBottom: 24,
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          background:
+            "linear-gradient(150deg, #092747ff 0%, #8dc7ff 30%, #2f6fbd 55%, #0085ff 80%, #00b89a 100%)",
           border: "none",
           borderRadius: "12px",
           boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
@@ -206,9 +207,7 @@ const MyHousehold = () => {
               >
                 Hộ Khẩu Của Tôi
               </Title>
-              <Text
-                style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}
-              >
+              <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}>
                 Thông tin hộ khẩu và danh sách thành viên
               </Text>
             </div>
@@ -269,7 +268,11 @@ const MyHousehold = () => {
               <Descriptions.Item label="Địa chỉ" span={2}>
                 <Text>
                   {household.address
-                    ? `${household.address.street || ""}, ${household.address.ward || ""}, ${household.address.district || ""}, ${household.address.city || ""}`
+                    ? `${household.address.street || ""}, ${
+                        household.address.ward || ""
+                      }, ${household.address.district || ""}, ${
+                        household.address.city || ""
+                      }`
                     : "N/A"}
                 </Text>
               </Descriptions.Item>
