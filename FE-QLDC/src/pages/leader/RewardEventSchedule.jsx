@@ -84,7 +84,14 @@ const RewardEventSchedule = () => {
   const calculateDate = (template) => {
     const currentYear = getCurrentYear();
 
-    if (template.defaultDate.includes("ÂL")) {
+    if (template.eventDateOverride) {
+      return dayjs(template.eventDateOverride);
+    }
+
+    const isLunar =
+      template.defaultDate.includes("ÂL") ||
+      template.defaultDate.includes("A,L");
+    if (isLunar) {
       // Xử lý ngày âm lịch - đơn giản hóa, có thể cần thư viện chuyển đổi
       // Ví dụ: 15/08 ÂL -> tính toán ngày dương lịch tương ứng
       // Tạm thời dùng ngày ước tính
@@ -196,6 +203,12 @@ const RewardEventSchedule = () => {
       budget: template.budget || undefined,
       dateRangeOverride:
         startOverride && endOverride ? [startOverride, endOverride] : undefined,
+      eventDateOverride: template.eventDateOverride
+        ? dayjs(template.eventDateOverride)
+        : undefined,
+      targetAgeMin: template.targetAge?.min,
+      targetAgeMax: template.targetAge?.max,
+      targetGender: template.targetGender || "ALL",
     });
     setIsEditModalVisible(true);
   };
@@ -211,6 +224,32 @@ const RewardEventSchedule = () => {
         ? values.dateRangeOverride[1].toISOString()
         : undefined;
 
+      const eventDateOverride = values.eventDateOverride
+        ? values.eventDateOverride.toISOString()
+        : undefined;
+
+      const hasAge =
+        values.targetAgeMin !== undefined && values.targetAgeMin !== null
+          ? true
+          : values.targetAgeMax !== undefined && values.targetAgeMax !== null;
+      const targetAge = hasAge
+        ? {
+            min:
+              values.targetAgeMin !== undefined && values.targetAgeMin !== null
+                ? values.targetAgeMin
+                : 0,
+            max:
+              values.targetAgeMax !== undefined && values.targetAgeMax !== null
+                ? values.targetAgeMax
+                : 0,
+          }
+        : undefined;
+
+      const targetGender =
+        values.targetGender && values.targetGender !== "ALL"
+          ? values.targetGender
+          : undefined;
+
       // Luu override vao localStorage
       const newOverrides = {
         ...templateOverrides,
@@ -221,6 +260,9 @@ const RewardEventSchedule = () => {
           budget: values.budget || undefined,
           startDateOverride: startOverride,
           endDateOverride: endOverride,
+          eventDateOverride,
+          targetAge,
+          targetGender,
         },
       };
       setTemplateOverrides(newOverrides);
@@ -275,6 +317,15 @@ const RewardEventSchedule = () => {
   const isEventExists = (template) => {
     const eventName = `${template.name} ${getCurrentYear()}`;
     return events.some((e) => e.name === eventName);
+  };
+
+  const getTargetText = (template) => {
+    if (template.targetAge) {
+      return `Trẻ em ${template.targetAge.min}-${template.targetAge.max} tuổi`;
+    }
+    if (template.targetGender === "FEMALE") return "Phụ nữ";
+    if (template.targetGender === "MALE") return "Nam";
+    return "Tất cả mọi người";
   };
 
   return (
@@ -407,11 +458,7 @@ const RewardEventSchedule = () => {
               {annualTemplates.map((template) => {
                 const exists = isEventExists(template);
                 const eventDate = calculateDate(template);
-                const targetInfo = template.targetAge
-                  ? `Trẻ em ${template.targetAge.min}-${template.targetAge.max} tuổi`
-                  : template.targetGender === "FEMALE"
-                  ? "Phụ nữ"
-                  : "Tất cả mọi người";
+                const targetInfo = getTargetText(template);
 
                 return (
                   <Col xs={24} sm={24} md={12} lg={8} key={template.id}>
@@ -490,7 +537,13 @@ const RewardEventSchedule = () => {
                           style={{ marginBottom: 0 }}
                         >
                           <Descriptions.Item label="Ngày diễn ra">
-                            <Text strong>{template.defaultDate}</Text>
+                            <Text strong>
+                              {template.eventDateOverride
+                                ? dayjs(template.eventDateOverride).format(
+                                    "DD/MM/YYYY"
+                                  )
+                                : template.defaultDate}
+                            </Text>
                           </Descriptions.Item>
                           <Descriptions.Item label="Ngày dự kiến">
                             <Text strong style={{ color: "#1890ff" }}>
@@ -676,6 +729,19 @@ const RewardEventSchedule = () => {
               <Input.TextArea rows={3} />
             </Form.Item>
             <Form.Item
+              name="eventDateOverride"
+              label="Ngày diễn ra (dương lịch)"
+              tooltip="Ghi đè ngày diễn ra nếu khác mặc định"
+            >
+              <DatePicker
+                style={{ width: "100%" }}
+                format="DD/MM/YYYY"
+                disabledDate={(current) =>
+                  current && current < dayjs().startOf("day")
+                }
+              />
+            </Form.Item>
+            <Form.Item
               name="dateRangeOverride"
               label="Thời gian phát quà"
               tooltip="Chọn khoảng thời gian phát quà thay cho mẫu này"
@@ -698,6 +764,58 @@ const RewardEventSchedule = () => {
                 rows={3}
                 placeholder="Ví dụ: 200.000 VNĐ tiền mặt, 1 bộ quà Tết (bánh kẹo, trà, rượu)..."
               />
+            </Form.Item>
+            <Form.Item
+              label="Đối tượng (tuổi)"
+              tooltip="Để trống nếu áp dụng cho tất cả"
+              style={{ marginBottom: 8 }}
+            >
+              <Space>
+                <Form.Item name="targetAgeMin" noStyle>
+                  <InputNumber
+                    min={0}
+                    placeholder="Từ tuổi"
+                    style={{ width: 120 }}
+                  />
+                </Form.Item>
+                <Form.Item name="targetAgeMax" noStyle>
+                  <InputNumber
+                    min={0}
+                    placeholder="Đến tuổi"
+                    style={{ width: 120 }}
+                  />
+                </Form.Item>
+              </Space>
+            </Form.Item>
+            <Form.Item
+              name="targetGender"
+              label="Giới tính"
+              tooltip="Chỉ chọn nếu giới hạn theo giới"
+            >
+              <Input.Group compact>
+                <Input
+                  style={{ display: "none" }}
+                  readOnly
+                  value={undefined}
+                  tabIndex={-1}
+                />
+                <select
+                  value={editForm.getFieldValue("targetGender") || "ALL"}
+                  onChange={(e) =>
+                    editForm.setFieldsValue({ targetGender: e.target.value })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "6px 11px",
+                    borderRadius: 6,
+                    border: "1px solid #d9d9d9",
+                  }}
+                >
+                  <option value="ALL">Tất cả</option>
+                  <option value="MALE">Nam</option>
+                  <option value="FEMALE">Nữ</option>
+                </select>
+              </Input.Group>
             </Form.Item>
             <Form.Item
               name="budget"

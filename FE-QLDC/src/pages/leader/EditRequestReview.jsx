@@ -11,7 +11,6 @@ import {
   message,
   Descriptions,
   Select,
-  Spin,
 } from "antd";
 import {
   SearchOutlined,
@@ -28,8 +27,49 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
+const REQUEST_TYPE = {
+  ADD_MEMBER: "THEM_NHAN_KHAU",
+  EDIT_INFO: "CHINH_SUA_THONG_TIN",
+  REMOVE_MEMBER: "XOA_NHAN_KHAU",
+  TEMP_ABSENCE: "TAM_VANG",
+  TEMP_RESIDENCE: "TAM_TRU",
+  MOVE_OUT: "CHUYEN_DI",
+  MOVE_IN: "CHUYEN_DEN",
+  OTHER: "KHAC",
+};
+
+const REQUEST_TYPE_LABELS = {
+  [REQUEST_TYPE.ADD_MEMBER]: "Thêm nhân khẩu",
+  [REQUEST_TYPE.EDIT_INFO]: "Chỉnh sửa thông tin",
+  [REQUEST_TYPE.REMOVE_MEMBER]: "Xóa nhân khẩu",
+  [REQUEST_TYPE.TEMP_ABSENCE]: "Tạm vắng",
+  [REQUEST_TYPE.TEMP_RESIDENCE]: "Tạm trú",
+  [REQUEST_TYPE.MOVE_OUT]: "Chuyển đi",
+  [REQUEST_TYPE.MOVE_IN]: "Chuyển đến",
+  [REQUEST_TYPE.OTHER]: "Khác",
+  // Legacy codes (hiển thị đẹp cho dữ liệu cũ)
+  ADD_MEMBER: "Thêm nhân khẩu",
+  EDIT_INFO: "Chỉnh sửa thông tin",
+  REMOVE_MEMBER: "Xóa nhân khẩu",
+  TEMP_ABSENCE: "Tạm vắng",
+  TEMP_RESIDENCE: "Tạm trú",
+  MOVE_OUT: "Chuyển đi",
+  MOVE_IN: "Chuyển đến",
+  OTHER: "Khác",
+};
+
+const getRequestTypeLabel = (value) =>
+  REQUEST_TYPE_LABELS[value] || value || "Khác";
+
+const isTempAbsence = (value) =>
+  value === REQUEST_TYPE.TEMP_ABSENCE || value === "TEMP_ABSENCE";
+
+const isTempResidence = (value) =>
+  value === REQUEST_TYPE.TEMP_RESIDENCE || value === "TEMP_RESIDENCE";
+
 const EditRequestReview = () => {
   const [loading, setLoading] = useState(false);
+  const [processingReview, setProcessingReview] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [viewModalVisible, setViewModalVisible] = useState(false);
@@ -42,38 +82,44 @@ const EditRequestReview = () => {
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      console.log("📋 Fetching edit requests...");
+      console.log("Đang tải danh sách yêu cầu chỉnh sửa...");
 
       const response = await editRequestService.getAll();
-      console.log("📋 Requests response:", response);
+      console.log("Danh sách yêu cầu:", response);
 
       // Backend trả về { docs, total, page, limit }
       const requestList = response.docs || [];
 
       // Transform data to match table format
-      const transformedRequests = requestList.map((req) => ({
-        key: req._id,
-        _id: req._id,
-        id: req._id.slice(-8).toUpperCase(), // Mã ngắn gọn từ _id
-        citizen: req.citizen?.fullName || req.requestedBy?.fullName || "N/A",
-        citizenId: req.citizen?._id,
-        household: req.citizen?.household?.code || "N/A",
-        householdId: req.citizen?.household?._id,
-        requestType: req.requestType,
-        type: req.title || "Chỉnh sửa thông tin",
-        description: req.reason || req.description || "N/A",
-        proposedChanges: req.proposedChanges,
-        submitDate: req.createdAt,
-        status: req.status.toLowerCase(), // PENDING -> pending
-        reviewDate: req.reviewedAt,
-        reviewer: req.reviewedBy?.fullName || req.reviewedBy?.username,
-        reviewNote: req.rejectionReason || "N/A",
-      }));
+      const transformedRequests = requestList.map((req) => {
+        const requestTypeLabel =
+          REQUEST_TYPE_LABELS[req.requestType] || req.requestType || "Khác";
+
+        return {
+          key: req._id,
+          _id: req._id,
+          id: req._id.slice(-8).toUpperCase(), // Mã rút gọn từ _id
+          citizen: req.citizen?.fullName || req.requestedBy?.fullName || "N/A",
+          citizenId: req.citizen?._id,
+          household: req.citizen?.household?.code || "N/A",
+          householdId: req.citizen?.household?._id,
+          requestType: req.requestType,
+          requestTypeLabel,
+          type: req.title || requestTypeLabel || "Chỉnh sửa thông tin",
+          description: req.reason || req.description || "N/A",
+          proposedChanges: req.proposedChanges,
+          submitDate: req.createdAt,
+          status: req.status.toLowerCase(), // PENDING -> pending
+          reviewDate: req.reviewedAt,
+          reviewer: req.reviewedBy?.fullName || req.reviewedBy?.username,
+          reviewNote: req.rejectionReason || "N/A",
+        };
+      });
 
       setRequests(transformedRequests);
-      console.log(`✅ Loaded ${transformedRequests.length} requests`);
+      console.log(`Đã tải ${transformedRequests.length} yêu cầu`);
     } catch (error) {
-      console.error("❌ Error fetching requests:", error);
+      console.error("Lỗi tải danh sách yêu cầu:", error);
       message.error("Không thể tải danh sách yêu cầu. Vui lòng thử lại!");
     } finally {
       setLoading(false);
@@ -86,6 +132,59 @@ const EditRequestReview = () => {
 
   const formatDate = (value) =>
     value ? dayjs(value).format("DD/MM/YYYY") : "N/A";
+
+  const formatDateTime = (value) =>
+    value ? dayjs(value).format("DD/MM/YYYY HH:mm") : "N/A";
+
+  const getFromDate = (req) => {
+    if (!req) return "N/A";
+    if (isTempAbsence(req.requestType)) {
+      return formatDate(
+        req.proposedChanges?.temporaryAbsenceFrom || req.temporaryAbsenceFrom
+      );
+    }
+    if (isTempResidence(req.requestType)) {
+      return formatDate(
+        req.proposedChanges?.temporaryResidenceFrom ||
+          req.temporaryResidenceFrom
+      );
+    }
+    return formatDate(req.submitDate);
+  };
+
+  const getToDate = (req) => {
+    if (!req) return "N/A";
+    if (isTempAbsence(req.requestType)) {
+      return formatDate(
+        req.proposedChanges?.temporaryAbsenceTo || req.temporaryAbsenceTo
+      );
+    }
+    if (isTempResidence(req.requestType)) {
+      return formatDate(
+        req.proposedChanges?.temporaryResidenceTo || req.temporaryResidenceTo
+      );
+    }
+    return "N/A";
+  };
+
+  const getDestination = (req) => {
+    if (!req) return "N/A";
+    if (isTempAbsence(req.requestType)) {
+      return (
+        req.proposedChanges?.temporaryAbsenceAddress ||
+        req.temporaryAbsenceAddress ||
+        "N/A"
+      );
+    }
+    if (isTempResidence(req.requestType)) {
+      return (
+        req.proposedChanges?.temporaryResidenceAddress ||
+        req.temporaryResidenceAddress ||
+        "N/A"
+      );
+    }
+    return "N/A";
+  };
 
   const statusConfig = {
     pending: {
@@ -204,42 +303,40 @@ const EditRequestReview = () => {
 
   const handleReviewConfirm = async () => {
     try {
-      setLoading(true);
+      if (!currentRequest) return;
+      setProcessingReview(true);
       console.log(
-        `🔄 ${
+        `${
           currentRequest.reviewAction === "approved" ? "Approving" : "Rejecting"
         } request:`,
         currentRequest._id
       );
 
       if (currentRequest.reviewAction === "approved") {
-        // Gọi API approve
         await editRequestService.approve(currentRequest._id, {
           note: reviewNote || "Đã duyệt",
         });
-        message.success("✅ Đã duyệt yêu cầu thành công");
+        message.success("Đã duyệt yêu cầu thành công");
       } else {
-        // Gọi API reject
         await editRequestService.reject(currentRequest._id, {
           reason: reviewNote || "Từ chối yêu cầu",
         });
-        message.success("✅ Đã từ chối yêu cầu");
+        message.success("Đã từ chối yêu cầu");
       }
 
-      // Reload danh sách
       await fetchRequests();
 
       setReviewModalVisible(false);
       setCurrentRequest(null);
       setReviewNote("");
     } catch (error) {
-      console.error("❌ Error reviewing request:", error);
+      console.error("Lỗi duyệt yêu cầu:", error);
       message.error(
         error.response?.data?.message ||
           "Không thể xử lý yêu cầu. Vui lòng thử lại!"
       );
     } finally {
-      setLoading(false);
+      setProcessingReview(false);
     }
   };
 
@@ -258,6 +355,11 @@ const EditRequestReview = () => {
     approved: requests.filter((r) => r.status === "approved").length,
     rejected: requests.filter((r) => r.status === "rejected").length,
   };
+
+  const reviewNotePlaceholder =
+    currentRequest?.reviewAction === "approved"
+      ? "Ghi chú phê duyệt (ví dụ: Đã kiểm tra giấy tờ, thông tin hợp lệ...)"
+      : "Lý do từ chối (ví dụ: Thiếu giấy tờ xác thực, thông tin chưa đúng...)";
 
   return (
     <Layout>
@@ -385,126 +487,99 @@ const EditRequestReview = () => {
               Đóng
             </Button>,
           ]}
-          width={800}
+          width={820}
+          bodyStyle={{ background: "#f7f9fc", padding: 16 }}
         >
           {currentRequest && (
-            <Descriptions bordered column={2}>
-              <Descriptions.Item label="Công dân">
-                {currentRequest.citizen}
-              </Descriptions.Item>
-              <Descriptions.Item label="Hộ khẩu">
-                {currentRequest.household}
-              </Descriptions.Item>
-              <Descriptions.Item label="Loại yêu cầu" span={2}>
-                <Tag color="blue">{currentRequest.type}</Tag>
-              </Descriptions.Item>
-
-              {currentRequest.requestType && (
-                <Descriptions.Item label="Phân loại" span={2}>
-                  <Tag color="blue">{currentRequest.requestType}</Tag>
-                </Descriptions.Item>
-              )}
-
-              {currentRequest.requestType === "TEMP_ABSENCE" && (
-                <Descriptions.Item label="Tạm vắng" span={2}>
-                  <div>
-                    <div>
-                      Từ ngày:{" "}
-                      {formatDate(
-                        currentRequest.proposedChanges?.temporaryAbsenceFrom ||
-                          currentRequest.temporaryAbsenceFrom
-                      )}{" "}
-                      Đến:{" "}
-                      {formatDate(
-                        currentRequest.proposedChanges?.temporaryAbsenceTo ||
-                          currentRequest.temporaryAbsenceTo
-                      )}
-                    </div>
-                    <div>
-                      Nơi vắng:{" "}
-                      {currentRequest.proposedChanges
-                        ?.temporaryAbsenceAddress ||
-                        currentRequest.temporaryAbsenceAddress ||
-                        "N/A"}
-                    </div>
-                  </div>
-                </Descriptions.Item>
-              )}
-
-              {currentRequest.requestType === "TEMP_RESIDENCE" && (
-                <Descriptions.Item label="Tạm trú" span={2}>
-                  <div>
-                    <div>
-                      Từ ngày:{" "}
-                      {formatDate(
-                        currentRequest.proposedChanges
-                          ?.temporaryResidenceFrom ||
-                          currentRequest.temporaryResidenceFrom
-                      )}{" "}
-                      - Đến:{" "}
-                      {formatDate(
-                        currentRequest.proposedChanges?.temporaryResidenceTo ||
-                          currentRequest.temporaryResidenceTo
-                      )}
-                    </div>
-                    <div>
-                      Địa chỉ:{" "}
-                      {currentRequest.proposedChanges
-                        ?.temporaryResidenceAddress ||
-                        currentRequest.temporaryResidenceAddress ||
-                        "N/A"}
-                    </div>
-                  </div>
-                </Descriptions.Item>
-              )}
-
-              <Descriptions.Item label="Lý do" span={2}>
-                {currentRequest.description}
-              </Descriptions.Item>
-              {currentRequest.proposedChanges && (
-                <Descriptions.Item label="Thông tin đề xuất thay đổi" span={2}>
-                  <pre
-                    style={{
-                      background: "#f5f5f5",
-                      padding: 12,
-                      borderRadius: 4,
-                      maxHeight: 200,
-                      overflow: "auto",
-                    }}
-                  >
-                    {JSON.stringify(currentRequest.proposedChanges, null, 2)}
-                  </pre>
-                </Descriptions.Item>
-              )}
-              <Descriptions.Item label="Ngày gửi">
-                {dayjs(currentRequest.submitDate).format("DD/MM/YYYY HH:mm")}
-              </Descriptions.Item>
-              <Descriptions.Item label="Trạng thái">
-                {statusConfig[currentRequest.status] && (
-                  <Tag
-                    color={statusConfig[currentRequest.status].color}
-                    icon={statusConfig[currentRequest.status].icon}
-                  >
-                    {statusConfig[currentRequest.status].text}
-                  </Tag>
-                )}
-              </Descriptions.Item>
-              {currentRequest.reviewDate && (
-                <>
-                  <Descriptions.Item label="Ngày duyệt">
-                    {dayjs(currentRequest.reviewDate).format(
-                      "DD/MM/YYYY HH:mm"
+            <Space direction="vertical" size={12} style={{ width: "100%" }}>
+              <div
+                style={{
+                  background:
+                    "linear-gradient(120deg, rgba(0, 82, 204, 0.08) 0%, rgba(0, 199, 255, 0.08) 100%)",
+                  border: "1px solid #e6f4ff",
+                  borderRadius: 12,
+                  padding: 16,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <Title level={4} style={{ margin: "4px 0 8px" }}>
+                    {currentRequest.type}
+                  </Title>
+                  <Space wrap size={8}>
+                    <Tag color="blue">{currentRequest.citizen}</Tag>
+                    {currentRequest.requestType && (
+                      <Tag color="geekblue">
+                        {currentRequest.requestTypeLabel ||
+                          getRequestTypeLabel(currentRequest.requestType)}
+                      </Tag>
                     )}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Người duyệt">
-                    {currentRequest.reviewer || "N/A"}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Ghi chú" span={2}>
-                    {currentRequest.reviewNote || "Không có"}
-                  </Descriptions.Item>
-                </>
-              )}
-            </Descriptions>
+                  </Space>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  {statusConfig[currentRequest.status] && (
+                    <Tag
+                      color={statusConfig[currentRequest.status].color}
+                      icon={statusConfig[currentRequest.status].icon}
+                      style={{ marginBottom: 8 }}
+                    >
+                      {statusConfig[currentRequest.status].text}
+                    </Tag>
+                  )}
+                  <div>
+                    <Text type="secondary">Gửi lúc</Text>
+                    <div>{formatDateTime(currentRequest.submitDate)}</div>
+                  </div>
+                  {currentRequest.reviewDate && (
+                    <div style={{ marginTop: 6 }}>
+                      <Text type="secondary">Xử lý</Text>
+                      <div>{formatDateTime(currentRequest.reviewDate)}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Descriptions
+                bordered
+                size="small"
+                column={2}
+                labelStyle={{ width: 150, fontWeight: 500 }}
+              >
+                <Descriptions.Item label="Công dân">
+                  {currentRequest.citizen}
+                </Descriptions.Item>
+                <Descriptions.Item label="Hộ khẩu">
+                  {currentRequest.household}
+                </Descriptions.Item>
+                <Descriptions.Item label="Loại yêu cầu">
+                  <Tag color="blue">{currentRequest.type}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Phân loại">
+                  {currentRequest.requestType ? (
+                    <Tag color="geekblue">
+                      {currentRequest.requestTypeLabel ||
+                        getRequestTypeLabel(currentRequest.requestType)}
+                    </Tag>
+                  ) : (
+                    "Không có"
+                  )}
+                </Descriptions.Item>
+                <Descriptions.Item label="Ngày đi">
+                  {getFromDate(currentRequest)}
+                </Descriptions.Item>
+                <Descriptions.Item label="Ngày về">
+                  {getToDate(currentRequest)}
+                </Descriptions.Item>
+                <Descriptions.Item label="Nơi đến" span={2}>
+                  {getDestination(currentRequest)}
+                </Descriptions.Item>
+                <Descriptions.Item label="Lý do" span={2}>
+                  {currentRequest.description}
+                </Descriptions.Item>
+              </Descriptions>
+            </Space>
           )}
         </Modal>
 
@@ -518,39 +593,111 @@ const EditRequestReview = () => {
           open={reviewModalVisible}
           onOk={handleReviewConfirm}
           onCancel={() => setReviewModalVisible(false)}
-          okText="Xác nhận"
+          okText={
+            currentRequest?.reviewAction === "approved" ? "Duyệt" : "Từ chối"
+          }
           cancelText="Hủy"
+          okButtonProps={{
+            icon:
+              currentRequest?.reviewAction === "approved" ? (
+                <CheckCircleOutlined />
+              ) : (
+                <CloseCircleOutlined />
+              ),
+            danger: currentRequest?.reviewAction === "rejected",
+            loading: processingReview,
+          }}
         >
           {currentRequest && (
-            <>
-              <Descriptions bordered column={1}>
+            <Space direction="vertical" size={14} style={{ width: "100%" }}>
+              <div
+                style={{
+                  background: "#f6f8ff",
+                  border: "1px solid #e5ebf5",
+                  borderRadius: 10,
+                  padding: 12,
+                }}
+              >
+                <Space
+                  style={{ width: "100%", justifyContent: "space-between" }}
+                  align="start"
+                >
+                  <div>
+                    <Text type="secondary">Yêu cầu #{currentRequest.id}</Text>
+                    <div style={{ marginTop: 4, fontWeight: 600 }}>
+                      {currentRequest.type}
+                    </div>
+                  </div>
+                  <Tag
+                    color={
+                      currentRequest.reviewAction === "approved"
+                        ? "green"
+                        : "red"
+                    }
+                    icon={
+                      currentRequest.reviewAction === "approved" ? (
+                        <CheckCircleOutlined />
+                      ) : (
+                        <CloseCircleOutlined />
+                      )
+                    }
+                  >
+                    {currentRequest.reviewAction === "approved"
+                      ? "Phê duyệt"
+                      : "Từ chối"}
+                  </Tag>
+                </Space>
+              </div>
+
+              <Descriptions bordered size="small" column={1}>
                 <Descriptions.Item label="Công dân">
                   {currentRequest.citizen}
                 </Descriptions.Item>
                 <Descriptions.Item label="Loại yêu cầu">
                   {currentRequest.type}
                 </Descriptions.Item>
-                <Descriptions.Item label="Mô tả">
+                <Descriptions.Item label="Ngày đi">
+                  {getFromDate(currentRequest)}
+                </Descriptions.Item>
+                <Descriptions.Item label="Ngày về">
+                  {getToDate(currentRequest)}
+                </Descriptions.Item>
+                <Descriptions.Item label="Nơi đến">
+                  {getDestination(currentRequest)}
+                </Descriptions.Item>
+                <Descriptions.Item label="Lý do yêu cầu">
                   {currentRequest.description}
                 </Descriptions.Item>
               </Descriptions>
-              <div style={{ marginTop: 16 }}>
-                <Text strong>
-                  Ghi chú{" "}
-                  {currentRequest.reviewAction === "approved"
-                    ? "duyệt"
-                    : "từ chối"}
-                  :
-                </Text>
+
+              <div
+                style={{
+                  marginTop: 4,
+                  padding: 12,
+                  background: "#f9fbfd",
+                  border: "1px solid #e8eef5",
+                  borderRadius: 10,
+                }}
+              >
+                <Text strong>Ghi chú xử lý</Text>
                 <TextArea
                   rows={4}
+                  showCount
+                  maxLength={300}
                   value={reviewNote}
                   onChange={(e) => setReviewNote(e.target.value)}
-                  placeholder="Nhập ghi chú (không bắt buộc)"
+                  placeholder={reviewNotePlaceholder}
                   style={{ marginTop: 8 }}
                 />
+                <Text
+                  type="secondary"
+                  style={{ display: "block", marginTop: 6 }}
+                >
+                  Ghi chú sẽ được lưu vào lịch sử và gửi cùng thông báo cho công
+                  dân.
+                </Text>
               </div>
-            </>
+            </Space>
           )}
         </Modal>
       </div>

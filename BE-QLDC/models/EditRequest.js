@@ -6,7 +6,7 @@ const editRequestSchema = new Schema(
     citizen: { type: Schema.Types.ObjectId, ref: "Citizen", required: true },
     requestedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
 
-    requestType: { type: String, trim: true }, // Loai yeu cau (TEMP_ABSENCE, TEMP_RESIDENCE, ...)
+    requestType: { type: String, trim: true }, // Loai yeu cau (TAM_VANG, TAM_TRU, ...)
     title: { type: String, trim: true },
     description: { type: String, trim: true },
 

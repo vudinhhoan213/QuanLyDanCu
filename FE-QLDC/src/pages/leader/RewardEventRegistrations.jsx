@@ -582,7 +582,7 @@ const RewardEventRegistrations = () => {
               title: "Yêu cầu nhập hộ khẩu",
               description: `Công dân ${citizen.name} chưa có hộ khẩu. Vui lòng cập nhật thông tin hộ khẩu để có thể tham gia các sự kiện khen thưởng.`,
               reason: `Công dân ${citizen.name} chưa có hộ khẩu. Yêu cầu được tạo tự động khi phân phát quà.`,
-              requestType: "ADD_MEMBER",
+              requestType: "THEM_NHAN_KHAU",
               proposedChanges: {
                 details: `Yêu cầu nhập hộ khẩu cho công dân ${citizen.name}`,
                 targetField: "household",

@@ -839,7 +839,6 @@ const HouseholdManagement = () => {
                 message="Chọn thành viên? Tách thành hộ mới"
                 description="Mỗi hộ mới cần có chủ hộ và thành viên. Hộ khẩu gốc phải có ít nhất 1 thành viên còn lại."
                 type="info"
-                showIcon
                 style={{ marginBottom: 16 }}
               />
               <Descriptions
