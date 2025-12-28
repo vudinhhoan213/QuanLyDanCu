@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import {
   Card,
   Table,
@@ -31,7 +31,12 @@ import {
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import Layout from "../../components/Layout";
-import { rewardService, editRequestService, notificationService, householdService } from "../../services";
+import {
+  rewardService,
+  editRequestService,
+  notificationService,
+  householdService,
+} from "../../services";
 import { exportRegistrationsToExcel } from "../../utils/exportExcel";
 import dayjs from "dayjs";
 
@@ -63,9 +68,9 @@ const RewardEventRegistrations = () => {
   const [generateConfig, setGenerateConfig] = useState({
     schoolYear: "",
     minAge: 0,
-    maxAge: 18,
+    maxAge: 120,
   });
-  const [useMockData, setUseMockData] = useState(false); // Mode tạo dữ liệu ảo
+  const [useMockData, setUseMockData] = useState(false);
   const [viewingCitizen, setViewingCitizen] = useState(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [householdStats, setHouseholdStats] = useState([]);
@@ -88,99 +93,130 @@ const RewardEventRegistrations = () => {
     }
   };
 
-  // Tạo dữ liệu ảo để test
+  // Tạo dữ liệu mẫu để test
   const generateMockData = () => {
     const mockCitizens = [];
     const names = [
-      "Nguyễn Văn An", "Trần Thị Bình", "Lê Văn Cường", "Phạm Thị Dung",
-      "Hoàng Văn Em", "Vũ Thị Phương", "Đặng Văn Giang", "Bùi Thị Hoa",
-      "Đỗ Văn Hùng", "Ngô Thị Lan", "Lý Văn Minh", "Võ Thị Nga",
-      "Phan Văn Oanh", "Trương Thị Phượng", "Đinh Văn Quang", "Lương Thị Quyên",
-      "Nguyễn Thị Mai", "Trần Văn Nam", "Lê Thị Hương", "Phạm Văn Đức"
+      "Nguyễn Văn An",
+      "Trần Thị Bình",
+      "Lê Văn Cường",
+      "Phạm Thị Dung",
+      "Hoàng Văn Em",
+      "Vũ Thị Phương",
+      "Đặng Văn Giang",
+      "Bùi Thị Hoa",
+      "Nguyễn Văn Hùng",
+      "Nguyễn Thị Lan",
+      "Lê Văn Minh",
+      "Vũ Thị Nga",
+      "Phan Văn Oanh",
+      "Trương Thị Phượng",
+      "Đinh Văn Quang",
+      "Lương Thị Quyền",
+      "Nguyễn Thị Mai",
+      "Trần Văn Nam",
+      "Lê Thị Hồng",
+      "Phạm Văn Cường",
     ];
-    
+
     const eventName = event?.name?.toLowerCase() || "";
     const currentYear = new Date().getFullYear();
-    
-    // Xác định độ tuổi dựa trên tên sự kiện
+
+    // Xác định sự
     let targetAge = null;
     let targetGender = null;
-    
+
     if (eventName.includes("trung thu")) {
       targetAge = { min: 0, max: 18 };
-    } else if (eventName.includes("thiếu nhi") || eventName.includes("quốc tế thiếu nhi")) {
+    } else if (
+      eventName.includes("thiß║┐u nhi") ||
+      eventName.includes("quß╗æc tß║┐ thiß║┐u nhi")
+    ) {
       targetAge = { min: 0, max: 14 };
-    } else if (eventName.includes("phụ nữ") || eventName.includes("20/10")) {
+    } else if (
+      eventName.includes("phß╗Ñ nß╗»") ||
+      eventName.includes("20/10")
+    ) {
       targetGender = "FEMALE";
     }
-    
+
     for (let i = 0; i < 20; i++) {
-      const isReceived = i < 12; // 12 người đã nhận, 8 người chưa nhận
-      
-      // Tính năm sinh dựa trên targetAge
+      const isReceived = i < 12; // 12 ng╞░ß╗¥i ─æ├ú nhß║¡n, 8 ng╞░ß╗¥i ch╞░a nhß║¡n
+
+      // T├¡nh n─âm sinh dß╗▒a tr├¬n targetAge
       let birthYear;
       if (targetAge) {
-        const age = targetAge.min + Math.floor(Math.random() * (targetAge.max - targetAge.min + 1));
+        const age =
+          targetAge.min +
+          Math.floor(Math.random() * (targetAge.max - targetAge.min + 1));
         birthYear = currentYear - age;
       } else {
         birthYear = 1970 + Math.floor(Math.random() * 50); // 1970-2020
       }
-      
+
       const birthMonth = Math.floor(Math.random() * 12) + 1;
       const birthDay = Math.floor(Math.random() * 28) + 1;
-      
-      // Xác định giới tính
+
+      // X├íc ─æß╗ïnh giß╗¢i t├¡nh
       const gender = targetGender || (Math.random() > 0.5 ? "MALE" : "FEMALE");
-      const fullName = gender === "FEMALE" 
-        ? names[i % names.length].replace("Văn", "Thị").replace("Văn", "Thị") + ` ${i + 1}`
-        : names[i % names.length] + ` ${i + 1}`;
-      
+      const fullName =
+        gender === "FEMALE"
+          ? names[i % names.length]
+              .replace("V─ân", "Thß╗ï")
+              .replace("V─ân", "Thß╗ï") + ` ${i + 1}`
+          : names[i % names.length] + ` ${i + 1}`;
+
       mockCitizens.push({
         _id: `mock_${i}`,
         key: `mock_${i}`,
         fullName,
-        nationalId: `2023${String(i).padStart(6, '0')}`,
+        nationalId: `2023${String(i).padStart(6, "0")}`,
         dateOfBirth: new Date(birthYear, birthMonth - 1, birthDay),
         gender,
         household: {
           _id: `household_${i}`,
-          code: `HK${String(i + 1).padStart(4, '0')}`,
+          code: `HK${String(i + 1).padStart(4, "0")}`,
         },
         status: isReceived ? "DISTRIBUTED" : "NOT_RECEIVED",
-        distributedAt: isReceived ? new Date(2025, 10, 17, 19 + (i % 3), 20 + (i % 40)) : null,
+        distributedAt: isReceived
+          ? new Date(2025, 10, 17, 19 + (i % 3), 20 + (i % 40))
+          : null,
         quantity: 1,
         totalValue: event?.budget || 50000,
         distributionId: isReceived ? `dist_${i}` : null,
       });
     }
-    
+
     return mockCitizens;
   };
 
   const fetchEligibleCitizens = async () => {
     try {
       setLoading(true);
-      
-      // Nếu dùng dữ liệu ảo
+
+      // Nß║┐u d├╣ng dß╗» liß╗çu ß║úo
       if (useMockData) {
         const mockCitizens = generateMockData();
-        const filtered = statusFilter === "ALL" 
-          ? mockCitizens 
-          : statusFilter === "DISTRIBUTED"
-          ? mockCitizens.filter(c => c.status === "DISTRIBUTED")
-          : mockCitizens.filter(c => c.status !== "DISTRIBUTED");
-        
+        const filtered =
+          statusFilter === "ALL"
+            ? mockCitizens
+            : statusFilter === "DISTRIBUTED"
+            ? mockCitizens.filter((c) => c.status === "DISTRIBUTED")
+            : mockCitizens.filter((c) => c.status !== "DISTRIBUTED");
+
         const start = (pagination.current - 1) * pagination.pageSize;
         const end = start + pagination.pageSize;
         const paginated = filtered.slice(start, end);
-        
+
         setEligibleCitizens(paginated);
         setPagination({
           ...pagination,
           total: filtered.length,
         });
-        
-        const received = mockCitizens.filter(c => c.status === "DISTRIBUTED").length;
+
+        const received = mockCitizens.filter(
+          (c) => c.status === "DISTRIBUTED"
+        ).length;
         setStats({
           total: mockCitizens.length,
           received,
@@ -189,25 +225,27 @@ const RewardEventRegistrations = () => {
         setLoading(false);
         return;
       }
-      
-      // Kiểm tra xem event có distributions (danh sách phân phối) chưa
-      // Nếu có thì lấy từ distributions, nếu chưa thì lấy từ eligible citizens
+
+      // Kiß╗âm tra xem event c├│ distributions (danh s├ích ph├ón phß╗æi) ch╞░a
+      // Nß║┐u c├│ th├¼ lß║Ñy tß╗½ distributions, nß║┐u ch╞░a th├¼ lß║Ñy tß╗½ eligible citizens
       let hasDistributions = false;
       let allDistributions = [];
-      
+
       try {
-        const checkDistributionsResponse = await rewardService.distributions.getAll({
-          event: id,
-          limit: 1, // Chỉ cần kiểm tra xem có hay không
-        });
-        hasDistributions = (checkDistributionsResponse.docs || []).length > 0;
-        
-        if (hasDistributions) {
-          // Lấy tất cả distributions để tính thống kê
-          const allDistributionsResponse = await rewardService.distributions.getAll({
+        const checkDistributionsResponse =
+          await rewardService.distributions.getAll({
             event: id,
-            limit: 1000,
+            limit: 1, // Chß╗ë cß║ºn kiß╗âm tra xem c├│ hay kh├┤ng
           });
+        hasDistributions = (checkDistributionsResponse.docs || []).length > 0;
+
+        if (hasDistributions) {
+          // Lß║Ñy tß║Ñt cß║ú distributions ─æß╗â t├¡nh thß╗æng k├¬
+          const allDistributionsResponse =
+            await rewardService.distributions.getAll({
+              event: id,
+              limit: 1000,
+            });
           allDistributions = allDistributionsResponse.docs || [];
         }
       } catch (checkError) {
@@ -216,9 +254,9 @@ const RewardEventRegistrations = () => {
       }
 
       if (hasDistributions && allDistributions.length > 0) {
-        // Có distributions → Lấy từ danh sách phân phối (khen thưởng)
+        // C├│ distributions ΓåÆ Lß║Ñy tß╗½ danh s├ích ph├ón phß╗æi (khen th╞░ß╗ƒng)
         try {
-          // Tính thống kê từ tất cả distributions
+          // T├¡nh thß╗æng k├¬ tß╗½ tß║Ñt cß║ú distributions
           const total = allDistributions.length;
           let received = 0;
           let notReceived = 0;
@@ -237,38 +275,39 @@ const RewardEventRegistrations = () => {
             notReceived,
           });
 
-          // Lấy danh sách phân phối với pagination và filter
+          // Lß║Ñy danh s├ích ph├ón phß╗æi vß╗¢i pagination v├á filter
           const distributionsParams = {
             event: id,
             page: pagination.current,
             limit: pagination.pageSize,
           };
 
-          // Thêm filter status nếu có
+          // Th├¬m filter status nß║┐u c├│
           if (statusFilter === "DISTRIBUTED") {
             distributionsParams.status = "DISTRIBUTED";
           }
 
-          // Lấy danh sách phân phối (distributions) cho event này
-          const distributionsResponse = await rewardService.distributions.getAll(distributionsParams);
+          // Lß║Ñy danh s├ích ph├ón phß╗æi (distributions) cho event n├áy
+          const distributionsResponse =
+            await rewardService.distributions.getAll(distributionsParams);
           let distributions = distributionsResponse.docs || [];
           let totalDistributions = distributionsResponse.total || 0;
 
-          // Nếu filter là NOT_RECEIVED, cần lấy tất cả rồi filter ở frontend
-          // vì backend không hỗ trợ $ne operator qua query params
+          // Nß║┐u filter l├á NOT_RECEIVED, cß║ºn lß║Ñy tß║Ñt cß║ú rß╗ôi filter ß╗ƒ frontend
+          // v├¼ backend kh├┤ng hß╗ù trß╗ú $ne operator qua query params
           if (statusFilter === "NOT_RECEIVED") {
             distributions = allDistributions.filter(
               (dist) => dist.status !== "DISTRIBUTED"
             );
             totalDistributions = distributions.length;
-            
+
             // Paginate sau khi filter
             const start = (pagination.current - 1) * pagination.pageSize;
             const end = start + pagination.pageSize;
             distributions = distributions.slice(start, end);
           }
 
-          // Chuyển đổi distributions thành format citizen với đầy đủ thông tin
+          // Chuyß╗ân ─æß╗òi distributions th├ánh format citizen vß╗¢i ─æß║ºy ─æß╗º th├┤ng tin
           const citizens = distributions.map((dist) => {
             const citizen = dist.citizen || {};
             return {
@@ -279,7 +318,7 @@ const RewardEventRegistrations = () => {
               dateOfBirth: citizen.dateOfBirth,
               gender: citizen.gender,
               household: dist.household || citizen.household,
-              // Thông tin từ distribution
+              // Th├┤ng tin tß╗½ distribution
               distributionId: dist._id,
               status: dist.status || "REGISTERED",
               distributedAt: dist.distributedAt,
@@ -297,25 +336,29 @@ const RewardEventRegistrations = () => {
           });
         } catch (distError) {
           console.error("Error fetching distributions:", distError);
-          throw distError; // Re-throw để fallback về eligible citizens
+          throw distError; // Re-throw ─æß╗â fallback vß╗ü eligible citizens
         }
       } else {
-        // Chưa có distributions → Lấy từ eligible citizens (công dân đủ điều kiện)
+        // Ch╞░a c├│ distributions ΓåÆ Lß║Ñy tß╗½ eligible citizens (c├┤ng d├ón ─æß╗º ─æiß╗üu kiß╗çn)
         const params = {
           page: pagination.current,
           limit: pagination.pageSize,
         };
 
-        const response = await rewardService.events.getEligibleCitizens(id, params);
+        const response = await rewardService.events.getEligibleCitizens(
+          id,
+          params
+        );
         let citizens = response.docs || [];
 
-        // Lấy distributions để kiểm tra trạng thái nhận quà (nếu có)
+        // Lß║Ñy distributions ─æß╗â kiß╗âm tra trß║íng th├íi nhß║¡n qu├á (nß║┐u c├│)
         let distributionMap = {};
         try {
-          const distributionsResponse = await rewardService.distributions.getAll({
-            event: id,
-            limit: 1000,
-          });
+          const distributionsResponse =
+            await rewardService.distributions.getAll({
+              event: id,
+              limit: 1000,
+            });
           const distributions = distributionsResponse.docs || [];
           distributions.forEach((dist) => {
             if (dist.citizen) {
@@ -324,10 +367,13 @@ const RewardEventRegistrations = () => {
             }
           });
         } catch (distError) {
-          console.error("Error fetching distributions for status check:", distError);
+          console.error(
+            "Error fetching distributions for status check:",
+            distError
+          );
         }
 
-        // Map citizens với thông tin từ distributions nếu có
+        // Map citizens vß╗¢i th├┤ng tin tß╗½ distributions nß║┐u c├│
         citizens = citizens.map((citizen) => {
           const distribution = distributionMap[citizen._id];
           return {
@@ -336,19 +382,20 @@ const RewardEventRegistrations = () => {
             distributionId: distribution?._id || null,
             status: distribution?.status || "NOT_RECEIVED",
             distributedAt: distribution?.distributedAt || null,
-            distributionNote: distribution?.note || distribution?.distributionNote || null,
+            distributionNote:
+              distribution?.note || distribution?.distributionNote || null,
             quantity: distribution?.quantity || 1,
             totalValue: distribution?.totalValue || 0,
             unitValue: distribution?.unitValue || 0,
           };
         });
 
-        // Lọc theo status nếu có filter
+        // Lß╗ìc theo status nß║┐u c├│ filter
         if (statusFilter !== "ALL") {
           if (statusFilter === "DISTRIBUTED") {
-            citizens = citizens.filter(c => c.status === "DISTRIBUTED");
+            citizens = citizens.filter((c) => c.status === "DISTRIBUTED");
           } else if (statusFilter === "NOT_RECEIVED") {
-            citizens = citizens.filter(c => c.status !== "DISTRIBUTED");
+            citizens = citizens.filter((c) => c.status !== "DISTRIBUTED");
           }
         }
 
@@ -358,23 +405,27 @@ const RewardEventRegistrations = () => {
           total: response.total || 0,
         });
 
-        // Tính thống kê từ tất cả eligible citizens
+        // T├¡nh thß╗æng k├¬ tß╗½ tß║Ñt cß║ú eligible citizens
         const allParams = { limit: 1000 };
-        const allResponse = await rewardService.events.getEligibleCitizens(id, allParams);
+        const allResponse = await rewardService.events.getEligibleCitizens(
+          id,
+          allParams
+        );
         const allCitizens = allResponse.docs || [];
-        
-        // Lấy tất cả distributions để tính thống kê chính xác
+
+        // Lß║Ñy tß║Ñt cß║ú distributions ─æß╗â t├¡nh thß╗æng k├¬ ch├¡nh x├íc
         let allDistributionsForStats = [];
         try {
-          const allDistributionsResponse = await rewardService.distributions.getAll({
-            event: id,
-            limit: 1000,
-          });
+          const allDistributionsResponse =
+            await rewardService.distributions.getAll({
+              event: id,
+              limit: 1000,
+            });
           allDistributionsForStats = allDistributionsResponse.docs || [];
         } catch (err) {
           console.error("Error fetching all distributions for stats:", err);
         }
-        
+
         const allDistributionMap = {};
         allDistributionsForStats.forEach((dist) => {
           if (dist.citizen) {
@@ -404,7 +455,7 @@ const RewardEventRegistrations = () => {
       }
     } catch (error) {
       console.error("Error fetching eligible citizens:", error);
-      message.error("Không thể tải danh sách nhận quà");
+      message.error("Kh├┤ng thß╗â tß║úi danh s├ích nhß║¡n qu├á");
     } finally {
       setLoading(false);
     }
@@ -412,29 +463,29 @@ const RewardEventRegistrations = () => {
 
   const handleMarkAsReceived = async (citizenIds) => {
     if (!citizenIds || citizenIds.length === 0) {
-      message.warning("Vui lòng chọn ít nhất một công dân");
+      message.warning("Vui l├▓ng chß╗ìn ├¡t nhß║Ñt mß╗Öt c├┤ng d├ón");
       return;
     }
 
     if (!id) {
-      message.error("Không tìm thấy ID sự kiện");
+      message.error("Kh├┤ng t├¼m thß║Ñy ID sß╗▒ kiß╗çn");
       return;
     }
 
     try {
       setDistributing(true);
 
-      // Fetch lại distributions để kiểm tra duplicate (đảm bảo dữ liệu mới nhất)
+      // Fetch lß║íi distributions ─æß╗â kiß╗âm tra duplicate (─æß║úm bß║úo dß╗» liß╗çu mß╗¢i nhß║Ñt)
       const distributionsResponse = await rewardService.distributions.getAll({
         event: id,
         limit: 1000,
       });
       const allDistributions = distributionsResponse.docs || [];
 
-      // Phân loại: những người đã có distribution và chưa có
+      // Ph├ón loß║íi: nhß╗»ng ng╞░ß╗¥i ─æ├ú c├│ distribution v├á ch╞░a c├│
       const citizensToUpdate = [];
       const citizensToCreate = [];
-      const citizensWithoutHousehold = []; // Thu thập công dân chưa có hộ khẩu (với thông tin đầy đủ)
+      const citizensWithoutHousehold = []; // Thu thß║¡p c├┤ng d├ón ch╞░a c├│ hß╗Ö khß║⌐u (vß╗¢i th├┤ng tin ─æß║ºy ─æß╗º)
 
       citizenIds.forEach((citizenId) => {
         const citizen = eligibleCitizens.find((c) => c._id === citizenId);
@@ -444,34 +495,37 @@ const RewardEventRegistrations = () => {
         }
 
         if (citizen.distributionId) {
-          // Kiểm tra lại xem distribution này có tồn tại và chưa DISTRIBUTED không
+          // Kiß╗âm tra lß║íi xem distribution n├áy c├│ tß╗ôn tß║íi v├á ch╞░a DISTRIBUTED kh├┤ng
           const existingDist = allDistributions.find(
             (d) => d._id?.toString() === citizen.distributionId?.toString()
           );
           if (existingDist && existingDist.status !== "DISTRIBUTED") {
             citizensToUpdate.push(citizen.distributionId);
           }
-          // Nếu đã DISTRIBUTED rồi, bỏ qua
+          // Nß║┐u ─æ├ú DISTRIBUTED rß╗ôi, bß╗Å qua
         } else {
-          // Kiểm tra xem đã có distribution cho citizen và event này chưa (tránh duplicate)
+          // Kiß╗âm tra xem ─æ├ú c├│ distribution cho citizen v├á event n├áy ch╞░a (tr├ính duplicate)
           const existingDist = allDistributions.find(
-            (d) => 
-              (d.citizen?._id || d.citizen)?.toString() === citizenId.toString() &&
+            (d) =>
+              (d.citizen?._id || d.citizen)?.toString() ===
+                citizenId.toString() &&
               (d.event?._id || d.event)?.toString() === id.toString()
           );
-          
+
           if (existingDist) {
-            // Nếu đã có nhưng chưa được đánh dấu là DISTRIBUTED, thêm vào danh sách update
+            // Nß║┐u ─æ├ú c├│ nh╞░ng ch╞░a ─æ╞░ß╗úc ─æ├ính dß║Ñu l├á DISTRIBUTED, th├¬m v├áo danh s├ích update
             if (existingDist.status !== "DISTRIBUTED") {
               citizensToUpdate.push(existingDist._id);
             }
-            // Nếu đã DISTRIBUTED rồi, bỏ qua
+            // Nß║┐u ─æ├ú DISTRIBUTED rß╗ôi, bß╗Å qua
             return;
           }
 
           const householdId = citizen.household?._id || citizen.household;
           if (!householdId) {
-            console.error(`Citizen ${citizen.fullName} (${citizenId}) chưa có hộ khẩu`);
+            console.error(
+              `Citizen ${citizen.fullName} (${citizenId}) ch╞░a c├│ hß╗Ö khß║⌐u`
+            );
             citizensWithoutHousehold.push({
               id: citizenId,
               name: citizen.fullName || `ID: ${citizenId}`,
@@ -486,109 +540,123 @@ const RewardEventRegistrations = () => {
             quantity: 1,
             unitValue: event?.budget || 0,
             totalValue: event?.budget || 0,
-            note: `Phân phát quà từ danh sách đủ điều kiện`,
-            // distributedAt sẽ được set tự động bởi service khi status là DISTRIBUTED
+            note: `Ph├ón ph├ít qu├á tß╗½ danh s├ích ─æß╗º ─æiß╗üu kiß╗çn`,
+            // distributedAt sß║╜ ─æ╞░ß╗úc set tß╗▒ ─æß╗Öng bß╗ƒi service khi status l├á DISTRIBUTED
           });
         }
       });
 
-      // Cập nhật những distribution đã có
+      // Cß║¡p nhß║¡t nhß╗»ng distribution ─æ├ú c├│
       if (citizensToUpdate.length > 0) {
         try {
           await rewardService.distributions.distribute(citizensToUpdate, "");
         } catch (updateError) {
           console.error("Error updating distributions:", updateError);
           throw new Error(
-            updateError.response?.data?.message || 
-            `Không thể cập nhật ${citizensToUpdate.length} phân phối quà`
+            updateError.response?.data?.message ||
+              `Kh├┤ng thß╗â cß║¡p nhß║¡t ${citizensToUpdate.length} ph├ón phß╗æi qu├á`
           );
         }
       }
 
-      // Tạo những distribution mới
+      // Tß║ío nhß╗»ng distribution mß╗¢i
       if (citizensToCreate.length > 0) {
         try {
           await Promise.all(
-            citizensToCreate.map((data) => rewardService.distributions.create(data))
+            citizensToCreate.map((data) =>
+              rewardService.distributions.create(data)
+            )
           );
         } catch (createError) {
           console.error("Error creating distributions:", createError);
           throw new Error(
-            createError.response?.data?.message || 
-            `Không thể tạo ${citizensToCreate.length} phân phối quà`
+            createError.response?.data?.message ||
+              `Kh├┤ng thß╗â tß║ío ${citizensToCreate.length} ph├ón phß╗æi qu├á`
           );
         }
       }
 
-      // Tạo yêu cầu chỉnh sửa cho các công dân chưa có hộ khẩu
+      // Tß║ío y├¬u cß║ºu chß╗ënh sß╗¡a cho c├íc c├┤ng d├ón ch╞░a c├│ hß╗Ö khß║⌐u
       if (citizensWithoutHousehold.length > 0) {
         try {
           const requestPromises = citizensWithoutHousehold.map((citizen) =>
             editRequestService.create({
               citizen: citizen.id,
-              title: "Yêu cầu nhập hộ khẩu",
-              description: `Công dân ${citizen.name} chưa có hộ khẩu. Vui lòng cập nhật thông tin hộ khẩu để có thể tham gia các sự kiện khen thưởng.`,
-              reason: `Công dân ${citizen.name} chưa có hộ khẩu. Yêu cầu được tạo tự động khi phân phát quà.`,
-              requestType: "ADD_MEMBER",
+              title: "Y├¬u cß║ºu nhß║¡p hß╗Ö khß║⌐u",
+              description: `C├┤ng d├ón ${citizen.name} ch╞░a c├│ hß╗Ö khß║⌐u. Vui l├▓ng cß║¡p nhß║¡t th├┤ng tin hß╗Ö khß║⌐u ─æß╗â c├│ thß╗â tham gia c├íc sß╗▒ kiß╗çn khen th╞░ß╗ƒng.`,
+              reason: `C├┤ng d├ón ${citizen.name} ch╞░a c├│ hß╗Ö khß║⌐u. Y├¬u cß║ºu ─æ╞░ß╗úc tß║ío tß╗▒ ─æß╗Öng khi ph├ón ph├ít qu├á.`,
+              requestType: "THEM_NHAN_KHAU",
               proposedChanges: {
-                details: `Yêu cầu nhập hộ khẩu cho công dân ${citizen.name}`,
+                details: `Y├¬u cß║ºu nhß║¡p hß╗Ö khß║⌐u cho c├┤ng d├ón ${citizen.name}`,
                 targetField: "household",
               },
             })
           );
 
           await Promise.all(requestPromises);
-          
-          const namesList = citizensWithoutHousehold.map((c) => c.name).join(", ");
-          const successMessage = 
+
+          const namesList = citizensWithoutHousehold
+            .map((c) => c.name)
+            .join(", ");
+          const successMessage =
             citizensWithoutHousehold.length === 1
-              ? `Đã tạo yêu cầu nhập hộ khẩu cho công dân "${namesList}". Yêu cầu đã được gửi đến công dân.`
-              : `Đã tạo ${citizensWithoutHousehold.length} yêu cầu nhập hộ khẩu cho các công dân: ${namesList}. Yêu cầu đã được gửi đến các công dân.`;
-          
-          message.warning(successMessage, 10); // Hiển thị trong 10 giây
+              ? `─É├ú tß║ío y├¬u cß║ºu nhß║¡p hß╗Ö khß║⌐u cho c├┤ng d├ón "${namesList}". Y├¬u cß║ºu ─æ├ú ─æ╞░ß╗úc gß╗¡i ─æß║┐n c├┤ng d├ón.`
+              : `─É├ú tß║ío ${citizensWithoutHousehold.length} y├¬u cß║ºu nhß║¡p hß╗Ö khß║⌐u cho c├íc c├┤ng d├ón: ${namesList}. Y├¬u cß║ºu ─æ├ú ─æ╞░ß╗úc gß╗¡i ─æß║┐n c├íc c├┤ng d├ón.`;
+
+          message.warning(successMessage, 10); // Hiß╗ân thß╗ï trong 10 gi├óy
         } catch (requestError) {
           console.error("Error creating edit requests:", requestError);
-          const namesList = citizensWithoutHousehold.map((c) => c.name).join(", ");
-          const errorMessage = 
+          const namesList = citizensWithoutHousehold
+            .map((c) => c.name)
+            .join(", ");
+          const errorMessage =
             citizensWithoutHousehold.length === 1
-              ? `Công dân "${namesList}" chưa có hộ khẩu. Không thể tạo yêu cầu tự động. Vui lòng thử lại.`
-              : `${citizensWithoutHousehold.length} công dân chưa có hộ khẩu: ${namesList}. Không thể tạo yêu cầu tự động. Vui lòng thử lại.`;
+              ? `C├┤ng d├ón "${namesList}" ch╞░a c├│ hß╗Ö khß║⌐u. Kh├┤ng thß╗â tß║ío y├¬u cß║ºu tß╗▒ ─æß╗Öng. Vui l├▓ng thß╗¡ lß║íi.`
+              : `${citizensWithoutHousehold.length} c├┤ng d├ón ch╞░a c├│ hß╗Ö khß║⌐u: ${namesList}. Kh├┤ng thß╗â tß║ío y├¬u cß║ºu tß╗▒ ─æß╗Öng. Vui l├▓ng thß╗¡ lß║íi.`;
           message.error(errorMessage, 8);
         }
       }
 
       const totalProcessed = citizensToUpdate.length + citizensToCreate.length;
       if (totalProcessed > 0) {
-        // Gửi thông báo cho chủ hộ của các công dân đã nhận quà
+        // Gß╗¡i th├┤ng b├ío cho chß╗º hß╗Ö cß╗ºa c├íc c├┤ng d├ón ─æ├ú nhß║¡n qu├á
         try {
-          const processedCitizens = eligibleCitizens.filter((c) => 
+          const processedCitizens = eligibleCitizens.filter((c) =>
             citizenIds.includes(c._id)
           );
-          
-          // Lấy danh sách household IDs duy nhất
-          const householdIds = [...new Set(
-            processedCitizens
-              .map((c) => c.household?._id || c.household)
-              .filter(Boolean)
-          )];
 
-          // Gửi thông báo cho từng chủ hộ
+          // Lß║Ñy danh s├ích household IDs duy nhß║Ñt
+          const householdIds = [
+            ...new Set(
+              processedCitizens
+                .map((c) => c.household?._id || c.household)
+                .filter(Boolean)
+            ),
+          ];
+
+          // Gß╗¡i th├┤ng b├ío cho tß╗½ng chß╗º hß╗Ö
           const notificationPromises = householdIds.map(async (householdId) => {
             try {
               const household = await householdService.getById(householdId);
               const head = household?.head;
-              
+
               if (head && head.user) {
                 const headUserId = head.user._id || head.user;
                 const citizenNames = processedCitizens
-                  .filter((c) => (c.household?._id || c.household)?.toString() === householdId.toString())
+                  .filter(
+                    (c) =>
+                      (c.household?._id || c.household)?.toString() ===
+                      householdId.toString()
+                  )
                   .map((c) => c.fullName)
                   .join(", ");
-                
+
                 await notificationService.create({
                   toUser: headUserId,
-                  title: "Thành viên trong hộ đã nhận quà",
-                  message: `${citizenNames} trong hộ khẩu ${household?.code || ""} đã nhận quà từ sự kiện "${event?.name || ""}".`,
+                  title: "Th├ánh vi├¬n trong hß╗Ö ─æ├ú nhß║¡n qu├á",
+                  message: `${citizenNames} trong hß╗Ö khß║⌐u ${
+                    household?.code || ""
+                  } ─æ├ú nhß║¡n qu├á tß╗½ sß╗▒ kiß╗çn "${event?.name || ""}".`,
                   type: "REWARD",
                   entityType: "RewardDistribution",
                   entityId: id,
@@ -596,22 +664,30 @@ const RewardEventRegistrations = () => {
                 });
               }
             } catch (notifError) {
-              console.error(`Error sending notification to household ${householdId}:`, notifError);
-              // Không throw error, chỉ log để không ảnh hưởng đến quá trình đánh dấu
+              console.error(
+                `Error sending notification to household ${householdId}:`,
+                notifError
+              );
+              // Kh├┤ng throw error, chß╗ë log ─æß╗â kh├┤ng ß║únh h╞░ß╗ƒng ─æß║┐n qu├í tr├¼nh ─æ├ính dß║Ñu
             }
           });
 
           await Promise.all(notificationPromises);
         } catch (notifError) {
-          console.error("Error sending notifications to household heads:", notifError);
-          // Không throw error, chỉ log để không ảnh hưởng đến quá trình đánh dấu
+          console.error(
+            "Error sending notifications to household heads:",
+            notifError
+          );
+          // Kh├┤ng throw error, chß╗ë log ─æß╗â kh├┤ng ß║únh h╞░ß╗ƒng ─æß║┐n qu├í tr├¼nh ─æ├ính dß║Ñu
         }
 
-        message.success(`Đã đánh dấu ${totalProcessed} người đã nhận quà`);
+        message.success(
+          `─É├ú ─æ├ính dß║Ñu ${totalProcessed} ng╞░ß╗¥i ─æ├ú nhß║¡n qu├á`
+        );
         setSelectedRowKeys([]);
         fetchEligibleCitizens();
       } else if (citizensWithoutHousehold.length === 0) {
-        message.warning("Không có công dân nào được xử lý");
+        message.warning("Kh├┤ng c├│ c├┤ng d├ón n├áo ─æ╞░ß╗úc xß╗¡ l├╜");
       }
     } catch (error) {
       console.error("Error marking as received:", error);
@@ -620,10 +696,10 @@ const RewardEventRegistrations = () => {
         response: error.response?.data,
         status: error.response?.status,
       });
-      const errorMsg = 
-        error.response?.data?.message || 
-        error.message || 
-        "Không thể đánh dấu đã nhận quà. Vui lòng thử lại!";
+      const errorMsg =
+        error.response?.data?.message ||
+        error.message ||
+        "Kh├┤ng thß╗â ─æ├ính dß║Ñu ─æ├ú nhß║¡n qu├á. Vui l├▓ng thß╗¡ lß║íi!";
       message.error(errorMsg);
     } finally {
       setDistributing(false);
@@ -632,7 +708,7 @@ const RewardEventRegistrations = () => {
 
   const handleBulkMarkAsReceived = () => {
     if (selectedRowKeys.length === 0) {
-      message.warning("Vui lòng chọn ít nhất một công dân");
+      message.warning("Vui l├▓ng chß╗ìn ├¡t nhß║Ñt mß╗Öt c├┤ng d├ón");
       return;
     }
     handleMarkAsReceived(selectedRowKeys);
@@ -644,14 +720,14 @@ const RewardEventRegistrations = () => {
 
   const handleUndoReceived = async (distributionId) => {
     if (!distributionId) {
-      message.warning("Không tìm thấy thông tin phân phối");
+      message.warning("Kh├┤ng t├¼m thß║Ñy th├┤ng tin ph├ón phß╗æi");
       return;
     }
 
     try {
       setDistributing(true);
-      
-      // Cập nhật status từ DISTRIBUTED về REGISTERED
+
+      // Cß║¡p nhß║¡t status tß╗½ DISTRIBUTED vß╗ü REGISTERED
       await rewardService.distributions.update(distributionId, {
         status: "REGISTERED",
         distributedAt: null,
@@ -659,14 +735,14 @@ const RewardEventRegistrations = () => {
         distributionNote: null,
       });
 
-      message.success("Đã hoàn tác trạng thái nhận quà");
+      message.success("─É├ú ho├án t├íc trß║íng th├íi nhß║¡n qu├á");
       fetchEligibleCitizens();
     } catch (error) {
       console.error("Error undoing received status:", error);
-      const errorMsg = 
-        error.response?.data?.message || 
-        error.message || 
-        "Không thể hoàn tác trạng thái. Vui lòng thử lại!";
+      const errorMsg =
+        error.response?.data?.message ||
+        error.message ||
+        "Kh├┤ng thß╗â ho├án t├íc trß║íng th├íi. Vui l├▓ng thß╗¡ lß║íi!";
       message.error(errorMsg);
     } finally {
       setDistributing(false);
@@ -678,10 +754,10 @@ const RewardEventRegistrations = () => {
       setGenerating(true);
       let result;
 
-      if (event?.type === "SCHOOL_YEAR" || event?.type === "ANNUAL") {
-        // Generate từ achievements
+      if (event?.type === "SCHOOL_YEAR") {
+        // Generate tß╗½ achievements
         if (!generateConfig.schoolYear) {
-          message.warning("Vui lòng nhập năm học");
+          message.warning("Vui l├▓ng nhß║¡p n─âm hß╗ìc");
           return;
         }
         result = await rewardService.distributions.generateFromAchievements(
@@ -690,7 +766,7 @@ const RewardEventRegistrations = () => {
           false
         );
       } else {
-        // Generate từ age range (1/6, Trung thu)
+        // Generate tß╗½ age range (1/6, Trung thu)
         result = await rewardService.distributions.generateFromAgeRange(
           id,
           generateConfig.minAge || 0,
@@ -703,13 +779,17 @@ const RewardEventRegistrations = () => {
         );
       }
 
-      message.success(`Đã tạo ${result.created || 0} bản ghi phân phối quà`);
+      message.success(
+        `─É├ú tß║ío ${result.created || 0} bß║ún ghi ph├ón phß╗æi qu├á`
+      );
       setIsGenerateModalVisible(false);
       setGenerateConfig({ schoolYear: "", minAge: 0, maxAge: 18 });
       fetchEligibleCitizens();
     } catch (error) {
       console.error("Error generating distributions:", error);
-      const errorMsg = error.response?.data?.message || "Không thể tạo danh sách phân phối";
+      const errorMsg =
+        error.response?.data?.message ||
+        "Kh├┤ng thß╗â tß║ío danh s├ích ph├ón phß╗æi";
       message.error(errorMsg);
     } finally {
       setGenerating(false);
@@ -718,7 +798,7 @@ const RewardEventRegistrations = () => {
 
   const handleExport = () => {
     try {
-      // Chuyển đổi eligible citizens thành format giống registrations để export
+      // Chuyß╗ân ─æß╗òi eligible citizens th├ánh format giß╗æng registrations ─æß╗â export
       const exportData = eligibleCitizens.map((citizen) => ({
         citizen: {
           fullName: citizen.fullName,
@@ -734,16 +814,16 @@ const RewardEventRegistrations = () => {
       }));
 
       if (exportData.length === 0) {
-        message.warning("Không có dữ liệu để xuất");
+        message.warning("Kh├┤ng c├│ dß╗» liß╗çu ─æß╗â xuß║Ñt");
         return;
       }
 
       const eventName = event?.name || "Su-kien";
       exportRegistrationsToExcel(exportData, eventName);
-      message.success("Xuất danh sách thành công!");
+      message.success("Xuß║Ñt danh s├ích th├ánh c├┤ng!");
     } catch (error) {
       console.error("Error exporting to Excel:", error);
-      message.error("Không thể xuất danh sách. Vui lòng thử lại!");
+      message.error("Kh├┤ng thß╗â xuß║Ñt danh s├ích. Vui l├▓ng thß╗¡ lß║íi!");
     }
   };
 
@@ -751,7 +831,9 @@ const RewardEventRegistrations = () => {
     const matchesSearch =
       !searchText ||
       citizen.fullName?.toLowerCase().includes(searchText.toLowerCase()) ||
-      citizen.household?.code?.toLowerCase().includes(searchText.toLowerCase()) ||
+      citizen.household?.code
+        ?.toLowerCase()
+        .includes(searchText.toLowerCase()) ||
       citizen.nationalId?.includes(searchText);
 
     const matchesStatus =
@@ -768,7 +850,7 @@ const RewardEventRegistrations = () => {
       setSelectedRowKeys(selectedKeys);
     },
     getCheckboxProps: (record) => ({
-      disabled: record.status === "DISTRIBUTED", // Không cho chọn những người đã nhận
+      disabled: record.status === "DISTRIBUTED", // Kh├┤ng cho chß╗ìn nhß╗»ng ng╞░ß╗¥i ─æ├ú nhß║¡n
     }),
   };
 
@@ -785,7 +867,7 @@ const RewardEventRegistrations = () => {
       setIsHouseholdStatsVisible(true);
     } catch (error) {
       console.error("Error fetching household stats:", error);
-      message.error("Không thể tải thống kê theo hộ gia đình");
+      message.error("Kh├┤ng thß╗â tß║úi thß╗æng k├¬ theo hß╗Ö gia ─æ├¼nh");
     } finally {
       setLoadingHouseholdStats(false);
     }
@@ -803,7 +885,7 @@ const RewardEventRegistrations = () => {
       },
     },
     {
-      title: "Họ tên",
+      title: "Hß╗ì t├¬n",
       key: "fullName",
       width: 200,
       fixed: "left",
@@ -822,12 +904,10 @@ const RewardEventRegistrations = () => {
       title: "CMND/CCCD",
       key: "nationalId",
       width: 140,
-      render: (_, record) => (
-        <Text>{record.nationalId || "N/A"}</Text>
-      ),
+      render: (_, record) => <Text>{record.nationalId || "N/A"}</Text>,
     },
     {
-      title: "Hộ khẩu",
+      title: "Hß╗Ö khß║⌐u",
       key: "household",
       width: 120,
       render: (_, record) => (
@@ -835,18 +915,20 @@ const RewardEventRegistrations = () => {
       ),
     },
     {
-      title: "Ngày sinh",
+      title: "Ng├áy sinh",
       key: "dateOfBirth",
       width: 110,
       align: "center",
       render: (_, record) => (
         <Text>
-          {record.dateOfBirth ? dayjs(record.dateOfBirth).format("DD/MM/YYYY") : "N/A"}
+          {record.dateOfBirth
+            ? dayjs(record.dateOfBirth).format("DD/MM/YYYY")
+            : "N/A"}
         </Text>
       ),
     },
     {
-      title: "Trạng thái",
+      title: "Trß║íng th├íi",
       key: "status",
       width: 140,
       align: "center",
@@ -855,7 +937,7 @@ const RewardEventRegistrations = () => {
           return (
             <Space direction="vertical" size={4}>
               <Tag color="green" icon={<CheckCircleOutlined />}>
-                Đã nhận quà
+                ─É├ú nhß║¡n qu├á
               </Tag>
               {record.distributedAt && (
                 <Text type="secondary" style={{ fontSize: "11px" }}>
@@ -865,11 +947,11 @@ const RewardEventRegistrations = () => {
             </Space>
           );
         }
-        return <Tag color="orange">Chưa nhận quà</Tag>;
+        return <Tag color="orange">Ch╞░a nhß║¡n qu├á</Tag>;
       },
     },
     {
-      title: "Hành động",
+      title: "H├ánh ─æß╗Öng",
       key: "action",
       width: 120,
       fixed: "right",
@@ -878,11 +960,11 @@ const RewardEventRegistrations = () => {
         if (record.status === "DISTRIBUTED") {
           return (
             <Popconfirm
-              title="Hoàn tác trạng thái nhận quà?"
-              description="Bạn có chắc muốn hoàn tác trạng thái đã nhận quà cho người này?"
+              title="Ho├án t├íc trß║íng th├íi nhß║¡n qu├á?"
+              description="Bß║ín c├│ chß║»c muß╗æn ho├án t├íc trß║íng th├íi ─æ├ú nhß║¡n qu├á cho ng╞░ß╗¥i n├áy?"
               onConfirm={() => handleUndoReceived(record.distributionId)}
-              okText="Xác nhận"
-              cancelText="Hủy"
+              okText="X├íc nhß║¡n"
+              cancelText="Hß╗ºy"
             >
               <Button
                 type="default"
@@ -891,7 +973,7 @@ const RewardEventRegistrations = () => {
                 loading={distributing}
                 danger
               >
-                Quay lại
+                Quay lß║íi
               </Button>
             </Popconfirm>
           );
@@ -905,7 +987,7 @@ const RewardEventRegistrations = () => {
             loading={distributing}
             disabled={useMockData}
           >
-            Nhận quà
+            Nhß║¡n qu├á
           </Button>
         );
       },
@@ -916,12 +998,18 @@ const RewardEventRegistrations = () => {
     if (event?.type === "SCHOOL_YEAR" || event?.type === "ANNUAL") {
       return (
         <div>
-          <p>Nhập năm học để tạo danh sách từ thành tích học tập:</p>
+          <p>
+            Nhß║¡p n─âm hß╗ìc ─æß╗â tß║ío danh s├ích tß╗½ th├ánh t├¡ch hß╗ìc
+            tß║¡p:
+          </p>
           <Input
-            placeholder="Ví dụ: 2023-2024"
+            placeholder="V├¡ dß╗Ñ: 2023-2024"
             value={generateConfig.schoolYear}
             onChange={(e) =>
-              setGenerateConfig({ ...generateConfig, schoolYear: e.target.value })
+              setGenerateConfig({
+                ...generateConfig,
+                schoolYear: e.target.value,
+              })
             }
             style={{ marginTop: 8 }}
           />
@@ -930,25 +1018,31 @@ const RewardEventRegistrations = () => {
     } else {
       return (
         <div>
-          <p>Nhập độ tuổi để tạo danh sách:</p>
+          <p>Nhß║¡p ─æß╗Ö tuß╗òi ─æß╗â tß║ío danh s├ích:</p>
           <Row gutter={16} style={{ marginTop: 8 }}>
             <Col span={12}>
               <Input
-                placeholder="Tuổi tối thiểu"
+                placeholder="Tuß╗òi tß╗æi thiß╗âu"
                 type="number"
                 value={generateConfig.minAge}
                 onChange={(e) =>
-                  setGenerateConfig({ ...generateConfig, minAge: parseInt(e.target.value) || 0 })
+                  setGenerateConfig({
+                    ...generateConfig,
+                    minAge: parseInt(e.target.value) || 0,
+                  })
                 }
               />
             </Col>
             <Col span={12}>
               <Input
-                placeholder="Tuổi tối đa"
+                placeholder="Tuß╗òi tß╗æi ─æa"
                 type="number"
                 value={generateConfig.maxAge}
                 onChange={(e) =>
-                  setGenerateConfig({ ...generateConfig, maxAge: parseInt(e.target.value) || 18 })
+                  setGenerateConfig({
+                    ...generateConfig,
+                    maxAge: parseInt(e.target.value) || 18,
+                  })
                 }
               />
             </Col>
@@ -966,7 +1060,8 @@ const RewardEventRegistrations = () => {
           bordered={false}
           style={{
             marginBottom: 24,
-            background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+            background:
+              "linear-gradient(90deg,rgba(165, 202, 210, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(0, 212, 255, 1) 100%)",
             border: "none",
             borderRadius: "12px",
             boxShadow: "0 4px 12px rgba(24, 144, 255, 0.3)",
@@ -1009,12 +1104,10 @@ const RewardEventRegistrations = () => {
                     fontWeight: 700,
                   }}
                 >
-                  Danh sách Nhận quà
+                  Danh s├ích Nhß║¡n qu├á
                 </Title>
-                <Text
-                  style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}
-                >
-                  {event ? event.name : "Quản lý danh sách nhận quà"}
+                <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}>
+                  {event ? event.name : "Quß║ún l├╜ danh s├ích nhß║¡n qu├á"}
                 </Text>
               </div>
             </div>
@@ -1035,7 +1128,7 @@ const RewardEventRegistrations = () => {
                   }}
                   className="hover-back"
                 >
-                  Xuất danh sách
+                  Xuß║Ñt danh s├ích
                 </Button>
                 <Button
                   icon={<HomeOutlined />}
@@ -1051,7 +1144,7 @@ const RewardEventRegistrations = () => {
                   }}
                   className="hover-back"
                 >
-                  Thống kê theo hộ
+                  Thß╗æng k├¬ theo hß╗Ö
                 </Button>
               </Space>
             </div>
@@ -1081,87 +1174,91 @@ const RewardEventRegistrations = () => {
           className="hover-table-card"
         >
           <Space direction="vertical" size="large" style={{ width: "100%" }}>
+            {/* Thß╗æng k├¬ */}
+            <Row gutter={16} style={{ marginBottom: 16 }}>
+              <Col span={6}>
+                <Card>
+                  <Statistic
+                    title="Tß╗òng sß╗æ ─æß╗º ─æiß╗üu kiß╗çn"
+                    value={stats.total}
+                    prefix={<UserOutlined />}
+                  />
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card>
+                  <Statistic
+                    title="─É├ú nhß║¡n qu├á"
+                    value={stats.received}
+                    valueStyle={{ color: "#3f8600" }}
+                    prefix={<CheckCircleOutlined />}
+                  />
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card>
+                  <Statistic
+                    title="Ch╞░a nhß║¡n qu├á"
+                    value={stats.notReceived}
+                    valueStyle={{ color: "#cf1322" }}
+                  />
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card>
+                  <Statistic
+                    title="Tß╗╖ lß╗ç nhß║¡n qu├á"
+                    value={
+                      stats.total > 0
+                        ? ((stats.received / stats.total) * 100).toFixed(1)
+                        : 0
+                    }
+                    suffix="%"
+                    valueStyle={{ color: "#1890ff" }}
+                  />
+                </Card>
+              </Col>
+            </Row>
 
-          {/* Thống kê */}
-          <Row gutter={16} style={{ marginBottom: 16 }}>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="Tổng số đủ điều kiện"
-                  value={stats.total}
-                  prefix={<UserOutlined />}
+            <Row gutter={16}>
+              <Col span={8}>
+                <Input
+                  placeholder="T├¼m kiß║┐m theo t├¬n/CMND/hß╗Ö khß║⌐u..."
+                  prefix={<SearchOutlined />}
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  allowClear
                 />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="Đã nhận quà"
-                  value={stats.received}
-                  valueStyle={{ color: "#3f8600" }}
-                  prefix={<CheckCircleOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="Chưa nhận quà"
-                  value={stats.notReceived}
-                  valueStyle={{ color: "#cf1322" }}
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="Tỷ lệ nhận quà"
-                  value={stats.total > 0 ? ((stats.received / stats.total) * 100).toFixed(1) : 0}
-                  suffix="%"
-                  valueStyle={{ color: "#1890ff" }}
-                />
-              </Card>
-            </Col>
-          </Row>
+              </Col>
+              <Col span={6}>
+                <Select
+                  placeholder="Lß╗ìc theo trß║íng th├íi"
+                  style={{ width: "100%" }}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                >
+                  <Option value="ALL">Tß║Ñt cß║ú</Option>
+                  <Option value="NOT_RECEIVED">Ch╞░a nhß║¡n qu├á</Option>
+                  <Option value="DISTRIBUTED">─É├ú nhß║¡n qu├á</Option>
+                </Select>
+              </Col>
+            </Row>
 
-          <Row gutter={16}>
-            <Col span={8}>
-              <Input
-                placeholder="Tìm kiếm theo tên/CMND/hộ khẩu..."
-                prefix={<SearchOutlined />}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                allowClear
-              />
-            </Col>
-            <Col span={6}>
-              <Select
-                placeholder="Lọc theo trạng thái"
-                style={{ width: "100%" }}
-                value={statusFilter}
-                onChange={setStatusFilter}
-              >
-                <Option value="ALL">Tất cả</Option>
-                <Option value="NOT_RECEIVED">Chưa nhận quà</Option>
-                <Option value="DISTRIBUTED">Đã nhận quà</Option>
-              </Select>
-            </Col>
-          </Row>
-
-          <Table
-            columns={columns}
-            dataSource={filteredCitizens}
-            loading={loading}
-            pagination={{
-              ...pagination,
-              showSizeChanger: true,
-              showTotal: (total) => `Tổng ${total} công dân đủ điều kiện`,
-              onChange: (page, pageSize) => {
-                setPagination({ ...pagination, current: page, pageSize });
-              },
-            }}
-            rowClassName={() => "hoverable-row"}
-          />
+            <Table
+              columns={columns}
+              dataSource={filteredCitizens}
+              loading={loading}
+              pagination={{
+                ...pagination,
+                showSizeChanger: true,
+                showTotal: (total) =>
+                  `Tß╗òng ${total} c├┤ng d├ón ─æß╗º ─æiß╗üu kiß╗çn`,
+                onChange: (page, pageSize) => {
+                  setPagination({ ...pagination, current: page, pageSize });
+                },
+              }}
+              rowClassName={() => "hoverable-row"}
+            />
           </Space>
         </Card>
 
@@ -1189,22 +1286,22 @@ const RewardEventRegistrations = () => {
         </style>
       </div>
 
-      {/* Modal tạo danh sách phân phối */}
+      {/* Modal tß║ío danh s├ích ph├ón phß╗æi */}
       <Modal
-        title="Tạo danh sách phân phối quà"
+        title="Tß║ío danh s├ích ph├ón phß╗æi qu├á"
         open={isGenerateModalVisible}
         onOk={handleGenerateDistributions}
         onCancel={() => setIsGenerateModalVisible(false)}
         confirmLoading={generating}
-        okText="Tạo danh sách"
-        cancelText="Hủy"
+        okText="Tß║ío danh s├ích"
+        cancelText="Hß╗ºy"
       >
         {getGenerateModalContent()}
       </Modal>
 
-      {/* Modal chi tiết công dân */}
+      {/* Modal chi tiß║┐t c├┤ng d├ón */}
       <Modal
-        title="Chi tiết công dân"
+        title="Chi tiß║┐t c├┤ng d├ón"
         open={isDetailModalVisible}
         onCancel={() => {
           setIsDetailModalVisible(false);
@@ -1218,7 +1315,7 @@ const RewardEventRegistrations = () => {
               setViewingCitizen(null);
             }}
           >
-            Đóng
+            ─É├│ng
           </Button>,
           viewingCitizen?.status !== "DISTRIBUTED" && (
             <Button
@@ -1235,7 +1332,7 @@ const RewardEventRegistrations = () => {
               loading={distributing}
               disabled={useMockData}
             >
-              Đánh dấu đã nhận quà
+              ─É├ính dß║Ñu ─æ├ú nhß║¡n qu├á
             </Button>
           ),
         ].filter(Boolean)}
@@ -1243,69 +1340,74 @@ const RewardEventRegistrations = () => {
       >
         {viewingCitizen && (
           <Descriptions bordered column={1}>
-            <Descriptions.Item label="Họ và tên">
+            <Descriptions.Item label="Hß╗ì v├á t├¬n">
               <Text strong>{viewingCitizen.fullName || "N/A"}</Text>
             </Descriptions.Item>
             <Descriptions.Item label="CMND/CCCD">
               {viewingCitizen.nationalId || "N/A"}
             </Descriptions.Item>
-            <Descriptions.Item label="Ngày sinh">
+            <Descriptions.Item label="Ng├áy sinh">
               {viewingCitizen.dateOfBirth
                 ? dayjs(viewingCitizen.dateOfBirth).format("DD/MM/YYYY")
                 : "N/A"}
             </Descriptions.Item>
-            <Descriptions.Item label="Giới tính">
+            <Descriptions.Item label="Giß╗¢i t├¡nh">
               {viewingCitizen.gender === "MALE"
                 ? "Nam"
                 : viewingCitizen.gender === "FEMALE"
-                ? "Nữ"
+                ? "Nß╗»"
                 : "N/A"}
             </Descriptions.Item>
-            <Descriptions.Item label="Hộ khẩu">
-              {viewingCitizen.household?.code || viewingCitizen.household || "N/A"}
+            <Descriptions.Item label="Hß╗Ö khß║⌐u">
+              {viewingCitizen.household?.code ||
+                viewingCitizen.household ||
+                "N/A"}
             </Descriptions.Item>
-            <Descriptions.Item label="Trạng thái nhận quà">
+            <Descriptions.Item label="Trß║íng th├íi nhß║¡n qu├á">
               {viewingCitizen.status === "DISTRIBUTED" ? (
                 <Tag color="green" icon={<CheckCircleOutlined />}>
-                  Đã nhận quà
+                  ─É├ú nhß║¡n qu├á
                 </Tag>
               ) : (
-                <Tag color="orange">Chưa nhận quà</Tag>
+                <Tag color="orange">Ch╞░a nhß║¡n qu├á</Tag>
               )}
             </Descriptions.Item>
             {viewingCitizen.distributedAt && (
-              <Descriptions.Item label="Thời gian nhận quà">
+              <Descriptions.Item label="Thß╗¥i gian nhß║¡n qu├á">
                 {dayjs(viewingCitizen.distributedAt).format("DD/MM/YYYY HH:mm")}
               </Descriptions.Item>
             )}
-            <Descriptions.Item label="Số lượng">
+            <Descriptions.Item label="Sß╗æ l╞░ß╗úng">
               {viewingCitizen.quantity || 1}
             </Descriptions.Item>
-            <Descriptions.Item label="Giá trị quà">
+            <Descriptions.Item label="Gi├í trß╗ï qu├á">
               {viewingCitizen.totalValue
-                ? `${viewingCitizen.totalValue.toLocaleString("vi-VN")} VNĐ`
+                ? `${viewingCitizen.totalValue.toLocaleString("vi-VN")} VN─É`
                 : event?.budget
-                ? `${event.budget.toLocaleString("vi-VN")} VNĐ`
+                ? `${event.budget.toLocaleString("vi-VN")} VN─É`
                 : "N/A"}
             </Descriptions.Item>
           </Descriptions>
         )}
       </Modal>
 
-      {/* Modal thống kê theo hộ gia đình */}
+      {/* Modal thß╗æng k├¬ theo hß╗Ö gia ─æ├¼nh */}
       <Modal
-        title="Thống kê theo Hộ gia đình"
+        title="Thß╗æng k├¬ theo Hß╗Ö gia ─æ├¼nh"
         open={isHouseholdStatsVisible}
         onCancel={() => {
           setIsHouseholdStatsVisible(false);
           setHouseholdStats([]);
         }}
         footer={[
-          <Button key="close" onClick={() => {
-            setIsHouseholdStatsVisible(false);
-            setHouseholdStats([]);
-          }}>
-            Đóng
+          <Button
+            key="close"
+            onClick={() => {
+              setIsHouseholdStatsVisible(false);
+              setHouseholdStats([]);
+            }}
+          >
+            ─É├│ng
           </Button>,
         ]}
         width={900}
@@ -1319,20 +1421,20 @@ const RewardEventRegistrations = () => {
               render: (_, __, index) => index + 1,
             },
             {
-              title: "Mã hộ khẩu",
+              title: "M├ú hß╗Ö khß║⌐u",
               dataIndex: "householdCode",
               key: "householdCode",
               width: 120,
             },
             {
-              title: "Địa chỉ",
+              title: "─Éß╗ïa chß╗ë",
               dataIndex: "householdAddress",
               key: "householdAddress",
               width: 200,
               ellipsis: true,
             },
             {
-              title: "Số người nhận",
+              title: "Sß╗æ ng╞░ß╗¥i nhß║¡n",
               dataIndex: "recipientCount",
               key: "recipientCount",
               width: 120,
@@ -1340,7 +1442,7 @@ const RewardEventRegistrations = () => {
               render: (count) => <Text strong>{count || 0}</Text>,
             },
             {
-              title: "Số phần quà",
+              title: "Sß╗æ phß║ºn qu├á",
               dataIndex: "totalQuantity",
               key: "totalQuantity",
               width: 120,
@@ -1348,23 +1450,31 @@ const RewardEventRegistrations = () => {
               render: (qty) => <Text strong>{qty || 0}</Text>,
             },
             {
-              title: "Tổng giá trị",
+              title: "Tß╗òng gi├í trß╗ï",
               dataIndex: "totalValue",
               key: "totalValue",
               width: 200,
               align: "right",
               render: (value, record) => {
-                const unitValue = record.totalQuantity > 0 
-                  ? (record.totalValue || 0) / record.totalQuantity 
-                  : 0;
+                const unitValue =
+                  record.totalQuantity > 0
+                    ? (record.totalValue || 0) / record.totalQuantity
+                    : 0;
                 return (
-                  <Space direction="vertical" size={2} style={{ textAlign: "right" }}>
+                  <Space
+                    direction="vertical"
+                    size={2}
+                    style={{ textAlign: "right" }}
+                  >
                     <Text strong style={{ color: "#52c41a" }}>
-                      {value ? `${value.toLocaleString("vi-VN")} VNĐ` : "0 VNĐ"}
+                      {value
+                        ? `${value.toLocaleString("vi-VN")} VN─É`
+                        : "0 VN─É"}
                     </Text>
                     {unitValue > 0 && (
                       <Text type="secondary" style={{ fontSize: "11px" }}>
-                        ({Math.round(unitValue).toLocaleString("vi-VN")} VNĐ/phần quà)
+                        ({Math.round(unitValue).toLocaleString("vi-VN")}{" "}
+                        VN─É/phß║ºn qu├á)
                       </Text>
                     )}
                   </Space>
@@ -1377,21 +1487,31 @@ const RewardEventRegistrations = () => {
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
-            showTotal: (total) => `Tổng ${total} hộ gia đình`,
+            showTotal: (total) => `Tß╗òng ${total} hß╗Ö gia ─æ├¼nh`,
           }}
           scroll={{ x: 700 }}
           summary={(pageData) => {
-            const totalQuantity = householdStats.reduce((sum, h) => sum + (h.totalQuantity || 0), 0);
-            const totalValue = householdStats.reduce((sum, h) => sum + (h.totalValue || 0), 0);
-            const totalRecipients = householdStats.reduce((sum, h) => sum + (h.recipientCount || 0), 0);
-            const avgUnitValue = totalQuantity > 0 ? totalValue / totalQuantity : 0;
-            
+            const totalQuantity = householdStats.reduce(
+              (sum, h) => sum + (h.totalQuantity || 0),
+              0
+            );
+            const totalValue = householdStats.reduce(
+              (sum, h) => sum + (h.totalValue || 0),
+              0
+            );
+            const totalRecipients = householdStats.reduce(
+              (sum, h) => sum + (h.recipientCount || 0),
+              0
+            );
+            const avgUnitValue =
+              totalQuantity > 0 ? totalValue / totalQuantity : 0;
+
             return (
               <Table.Summary>
                 {householdStats.length > 0 && (
                   <Table.Summary.Row>
                     <Table.Summary.Cell index={0} colSpan={3}>
-                      <Text strong>Tổng cộng (tất cả)</Text>
+                      <Text strong>Tß╗òng cß╗Öng (tß║Ñt cß║ú)</Text>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell index={1} align="center">
                       <Text strong>{totalRecipients}</Text>
@@ -1400,13 +1520,18 @@ const RewardEventRegistrations = () => {
                       <Text strong>{totalQuantity}</Text>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell index={3} align="right">
-                      <Space direction="vertical" size={2} style={{ textAlign: "right" }}>
+                      <Space
+                        direction="vertical"
+                        size={2}
+                        style={{ textAlign: "right" }}
+                      >
                         <Text strong style={{ color: "#52c41a" }}>
-                          {totalValue.toLocaleString("vi-VN")} VNĐ
+                          {totalValue.toLocaleString("vi-VN")} VN─É
                         </Text>
                         {avgUnitValue > 0 && (
                           <Text type="secondary" style={{ fontSize: "11px" }}>
-                            ({Math.round(avgUnitValue).toLocaleString("vi-VN")} VNĐ/phần quà)
+                            ({Math.round(avgUnitValue).toLocaleString("vi-VN")}{" "}
+                            VN─É/phß║ºn qu├á)
                           </Text>
                         )}
                       </Space>

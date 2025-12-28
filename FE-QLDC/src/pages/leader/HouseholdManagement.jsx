@@ -533,7 +533,8 @@ const HouseholdManagement = () => {
         {/* Page Header */}
         <div
           style={{
-            background: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
+            background:
+              "linear-gradient(90deg,rgba(138, 80, 130, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(0, 212, 255, 1) 100%)",
             borderRadius: "12px",
             padding: "24px 32px",
             marginBottom: 24,
@@ -838,7 +839,6 @@ const HouseholdManagement = () => {
                 message="Chọn thành viên? Tách thành hộ mới"
                 description="Mỗi hộ mới cần có chủ hộ và thành viên. Hộ khẩu gốc phải có ít nhất 1 thành viên còn lại."
                 type="info"
-                showIcon
                 style={{ marginBottom: 16 }}
               />
               <Descriptions

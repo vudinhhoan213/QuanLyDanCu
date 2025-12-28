@@ -450,7 +450,8 @@ const CitizenManagement = () => {
         {/* Page Header */}
         <div
           style={{
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            background:
+              "linear-gradient(90deg,rgba(117, 142, 183, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(0, 212, 255, 1) 100%)",
             borderRadius: "12px",
             padding: "24px 32px",
             marginBottom: 24,

@@ -357,7 +357,8 @@ const CitizenDashboard = () => {
         <Card
           style={{
             marginBottom: 24,
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            background:
+              "linear-gradient(135deg, #093f61ff 0%, #9bd8ff 28%, #2a7ecf 55%, #0077ff 78%, #00c2cf 100%)",
             border: "none",
           }}
           bodyStyle={{ padding: "32px" }}

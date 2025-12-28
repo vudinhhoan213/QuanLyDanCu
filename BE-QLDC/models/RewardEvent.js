@@ -17,6 +17,14 @@ const rewardEventSchema = new Schema(
     endDate: { type: Date },
     maxSlots: { type: Number, default: 0 }, // Số slot tối đa
     budget: { type: Number },
+    targetAge: {
+      min: { type: Number },
+      max: { type: Number },
+    },
+    targetGender: {
+      type: String,
+      enum: ["MALE", "FEMALE"],
+    },
     status: {
       type: String,
       enum: ["OPEN", "CLOSED", "EXPIRED", "ENDED", "PLANNED", "ONGOING", "COMPLETED"], // Giữ lại cũ để tương thích

@@ -333,9 +333,7 @@ const StudentAchievements = () => {
         title: "Thành tích",
         key: "achievement",
         width: 300,
-        render: (_, record) => (
-          <Text>{record?.title || "N/A"}</Text>
-        ),
+        render: (_, record) => <Text>{record?.title || "N/A"}</Text>,
       },
     ],
     []
@@ -363,10 +361,10 @@ const StudentAchievements = () => {
             bordered={false}
             style={{
               marginBottom: 24,
-              background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+              background:
+                "linear-gradient(120deg, #35475aff 0%, #7fc4ff 30%, #2b6fd6 55%, #008dff 80%, #00c4b4 100%)",
               border: "none",
               borderRadius: "12px",
-              boxShadow: "0 4px 12px rgba(24, 144, 255, 0.3)",
               transition: "transform 0.3s ease, box-shadow 0.3s ease",
             }}
             bodyStyle={{ padding: "32px" }}
@@ -406,9 +404,7 @@ const StudentAchievements = () => {
                 >
                   Thành tích học sinh
                 </Title>
-                <Text
-                  style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}
-                >
+                <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 16 }}>
                   Quản lý và theo dõi thành tích học tập của học sinh
                 </Text>
               </div>
@@ -424,144 +420,143 @@ const StudentAchievements = () => {
           </Card>
 
           <div style={{ padding: "0", minHeight: "100vh" }}>
+            {/* Error Message */}
+            {error && (
+              <Card
+                bordered={false}
+                style={{
+                  marginBottom: 16,
+                  backgroundColor: "#fff2f0",
+                  borderColor: "#ffccc7",
+                }}
+              >
+                <Text type="danger">Lỗi: {error}</Text>
+              </Card>
+            )}
 
-          {/* Error Message */}
-          {error && (
+            {/* Statistics */}
             <Card
               bordered={false}
               style={{
                 marginBottom: 16,
-                backgroundColor: "#fff2f0",
-                borderColor: "#ffccc7",
+                borderRadius: 12,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
               }}
             >
-              <Text type="danger">Lỗi: {error}</Text>
-            </Card>
-          )}
-
-          {/* Statistics */}
-          <Card
-            bordered={false}
-            style={{
-              marginBottom: 16,
-              borderRadius: 12,
-              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-            }}
-          >
-            <Space size="large">
-              <div>
-                <Text type="secondary">Tổng thành tích</Text>
-                <Title level={3} style={{ margin: 0 }}>
-                  {stats.total}
-                </Title>
-              </div>
-              <div>
-                <Text type="secondary">Đã duyệt khen thưởng</Text>
-                <Title level={3} style={{ margin: 0, color: "#52c41a" }}>
-                  {stats.withReward}
-                </Title>
-              </div>
-              <div>
-                <Text type="secondary">Chưa duyệt khen thưởng</Text>
-                <Title level={3} style={{ margin: 0, color: "#faad14" }}>
-                  {stats.withoutReward}
-                </Title>
-              </div>
-              <div>
-                <Text type="secondary">Học sinh giỏi</Text>
-                <Title level={3} style={{ margin: 0, color: "#faad14" }}>
-                  {stats.gioi}
-                </Title>
-              </div>
-            </Space>
-          </Card>
-
-          {/* Filter Bar */}
-          <Card
-            bordered={false}
-            style={{
-              marginBottom: 16,
-              borderRadius: 12,
-              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-            }}
-          >
-            <Space style={{ width: "100%", justifyContent: "space-between" }}>
-              <Space>
-                <Input
-                  placeholder="Tìm kiếm thành tích..."
-                  prefix={<SearchOutlined />}
-                  style={{ width: 300 }}
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  allowClear
-                />
-                <Select
-                  style={{ width: 150 }}
-                  value={achievementFilter}
-                  onChange={setAchievementFilter}
-                >
-                  <Option value="all">Tất cả thành tích</Option>
-                  <Option value="GIOI">Giỏi</Option>
-                  <Option value="TIEN_TIEN">Tiên tiến</Option>
-                  <Option value="KHAC">Khác</Option>
-                </Select>
-                <Select
-                  style={{ width: 180 }}
-                  value={rewardStatusFilter}
-                  onChange={setRewardStatusFilter}
-                >
-                  <Option value="all">Tất cả</Option>
-                  <Option value="approved">Đã duyệt khen thưởng</Option>
-                  <Option value="none">Chưa duyệt khen thưởng</Option>
-                </Select>
+              <Space size="large">
+                <div>
+                  <Text type="secondary">Tổng thành tích</Text>
+                  <Title level={3} style={{ margin: 0 }}>
+                    {stats.total}
+                  </Title>
+                </div>
+                <div>
+                  <Text type="secondary">Đã duyệt khen thưởng</Text>
+                  <Title level={3} style={{ margin: 0, color: "#52c41a" }}>
+                    {stats.withReward}
+                  </Title>
+                </div>
+                <div>
+                  <Text type="secondary">Chưa duyệt khen thưởng</Text>
+                  <Title level={3} style={{ margin: 0, color: "#faad14" }}>
+                    {stats.withoutReward}
+                  </Title>
+                </div>
+                <div>
+                  <Text type="secondary">Học sinh giỏi</Text>
+                  <Title level={3} style={{ margin: 0, color: "#faad14" }}>
+                    {stats.gioi}
+                  </Title>
+                </div>
               </Space>
-            </Space>
-          </Card>
+            </Card>
 
-          {/* Table */}
-          <Card
-            bordered={false}
-            style={{
-              borderRadius: 12,
-              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-              transition: "all 0.3s ease",
-            }}
-            className="hover-table-card"
-          >
-            {!loading &&
-            filteredAchievements.length === 0 &&
-            achievements.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "40px" }}>
-                <Text type="secondary">Chưa có thành tích học sinh nào</Text>
-              </div>
-            ) : !loading &&
+            {/* Filter Bar */}
+            <Card
+              bordered={false}
+              style={{
+                marginBottom: 16,
+                borderRadius: 12,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+              }}
+            >
+              <Space style={{ width: "100%", justifyContent: "space-between" }}>
+                <Space>
+                  <Input
+                    placeholder="Tìm kiếm thành tích..."
+                    prefix={<SearchOutlined />}
+                    style={{ width: 300 }}
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    allowClear
+                  />
+                  <Select
+                    style={{ width: 150 }}
+                    value={achievementFilter}
+                    onChange={setAchievementFilter}
+                  >
+                    <Option value="all">Tất cả thành tích</Option>
+                    <Option value="GIOI">Giỏi</Option>
+                    <Option value="TIEN_TIEN">Tiên tiến</Option>
+                    <Option value="KHAC">Khác</Option>
+                  </Select>
+                  <Select
+                    style={{ width: 180 }}
+                    value={rewardStatusFilter}
+                    onChange={setRewardStatusFilter}
+                  >
+                    <Option value="all">Tất cả</Option>
+                    <Option value="approved">Đã duyệt khen thưởng</Option>
+                    <Option value="none">Chưa duyệt khen thưởng</Option>
+                  </Select>
+                </Space>
+              </Space>
+            </Card>
+
+            {/* Table */}
+            <Card
+              bordered={false}
+              style={{
+                borderRadius: 12,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                transition: "all 0.3s ease",
+              }}
+              className="hover-table-card"
+            >
+              {!loading &&
               filteredAchievements.length === 0 &&
-              achievements.length > 0 ? (
-              <div style={{ textAlign: "center", padding: "40px" }}>
-                <Text type="secondary">
-                  Không tìm thấy thành tích nào phù hợp với bộ lọc
-                </Text>
-              </div>
-            ) : (
-              <Table
-                columns={columns}
-                dataSource={filteredAchievements}
-                loading={loading}
-                rowKey="id"
-                pagination={{
-                  total: filteredAchievements.length,
-                  pageSize: 10,
-                  showSizeChanger: true,
-                  showTotal: (total) => `Tổng ${total} thành tích`,
-                }}
-                rowClassName={() => "hoverable-row"}
-              />
-            )}
-          </Card>
+              achievements.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px" }}>
+                  <Text type="secondary">Chưa có thành tích học sinh nào</Text>
+                </div>
+              ) : !loading &&
+                filteredAchievements.length === 0 &&
+                achievements.length > 0 ? (
+                <div style={{ textAlign: "center", padding: "40px" }}>
+                  <Text type="secondary">
+                    Không tìm thấy thành tích nào phù hợp với bộ lọc
+                  </Text>
+                </div>
+              ) : (
+                <Table
+                  columns={columns}
+                  dataSource={filteredAchievements}
+                  loading={loading}
+                  rowKey="id"
+                  pagination={{
+                    total: filteredAchievements.length,
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    showTotal: (total) => `Tổng ${total} thành tích`,
+                  }}
+                  rowClassName={() => "hoverable-row"}
+                />
+              )}
+            </Card>
 
-          {/* CSS hover effects */}
-          <style>
-            {`
+            {/* CSS hover effects */}
+            <style>
+              {`
               .hover-table-card:hover {
                 transform: translateY(-4px);
                 box-shadow: 0 10px 25px rgba(0,0,0,0.15);
@@ -580,7 +575,7 @@ const StudentAchievements = () => {
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
               }
             `}
-          </style>
+            </style>
           </div>
 
           {/* View Modal */}
@@ -620,9 +615,7 @@ const StudentAchievements = () => {
                     {currentAchievement.notebooksRewarded || 0}
                   </Descriptions.Item>
                   <Descriptions.Item label="Khen thưởng">
-                    <Text strong>
-                      {currentAchievement.title || "N/A"}
-                    </Text>
+                    <Text strong>{currentAchievement.title || "N/A"}</Text>
                   </Descriptions.Item>
                   <Descriptions.Item label="Mô tả">
                     {currentAchievement.description || "N/A"}

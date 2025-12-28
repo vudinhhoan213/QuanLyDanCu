@@ -32,6 +32,17 @@ const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
 
+const REQUEST_TYPE = {
+  ADD_MEMBER: "THEM_NHAN_KHAU",
+  EDIT_INFO: "CHINH_SUA_THONG_TIN",
+  REMOVE_MEMBER: "XOA_NHAN_KHAU",
+  TEMP_ABSENCE: "TAM_VANG",
+  TEMP_RESIDENCE: "TAM_TRU",
+  MOVE_OUT: "CHUYEN_DI",
+  MOVE_IN: "CHUYEN_DEN",
+  OTHER: "KHAC",
+};
+
 const SubmitEditRequest = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -39,26 +50,26 @@ const SubmitEditRequest = () => {
   const [selectedType, setSelectedType] = useState(null);
 
   const requestTypes = [
-    { value: "ADD_MEMBER", label: "Thêm nhân khẩu", icon: <EditOutlined /> },
+    { value: REQUEST_TYPE.ADD_MEMBER, label: "Thêm nhân khẩu", icon: <EditOutlined /> },
     {
-      value: "EDIT_INFO",
+      value: REQUEST_TYPE.EDIT_INFO,
       label: "Chỉnh sửa thông tin",
       icon: <EditOutlined />,
     },
-    { value: "REMOVE_MEMBER", label: "Xóa nhân khẩu", icon: <EditOutlined /> },
+    { value: REQUEST_TYPE.REMOVE_MEMBER, label: "Xóa nhân khẩu", icon: <EditOutlined /> },
     {
-      value: "TEMP_ABSENCE",
+      value: REQUEST_TYPE.TEMP_ABSENCE,
       label: "Đăng ký tạm vắng",
       icon: <EditOutlined />,
     },
     {
-      value: "TEMP_RESIDENCE",
+      value: REQUEST_TYPE.TEMP_RESIDENCE,
       label: "Đăng ký tạm trú",
       icon: <EditOutlined />,
     },
-    { value: "MOVE_OUT", label: "Chuyển đi", icon: <EditOutlined /> },
-    { value: "MOVE_IN", label: "Chuyển đến", icon: <EditOutlined /> },
-    { value: "OTHER", label: "Khác", icon: <InfoCircleOutlined /> },
+    { value: REQUEST_TYPE.MOVE_OUT, label: "Chuyển đi", icon: <EditOutlined /> },
+    { value: REQUEST_TYPE.MOVE_IN, label: "Chuyển đến", icon: <EditOutlined /> },
+    { value: REQUEST_TYPE.OTHER, label: "Khác", icon: <InfoCircleOutlined /> },
   ];
 
   const handleSubmit = async (values) => {
@@ -124,7 +135,8 @@ const SubmitEditRequest = () => {
           bordered={false}
           style={{
             marginBottom: 24,
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            background:
+              "linear-gradient(110deg, #1d5e9cff 0%, #92d0ff 32%, #2c6fbf 56%, #0092ff 82%, #00d7a8 100%)",
             borderRadius: "12px",
             boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
             transition: "transform 0.3s ease, box-shadow 0.3s ease",
@@ -317,7 +329,7 @@ const SubmitEditRequest = () => {
                   </Form.Item>
 
                   {/* --- THONG TIN TAM TRU / TAM VANG --- */}
-                  {selectedType === "TEMP_ABSENCE" && (
+                  {selectedType === REQUEST_TYPE.TEMP_ABSENCE && (
                     <div
                       style={{
                         padding: "16px",
@@ -381,7 +393,7 @@ const SubmitEditRequest = () => {
                       </Form.Item>
                     </div>
                   )}
-                  {selectedType === "TEMP_RESIDENCE" && (
+                  {selectedType === REQUEST_TYPE.TEMP_RESIDENCE && (
                     <div
                       style={{
                         padding: "16px",

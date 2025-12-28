@@ -74,7 +74,7 @@ module.exports = {
     delete updates.details;
     const requestType = reqDoc.requestType;
 
-    if (requestType === "TEMP_ABSENCE") {
+    if (requestType === "TAM_VANG") {
       if (!updates.temporaryAbsenceFrom || !updates.temporaryAbsenceTo) {
         throw new Error("Missing temporary absence date range");
       }
@@ -92,7 +92,7 @@ module.exports = {
       updates.temporaryResidenceTo = null;
     }
 
-    if (requestType === "TEMP_RESIDENCE") {
+    if (requestType === "TAM_TRU") {
       if (!updates.temporaryResidenceFrom || !updates.temporaryResidenceTo) {
         throw new Error("Missing temporary residence date range");
       }

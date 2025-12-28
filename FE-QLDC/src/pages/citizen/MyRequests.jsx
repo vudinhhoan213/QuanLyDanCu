@@ -34,6 +34,40 @@ import dayjs from "dayjs";
 
 const { Title, Text, Paragraph } = Typography;
 
+const REQUEST_TYPE = {
+  ADD_MEMBER: "THEM_NHAN_KHAU",
+  EDIT_INFO: "CHINH_SUA_THONG_TIN",
+  REMOVE_MEMBER: "XOA_NHAN_KHAU",
+  TEMP_ABSENCE: "TAM_VANG",
+  TEMP_RESIDENCE: "TAM_TRU",
+  MOVE_OUT: "CHUYEN_DI",
+  MOVE_IN: "CHUYEN_DEN",
+  OTHER: "KHAC",
+};
+
+const REQUEST_TYPE_LABELS = {
+  [REQUEST_TYPE.ADD_MEMBER]: "Th?m nh?n kh?u",
+  [REQUEST_TYPE.EDIT_INFO]: "Ch?nh s?a th?ng tin",
+  [REQUEST_TYPE.REMOVE_MEMBER]: "X?a nh?n kh?u",
+  [REQUEST_TYPE.TEMP_ABSENCE]: "T?m v?ng",
+  [REQUEST_TYPE.TEMP_RESIDENCE]: "T?m tr?",
+  [REQUEST_TYPE.MOVE_OUT]: "Chuy?n ?i",
+  [REQUEST_TYPE.MOVE_IN]: "Chuy?n ??n",
+  [REQUEST_TYPE.OTHER]: "Kh?c",
+  // Legacy codes (d? li?u c?)
+  ADD_MEMBER: "Th?m nh?n kh?u",
+  EDIT_INFO: "Ch?nh s?a th?ng tin",
+  REMOVE_MEMBER: "X?a nh?n kh?u",
+  TEMP_ABSENCE: "T?m v?ng",
+  TEMP_RESIDENCE: "T?m tr?",
+  MOVE_OUT: "Chuy?n ?i",
+  MOVE_IN: "Chuy?n ??n",
+  OTHER: "Kh?c",
+};
+const getRequestTypeLabel = (value) => REQUEST_TYPE_LABELS[value] || value || "Kh?c";
+
+
+
 const MyRequests = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -73,6 +107,8 @@ const MyRequests = () => {
       const formattedEditRequests = editData.map((item) => ({
         ...item,
         requestCategory: "EDIT",
+        requestTypeLabel:
+          REQUEST_TYPE_LABELS[item.requestType] || item.requestType,
       }));
 
       const formattedRewardProposals = rewardData.map((item) => ({
@@ -275,7 +311,8 @@ const MyRequests = () => {
           bordered={false}
           style={{
             marginBottom: 24,
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            background:
+              "linear-gradient(115deg, #6c9bcdff 0%, #a4d2ff 30%, #2d73c8 56%, #0086ff 80%, #00b7c4 100%)",
             border: "none",
             borderRadius: "12px",
             boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
@@ -595,11 +632,14 @@ const MyRequests = () => {
                 {currentRequest.requestCategory === "EDIT" &&
                   currentRequest.requestType && (
                     <Descriptions.Item label="Phân loại">
-                      <Tag color="blue">{currentRequest.requestType}</Tag>
+                      <Tag color="blue">
+                        {currentRequest.requestTypeLabel ||
+                          getRequestTypeLabel(currentRequest.requestType)}
+                      </Tag>
                     </Descriptions.Item>
                   )}
                 {currentRequest.requestCategory === "EDIT" &&
-                  currentRequest.requestType === "TEMP_ABSENCE" && (
+                  currentRequest.requestType === REQUEST_TYPE.TEMP_ABSENCE && (
                     <Descriptions.Item label="Tạm vắng">
                       <div>
                         <div>
@@ -627,7 +667,7 @@ const MyRequests = () => {
                     </Descriptions.Item>
                   )}
                 {currentRequest.requestCategory === "EDIT" &&
-                  currentRequest.requestType === "TEMP_RESIDENCE" && (
+                  currentRequest.requestType === REQUEST_TYPE.TEMP_RESIDENCE && (
                     <Descriptions.Item label="Tạm trú">
                       <div>
                         <div>

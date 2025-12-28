@@ -182,7 +182,8 @@ const SubmitRewardProposal = () => {
           bordered={false}
           style={{
             marginBottom: 24,
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            background:
+              "linear-gradient(140deg, #182c3bff 0%, #a8ddff 34%, #367cc9 58%, #009bff 82%, #00d1be 100%)",
             border: "none",
             borderRadius: "12px",
             boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",

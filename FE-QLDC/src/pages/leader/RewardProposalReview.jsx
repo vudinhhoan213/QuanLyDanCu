@@ -258,11 +258,10 @@ const RewardProposalReview = () => {
         <div
           style={{
             background:
-              "linear-gradient(84deg,rgba(34, 193, 195, 1) 0%, rgba(253, 187, 45, 1) 100%)",
+              "linear-gradient(90deg,rgba(255, 123, 137, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(0, 212, 255, 1) 100%)",
             borderRadius: "12px",
             padding: "24px 32px",
             marginBottom: 24,
-            boxShadow: "0 4px 12px rgba(102, 126, 234, 0.15)",
           }}
         >
           <Space align="center" size={16}>

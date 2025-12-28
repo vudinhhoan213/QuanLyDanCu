@@ -480,8 +480,7 @@ const LeaderDashboard = () => {
           style={{
             marginBottom: 24,
             background:
-              "linear-gradient(356deg,rgba(2, 0, 36, 1) 0%, rgba(9, 74, 121, 1) 15%, rgba(0, 212, 255, 1) 100%)",
-
+              "linear-gradient(90deg,rgba(194, 100, 154, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(0, 212, 255, 1) 100%)",
             border: "none",
           }}
           bodyStyle={{ padding: "32px" }}
