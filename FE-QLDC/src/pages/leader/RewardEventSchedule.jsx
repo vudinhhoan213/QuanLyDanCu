@@ -16,6 +16,8 @@ import {
   DatePicker,
   Input,
   Badge,
+  Table,
+  Select,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -33,6 +35,7 @@ import { ANNUAL_OCCASIONS } from "../../constants/annualOccasions";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 const RewardEventSchedule = () => {
   const navigate = useNavigate();
@@ -79,6 +82,36 @@ const RewardEventSchedule = () => {
 
   const getCurrentYear = () => {
     return dayjs().year();
+  };
+
+  const getEventName = (template) => {
+    const name = template.name || "";
+    const hasYear = /\b(19|20)\d{2}\b/.test(name);
+    return hasYear ? name : `${name} ${getCurrentYear()}`;
+  };
+
+  const getStatusTag = (status) => {
+    const statusMap = {
+      OPEN: { color: "green", text: "Đang phát" },
+      CLOSED: { color: "orange", text: "Đóng" },
+      EXPIRED: { color: "red", text: "Hết hạn" },
+      ENDED: { color: "default", text: "Đã kết thúc" },
+      PLANNED: { color: "blue", text: "Đã lên kế hoạch" },
+      ONGOING: { color: "green", text: "Đang diễn ra" },
+      COMPLETED: { color: "default", text: "Hoàn thành" },
+    };
+    const statusInfo = statusMap[status] || { color: "default", text: status };
+    return <Tag color={statusInfo.color}>{statusInfo.text}</Tag>;
+  };
+
+  const getTypeText = (type) => {
+    const typeMap = {
+      ANNUAL: "Thường niên",
+      SPECIAL: "Đặc biệt",
+      SPECIAL_OCCASION: "Dịp đặc biệt",
+      SCHOOL_YEAR: "Năm học",
+    };
+    return typeMap[type] || type;
   };
 
   const calculateDate = (template) => {
@@ -128,7 +161,7 @@ const RewardEventSchedule = () => {
 
       // Tạo sự kiện với thời gian phát quà (không có đăng ký)
       const eventData = {
-        name: `${template.name} ${getCurrentYear()}`,
+        name: getEventName(template),
         type: template.type,
         description: template.description,
         rewardDescription: template.rewardDescription || undefined,
@@ -140,7 +173,7 @@ const RewardEventSchedule = () => {
       };
 
       const createdEvent = await rewardService.events.create(eventData);
-      message.success(`Đã tạo sự kiện "${template.name} ${getCurrentYear()}"`);
+      message.success(`Đã tạo sự kiện "${eventData.name}"`);
 
       // Nếu có targetAge, tự động tạo danh sách phân phối
       if (template.targetAge) {
@@ -228,20 +261,23 @@ const RewardEventSchedule = () => {
         ? values.eventDateOverride.toISOString()
         : undefined;
 
-      const hasAge =
-        values.targetAgeMin !== undefined && values.targetAgeMin !== null
-          ? true
-          : values.targetAgeMax !== undefined && values.targetAgeMax !== null;
+      const hasAgeMin =
+        values.targetAgeMin !== undefined && values.targetAgeMin !== null;
+      const hasAgeMax =
+        values.targetAgeMax !== undefined && values.targetAgeMax !== null;
+      if (hasAgeMin && hasAgeMax && values.targetAgeMin > values.targetAgeMax) {
+        message.error("Tuổi tối thiểu không được lớn hơn tuổi tối đa");
+        return;
+      }
+      const hasAge = hasAgeMin || hasAgeMax;
       const targetAge = hasAge
         ? {
-            min:
-              values.targetAgeMin !== undefined && values.targetAgeMin !== null
-                ? values.targetAgeMin
-                : 0,
-            max:
-              values.targetAgeMax !== undefined && values.targetAgeMax !== null
-                ? values.targetAgeMax
-                : 0,
+            min: hasAgeMin ? values.targetAgeMin : 0,
+            max: hasAgeMax
+              ? values.targetAgeMax
+              : hasAgeMin
+              ? values.targetAgeMin
+              : 0,
           }
         : undefined;
 
@@ -289,6 +325,32 @@ const RewardEventSchedule = () => {
       const values = await createForm.validateFields();
       setCreateLoading(true);
 
+      const hasAgeMin =
+        values.targetAgeMin !== undefined && values.targetAgeMin !== null;
+      const hasAgeMax =
+        values.targetAgeMax !== undefined && values.targetAgeMax !== null;
+      if (hasAgeMin && hasAgeMax && values.targetAgeMin > values.targetAgeMax) {
+        message.error("Tuổi tối thiểu không được lớn hơn tuổi tối đa");
+        setCreateLoading(false);
+        return;
+      }
+      const hasAge = hasAgeMin || hasAgeMax;
+      const targetAge = hasAge
+        ? {
+            min: hasAgeMin ? values.targetAgeMin : 0,
+            max: hasAgeMax
+              ? values.targetAgeMax
+              : hasAgeMin
+              ? values.targetAgeMin
+              : 0,
+          }
+        : undefined;
+
+      const targetGender =
+        values.targetGender && values.targetGender !== "ALL"
+          ? values.targetGender
+          : undefined;
+
       const eventData = {
         name: values.name,
         type: values.type || "ANNUAL",
@@ -298,6 +360,8 @@ const RewardEventSchedule = () => {
         endDate: values.dateRange?.[1]?.toISOString(),
         budget: values.budget || undefined,
         status: "OPEN",
+        targetAge,
+        targetGender,
       };
 
       await rewardService.events.create(eventData);
@@ -315,7 +379,7 @@ const RewardEventSchedule = () => {
   };
 
   const isEventExists = (template) => {
-    const eventName = `${template.name} ${getCurrentYear()}`;
+    const eventName = getEventName(template);
     return events.some((e) => e.name === eventName);
   };
 
@@ -327,6 +391,69 @@ const RewardEventSchedule = () => {
     if (template.targetGender === "MALE") return "Nam";
     return "Tất cả mọi người";
   };
+
+  const formatDate = (value) =>
+    value ? dayjs(value).format("DD/MM/YYYY") : "N/A";
+
+  const eventColumns = [
+    {
+      title: "Tên sự kiện",
+      dataIndex: "name",
+      key: "name",
+      render: (text, record) => (
+        <Button
+          type="link"
+          onClick={() =>
+            navigate(`/leader/reward-events/${record._id}/registrations`)
+          }
+        >
+          {text}
+        </Button>
+      ),
+    },
+    {
+      title: "Loại",
+      dataIndex: "type",
+      key: "type",
+      render: (type) => <Tag>{getTypeText(type)}</Tag>,
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => getStatusTag(status),
+    },
+    {
+      title: "Thời gian",
+      key: "time",
+      render: (_, record) =>
+        record.startDate && record.endDate ? (
+          <Text type="secondary">
+            {formatDate(record.startDate)} - {formatDate(record.endDate)}
+          </Text>
+        ) : record.date ? (
+          <Text type="secondary">{formatDate(record.date)}</Text>
+        ) : (
+          "N/A"
+        ),
+    },
+    {
+      title: "Hành động",
+      key: "action",
+      align: "center",
+      render: (_, record) => (
+        <Button
+          size="small"
+          type="primary"
+          onClick={() =>
+            navigate(`/leader/reward-events/${record._id}/registrations`)
+          }
+        >
+          Xem danh sách
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <Layout>
@@ -591,9 +718,7 @@ const RewardEventSchedule = () => {
                               icon={<EyeOutlined />}
                               onClick={() => {
                                 const event = events.find(
-                                  (e) =>
-                                    e.name ===
-                                    `${template.name} ${getCurrentYear()}`
+                                  (e) => e.name === getEventName(template)
                                 );
                                 if (event) {
                                   navigate(
@@ -626,6 +751,29 @@ const RewardEventSchedule = () => {
             </Row>
           </Space>
         </Card>
+
+        {events.length > 0 && (
+          <Card
+            bordered={false}
+            style={{ marginTop: 24, borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
+          >
+            <Space
+              direction="vertical"
+              size="middle"
+              style={{ width: "100%" }}
+            >
+              <Title level={4} style={{ margin: 0 }}>
+                Sự kiện đã tạo
+              </Title>
+              <Table
+                columns={eventColumns}
+                dataSource={events}
+                rowKey="_id"
+                pagination={false}
+              />
+            </Space>
+          </Card>
+        )}
       </div>
 
       {/* Create Event Modal */}
@@ -644,7 +792,7 @@ const RewardEventSchedule = () => {
         <Form
           form={createForm}
           layout="vertical"
-          initialValues={{ type: "ANNUAL" }}
+          initialValues={{ type: "ANNUAL", targetGender: "ALL" }}
         >
           <Form.Item
             name="name"
@@ -669,6 +817,41 @@ const RewardEventSchedule = () => {
                 current && current < dayjs().startOf("day")
               }
             />
+          </Form.Item>
+
+          <Form.Item
+            label="Đối tượng (tuổi)"
+            tooltip="Để trống nếu áp dụng cho tất cả"
+            style={{ marginBottom: 8 }}
+          >
+            <Space>
+              <Form.Item name="targetAgeMin" noStyle>
+                <InputNumber
+                  min={0}
+                  placeholder="Từ tuổi"
+                  style={{ width: 120 }}
+                />
+              </Form.Item>
+              <Form.Item name="targetAgeMax" noStyle>
+                <InputNumber
+                  min={0}
+                  placeholder="Đến tuổi"
+                  style={{ width: 120 }}
+                />
+              </Form.Item>
+            </Space>
+          </Form.Item>
+
+          <Form.Item
+            name="targetGender"
+            label="Giới tính"
+            tooltip="Chỉ chọn nếu giới hạn theo giới"
+          >
+            <Select>
+              <Option value="ALL">Tất cả</Option>
+              <Option value="MALE">Nam</Option>
+              <Option value="FEMALE">Nữ</Option>
+            </Select>
           </Form.Item>
 
           <Form.Item name="budget" label="Ngân sách (VNĐ)">

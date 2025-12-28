@@ -1,7 +1,95 @@
 const { RewardEvent, Citizen, StudentAchievement, RewardDistribution } = require("../models");
 
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const buildAgeRangeQuery = (targetAge, referenceDate) => {
+  if (!targetAge) return null;
+  const minAge = typeof targetAge.min === "number" ? targetAge.min : 0;
+  const maxAge =
+    typeof targetAge.max === "number" && targetAge.max !== null
+      ? targetAge.max
+      : 200;
+
+  const minDate = new Date(referenceDate);
+  minDate.setFullYear(referenceDate.getFullYear() - maxAge);
+  minDate.setHours(0, 0, 0, 0);
+
+  const maxDate = new Date(referenceDate);
+  maxDate.setFullYear(referenceDate.getFullYear() - minAge);
+  maxDate.setHours(23, 59, 59, 999);
+
+  return { $gte: minDate, $lte: maxDate };
+};
+
+const buildAnnualEligibilityQuery = (event, referenceDate) => {
+  const query = { status: "ALIVE" };
+
+  // Ưu tiên cấu hình targetAge/targetGender nếu có
+  const ageRange = buildAgeRangeQuery(event.targetAge, referenceDate);
+  if (ageRange) {
+    query.dateOfBirth = ageRange;
+    query.residenceStatus = "THUONG_TRU";
+  }
+  if (event.targetGender) {
+    query.gender = event.targetGender;
+    query.residenceStatus = "THUONG_TRU";
+  }
+
+  // Nếu đã có cấu hình rõ ràng thì dùng luôn
+  if (ageRange || event.targetGender) {
+    return query;
+  }
+
+  // Fallback: logic cũ dựa vào tên sự kiện
+  const eventName = event.name.toLowerCase();
+
+  const minMaxFromYears = (years) => {
+    const minDate = new Date(referenceDate);
+    minDate.setFullYear(referenceDate.getFullYear() - years);
+    minDate.setHours(0, 0, 0, 0);
+    const maxDate = new Date(referenceDate);
+    maxDate.setHours(23, 59, 59, 999);
+    return { minDate, maxDate };
+  };
+
+  if (eventName.includes("trung thu")) {
+    const { minDate, maxDate } = minMaxFromYears(18);
+    query.dateOfBirth = { $gte: minDate, $lte: maxDate };
+    query.residenceStatus = "THUONG_TRU";
+  } else if (
+    eventName.includes("thiếu nhi") ||
+    eventName.includes("quốc tế thiếu nhi")
+  ) {
+    const { minDate, maxDate } = minMaxFromYears(14);
+    query.dateOfBirth = { $gte: minDate, $lte: maxDate };
+    query.residenceStatus = "THUONG_TRU";
+  } else if (eventName.includes("phụ nữ") || eventName.includes("20/10")) {
+    query.gender = "FEMALE";
+    query.residenceStatus = "THUONG_TRU";
+  } else {
+    query.residenceStatus = "THUONG_TRU";
+  }
+
+  return query;
+};
+
 module.exports = {
   async create(data) {
+    if ((data.type || "ANNUAL") === "ANNUAL" && data.name) {
+      const nameRegex = new RegExp(`^${escapeRegex(data.name.trim())}$`, "i");
+      const existing = await RewardEvent.findOne({
+        type: "ANNUAL",
+        name: { $regex: nameRegex },
+      });
+      if (existing) {
+        const err = new Error(
+          "Sự kiện thường niên này đã tồn tại, không cần tạo thêm."
+        );
+        err.status = 400;
+        throw err;
+      }
+    }
+
     return RewardEvent.create(data);
   },
   async getAll(filter = {}, options = {}) {
