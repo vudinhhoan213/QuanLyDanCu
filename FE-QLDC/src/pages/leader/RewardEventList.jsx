@@ -59,6 +59,58 @@ const RewardEventList = () => {
     setSelectedRowKeys([]);
   }, [statusFilter, typeFilter]);
 
+  const buildEventStats = async (eventId) => {
+    let eligible = 0;
+    let distributed = 0;
+
+    let distributions = [];
+    let achievements = [];
+
+    try {
+      const distRes = await rewardService.distributions.getAll({
+        event: eventId,
+        limit: 1000,
+      });
+      distributions = distRes.docs || [];
+    } catch (err) {
+      distributions = [];
+    }
+
+    try {
+      const achRes = await rewardService.achievements.getAll({ limit: 1000 });
+      achievements = achRes.docs || [];
+    } catch (err) {
+      achievements = [];
+    }
+
+    const distributionIds = new Set(
+      distributions
+        .map((d) => d.citizen?._id || d.citizen)
+        .filter(Boolean)
+        .map((id) => id.toString())
+    );
+    const achievementIds = new Set(
+      achievements
+        .map((a) => a.citizen?._id || a.citizen)
+        .filter(Boolean)
+        .map((id) => id.toString())
+    );
+
+    const mergedIds = new Set([...distributionIds, ...achievementIds]);
+    distributed = distributions.filter((d) => d.status === "DISTRIBUTED").length;
+
+    // Fallback to summary eligible count if greater
+    try {
+      const summary = await rewardService.events.getSummary(eventId);
+      const summaryEligible = summary?.eligibleCount || 0;
+      eligible = Math.max(mergedIds.size, summaryEligible);
+    } catch (err) {
+      eligible = mergedIds.size;
+    }
+
+    return { eligible, distributed };
+  };
+
   const fetchEvents = async () => {
     try {
       setLoading(true);
@@ -73,85 +125,15 @@ const RewardEventList = () => {
       const response = await rewardService.events.getAll(params);
       const eventList = response.docs || [];
 
-      // Lấy thống kê cho mỗi event
-      // Nếu có distributions thì lấy từ distributions, nếu không thì lấy từ eligible citizens
       const eventsWithEligible = await Promise.all(
         eventList.map(async (event) => {
           try {
-            let totalCount = 0; // Tổng số người
-            let distributedCount = 0; // Số người đã nhận quà
-
-            // Kiểm tra xem có distributions không
-            let hasDistributions = false;
-            try {
-              const checkDistributionsResponse =
-                await rewardService.distributions.getAll({
-                  event: event._id,
-                  limit: 1,
-                });
-              hasDistributions =
-                (checkDistributionsResponse.docs || []).length > 0;
-            } catch (checkErr) {
-              hasDistributions = false;
-            }
-
-            if (hasDistributions) {
-              // Có distributions → Lấy từ danh sách phân phối
-              try {
-                const distributionsResponse =
-                  await rewardService.distributions.getAll({
-                    event: event._id,
-                    limit: 1000,
-                  });
-                const distributions = distributionsResponse.docs || [];
-                totalCount = distributions.length;
-
-                // Đếm số distributions có status = "DISTRIBUTED"
-                distributedCount = distributions.filter(
-                  (dist) => dist.status === "DISTRIBUTED"
-                ).length;
-              } catch (err) {
-                console.error(
-                  `Error fetching distributions for event ${event._id}:`,
-                  err
-                );
-              }
-            } else {
-              // Chưa có distributions → Lấy từ eligible citizens
-              try {
-                const summary = await rewardService.events.getSummary(
-                  event._id
-                );
-                totalCount = summary.eligibleCount || 0;
-
-                // Vẫn kiểm tra distributions để đếm số người đã nhận quà
-                try {
-                  const distributionsResponse =
-                    await rewardService.distributions.getAll({
-                      event: event._id,
-                      limit: 1000,
-                    });
-                  const distributions = distributionsResponse.docs || [];
-                  distributedCount = distributions.filter(
-                    (dist) => dist.status === "DISTRIBUTED"
-                  ).length;
-                } catch (distErr) {
-                  // Không có distributions thì distributedCount = 0
-                  distributedCount = 0;
-                }
-              } catch (summaryErr) {
-                console.error(
-                  `Error fetching summary for event ${event._id}:`,
-                  summaryErr
-                );
-              }
-            }
-
+            const stats = await buildEventStats(event._id);
             return {
               key: event._id,
               ...event,
-              eligibleCount: totalCount,
-              distributedCount,
+              eligibleCount: stats.eligible,
+              distributedCount: stats.distributed,
             };
           } catch (error) {
             console.error(
@@ -231,67 +213,12 @@ const RewardEventList = () => {
   const handleViewDetails = async (eventId) => {
     try {
       const event = await rewardService.events.getById(eventId);
-
-      // Kiểm tra xem có distributions không
-      let registeredCount = 0;
-      let distributedCount = 0;
-
-      try {
-        const checkDistributionsResponse =
-          await rewardService.distributions.getAll({
-            event: eventId,
-            limit: 1,
-          });
-        const hasDistributions =
-          (checkDistributionsResponse.docs || []).length > 0;
-
-        if (hasDistributions) {
-          // Có distributions → Lấy từ danh sách phân phối
-          const distributionsResponse =
-            await rewardService.distributions.getAll({
-              event: eventId,
-              limit: 1000,
-            });
-          const distributions = distributionsResponse.docs || [];
-          registeredCount = distributions.length; // Tổng số người trong danh sách khen thưởng
-          distributedCount = distributions.filter(
-            (dist) => dist.status === "DISTRIBUTED"
-          ).length; // Số người đã nhận quà
-        } else {
-          // Chưa có distributions → Lấy từ eligible citizens
-          const summary = await rewardService.events.getSummary(eventId);
-          registeredCount = summary.eligibleCount || 0;
-
-          // Vẫn kiểm tra distributions để đếm số người đã nhận quà
-          try {
-            const distributionsResponse =
-              await rewardService.distributions.getAll({
-                event: eventId,
-                limit: 1000,
-              });
-            const distributions = distributionsResponse.docs || [];
-            distributedCount = distributions.filter(
-              (dist) => dist.status === "DISTRIBUTED"
-            ).length;
-          } catch (distErr) {
-            distributedCount = 0;
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching stats for event details:", error);
-        // Fallback về summary
-        try {
-          const summary = await rewardService.events.getSummary(eventId);
-          registeredCount = summary.eligibleCount || 0;
-        } catch (summaryErr) {
-          registeredCount = 0;
-        }
-      }
+      const stats = await buildEventStats(eventId);
 
       setViewingEvent({
         ...event,
-        registeredCount,
-        distributedCount,
+        registeredCount: stats.eligible,
+        distributedCount: stats.distributed,
       });
 
       setIsViewModalVisible(true);
